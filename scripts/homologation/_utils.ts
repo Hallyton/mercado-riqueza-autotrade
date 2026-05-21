@@ -1,6 +1,8 @@
 /**
  * Utilitários compartilhados — scripts de homologação local AutoTrade apenas.
  * Não usar em produção. Não altera a ferramenta DARF.
+ *
+ * Scripts devem importar `./load-env` antes de `@/lib/prisma`.
  */
 
 export function assertHomologationNotProduction(scriptName: string): void {

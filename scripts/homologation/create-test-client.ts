@@ -1,14 +1,15 @@
 /**
  * Cria usuário CLIENT de teste para homologação local (não altera existentes).
  */
+import "./load-env";
 import { hash } from "bcryptjs";
 import { UserRole } from "@prisma/client";
-import prisma from "@/lib/prisma";
 import {
   assertHomologationNotProduction,
   normalizeEmail,
   requireEnv,
 } from "./_utils";
+import prisma from "@/lib/prisma";
 
 async function main() {
   assertHomologationNotProduction("create-test-client");

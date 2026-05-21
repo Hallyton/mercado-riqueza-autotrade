@@ -1,8 +1,9 @@
 /**
  * Resumo somente leitura da homologação AutoTrade (cliente de teste).
  */
-import prisma from "@/lib/prisma";
+import "./load-env";
 import { normalizeEmail, requireEnv } from "./_utils";
+import prisma from "@/lib/prisma";
 
 async function main() {
   const email = normalizeEmail(requireEnv("HOMOLOG_CLIENT_EMAIL"));

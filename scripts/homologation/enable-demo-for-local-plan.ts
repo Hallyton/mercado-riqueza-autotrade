@@ -1,11 +1,12 @@
 /**
  * allow_demo=true no plano — somente banco local de homologação.
  */
-import prisma from "@/lib/prisma";
+import "./load-env";
 import {
   assertHomologationNotProduction,
   requireEnv,
 } from "./_utils";
+import prisma from "@/lib/prisma";
 
 async function main() {
   assertHomologationNotProduction("enable-demo");

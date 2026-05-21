@@ -1,11 +1,12 @@
 /**
  * Reverte allow_demo=false no plano — somente homologação local (opcional).
  */
-import prisma from "@/lib/prisma";
+import "./load-env";
 import {
   assertHomologationNotProduction,
   requireEnv,
 } from "./_utils";
+import prisma from "@/lib/prisma";
 
 async function main() {
   assertHomologationNotProduction("disable-demo");

@@ -1,14 +1,15 @@
 /**
  * Ativa assinatura + licença para cliente de homologação (sem gateway real).
  */
+import "./load-env";
 import { SubscriptionStatus } from "@prisma/client";
-import { activateSubscription } from "@/lib/licensing/service";
-import prisma from "@/lib/prisma";
 import {
   assertHomologationNotProduction,
   normalizeEmail,
   requireEnv,
 } from "./_utils";
+import { activateSubscription } from "@/lib/licensing/service";
+import prisma from "@/lib/prisma";
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);

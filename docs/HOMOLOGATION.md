@@ -19,7 +19,9 @@ A ferramenta **DARF** (rota `/DARF`, páginas, APIs e deploy próprios) **não f
 
 ## Variáveis de ambiente
 
-Configure no `.env` (ou exporte no shell):
+Os scripts carregam automaticamente `.env`, `.env.local` e variantes via `@next/env` (`scripts/homologation/load-env.ts`) **antes** de conectar ao Prisma. Coloque `DATABASE_URL` e as variáveis `HOMOLOG_*` na raiz do projeto.
+
+Configure no `.env` (export manual no shell só se necessário):
 
 ```env
 DATABASE_URL="postgresql://..."
