@@ -5,7 +5,8 @@ import { problemJson } from "@/lib/ea/problem";
 import { reportExecution } from "@/lib/ea/instructions";
 import { executionBodySchema } from "@/lib/ea/schemas";
 
-export const POST = withEaAuth(async (ctx, request) => {
+export const POST = withEaAuth(
+  async (ctx, request) => {
   assertLicenseUsable(ctx);
 
   let body: unknown;
@@ -42,4 +43,6 @@ export const POST = withEaAuth(async (ctx, request) => {
     instruction_id: parsed.data.instruction_id,
     order_status: result.orderStatus,
   });
-});
+  },
+  { rateLimit: "executions" }
+);

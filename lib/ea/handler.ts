@@ -3,7 +3,9 @@ import { authenticateEaRequest, EaAuthError } from "./auth";
 import { problemJson } from "./problem";
 import type { EaRateLimitScope } from "./rate-limit";
 import {
+  applyEaRateLimitHeaders,
   checkEaRateLimit,
+  type EaRateLimitCheckResult,
   rateLimitProblemResponse,
   recordEaRateLimitBlocked,
 } from "./rate-limit";
@@ -32,16 +34,22 @@ const ERROR_TITLES: Record<string, string> = {
 export function withEaAuth(handler: EaHandler, options?: WithEaAuthOptions) {
   return async (request: Request) => {
     try {
+      const ctx = await authenticateEaRequest(request);
+
+      let rl: EaRateLimitCheckResult | undefined;
       if (options?.rateLimit) {
-        const rl = checkEaRateLimit(request, options.rateLimit);
+        rl = checkEaRateLimit(request, options.rateLimit);
         if (!rl.allowed) {
-          await recordEaRateLimitBlocked(request, rl);
+          await recordEaRateLimitBlocked(request, rl, {
+            license: { id: ctx.license.id, userId: ctx.license.userId },
+            device: { id: ctx.device.id, deviceId: ctx.device.deviceId },
+          });
           return rateLimitProblemResponse(rl);
         }
       }
 
-      const ctx = await authenticateEaRequest(request);
-      return await handler(ctx, request);
+      const response = await handler(ctx, request);
+      return rl ? applyEaRateLimitHeaders(response, rl) : response;
     } catch (e) {
       if (e instanceof EaAuthError) {
         return problemJson(

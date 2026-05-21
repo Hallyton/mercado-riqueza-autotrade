@@ -4,8 +4,21 @@ import { readEaHeaders } from "@/lib/ea/auth";
 import { problemJson } from "@/lib/ea/problem";
 import { NextResponse } from "next/server";
 
-/** Escopos com rate limit (rotas sensíveis EA). */
-export type EaRateLimitScope = "activate" | "heartbeat" | "instructions" | "errors";
+/**
+ * Rate limit EA — janela fixa em memória (MVP).
+ *
+ * **Produção multi-instância:** cada réplica mantém contadores isolados.
+ * Antes de escalar horizontalmente, migrar o store para Redis/KV/Upstash (ou
+ * equivalente) com chaves `ea:{scope}:ip:{ip}:device:{deviceId}`.
+ */
+export type EaRateLimitScope =
+  | "activate"
+  | "heartbeat"
+  | "instructions"
+  | "errors"
+  | "config"
+  | "executions"
+  | "ignore";
 
 type RateLimitPolicy = {
   limit: number;
@@ -19,6 +32,10 @@ const DEFAULT_POLICIES: Record<EaRateLimitScope, RateLimitPolicy> = {
   heartbeat: { limit: 180, windowMs: 60 * 60 * 1000 },
   instructions: { limit: 240, windowMs: 60 * 60 * 1000 },
   errors: { limit: 60, windowMs: 60 * 60 * 1000 },
+  /** Poll de config (menos frequente que heartbeat) */
+  config: { limit: 120, windowMs: 60 * 60 * 1000 },
+  executions: { limit: 240, windowMs: 60 * 60 * 1000 },
+  ignore: { limit: 60, windowMs: 60 * 60 * 1000 },
 };
 
 type WindowEntry = {
@@ -67,12 +84,24 @@ export type EaRateLimitCheckResult = {
   scope: EaRateLimitScope;
   key: string;
   limit: number;
+  remaining: number;
   retryAfterSec: number;
 };
 
-/**
- * Janela fixa em memória (MVP). Em deploy multi-instância o limite é por instância.
- */
+export type EaRateLimitAuditContext = {
+  license: { id: string; userId: string };
+  device: { id: string; deviceId: string };
+};
+
+export function applyEaRateLimitHeaders(
+  response: NextResponse,
+  result: EaRateLimitCheckResult
+): NextResponse {
+  response.headers.set("X-RateLimit-Limit", String(result.limit));
+  response.headers.set("X-RateLimit-Remaining", String(Math.max(0, result.remaining)));
+  return response;
+}
+
 export function checkEaRateLimit(
   request: Request,
   scope: EaRateLimitScope,
@@ -94,16 +123,19 @@ export function checkEaRateLimit(
       scope,
       key,
       limit: policy.limit,
+      remaining: 0,
       retryAfterSec,
     };
   }
 
   entry.count += 1;
+  const remaining = Math.max(0, policy.limit - entry.count);
   return {
     allowed: true,
     scope,
     key,
     limit: policy.limit,
+    remaining,
     retryAfterSec: 0,
   };
 }
@@ -124,26 +156,48 @@ export function rateLimitProblemResponse(
   );
 
   response.headers.set("Retry-After", String(result.retryAfterSec));
-  return response;
+  return applyEaRateLimitHeaders(response, result);
 }
 
 export async function recordEaRateLimitBlocked(
   request: Request,
-  result: EaRateLimitCheckResult
+  result: EaRateLimitCheckResult,
+  ctx?: EaRateLimitAuditContext
 ): Promise<void> {
   const headers = readEaHeaders(request);
+  const baseMetadata = {
+    scope: result.scope,
+    key: result.key,
+    limit: result.limit,
+    remaining: result.remaining,
+    retryAfterSec: result.retryAfterSec,
+    deviceId: headers.deviceId,
+  };
+
+  if (ctx) {
+    await createAuditLog({
+      actorType: AuditActorType.EA,
+      actorId: ctx.license.userId,
+      action: "ea.rate_limit_exceeded",
+      entityType: "license",
+      entityId: ctx.license.id,
+      metadata: {
+        ...baseMetadata,
+        deviceRecordId: ctx.device.id,
+        licenseDeviceId: ctx.device.deviceId,
+      },
+      ipAddress: resolveClientIp(request),
+      requestId: headers.requestId,
+    });
+    return;
+  }
+
   await createAuditLog({
     actorType: AuditActorType.SYSTEM,
     action: "ea.rate_limit_exceeded",
     entityType: "ea_rate_limit",
     entityId: result.scope,
-    metadata: {
-      scope: result.scope,
-      key: result.key,
-      limit: result.limit,
-      retryAfterSec: result.retryAfterSec,
-      deviceId: headers.deviceId,
-    },
+    metadata: baseMetadata,
     ipAddress: resolveClientIp(request),
     requestId: headers.requestId,
   });

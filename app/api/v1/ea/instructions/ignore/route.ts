@@ -5,7 +5,8 @@ import { problemJson } from "@/lib/ea/problem";
 import { reportIgnored } from "@/lib/ea/instructions";
 import { ignoredBodySchema } from "@/lib/ea/schemas";
 
-export const POST = withEaAuth(async (ctx, request) => {
+export const POST = withEaAuth(
+  async (ctx, request) => {
   assertLicenseUsable(ctx);
 
   let body: unknown;
@@ -31,4 +32,6 @@ export const POST = withEaAuth(async (ctx, request) => {
   }
 
   return eaJson({ ok: true, instruction_id: parsed.data.instruction_id, status: "IGNORED" });
-});
+  },
+  { rateLimit: "ignore" }
+);

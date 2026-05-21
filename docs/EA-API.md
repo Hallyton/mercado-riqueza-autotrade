@@ -126,6 +126,28 @@ EA offline: sem heartbeat há mais de **120s** (`EA_OFFLINE_THRESHOLD_SEC`).
 
 ---
 
+## Rate limiting
+
+Rotas protegidas por janela fixa (`lib/ea/rate-limit.ts`). Ao exceder o limite: **HTTP 429** com `application/problem+json` (`RATE_LIMIT_EXCEEDED`), headers `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`.
+
+| Escopo | Rota | Chave |
+|--------|------|-------|
+| `activate` | `POST /activate` | IP |
+| `heartbeat` | `POST /heartbeat` | IP + `X-Device-Id` |
+| `instructions` | `GET /instructions` | IP + device |
+| `errors` | `POST /errors` | IP + device |
+| `config` | `GET /config` | IP + device |
+| `executions` | `POST /executions` | IP + device |
+| `ignore` | `POST /instructions/ignore` | IP + device |
+
+Limites padrão por hora (exceto activate: 10 / 15 min). Override opcional: `EA_RATE_LIMIT_<SCOPE>_MAX` (ex.: `EA_RATE_LIMIT_CONFIG_MAX`).
+
+**MVP:** contadores em memória por processo Node. Em **produção com várias instâncias** (Vercel/serverless, múltiplos pods), migrar o store para **Redis / KV / Upstash** com as mesmas chaves antes de escalar.
+
+Bloqueios em rotas autenticadas geram `audit_logs` (`ea.rate_limit_exceeded`) com `license_id` quando o Bearer é válido.
+
+---
+
 ## Auditoria
 
 Eventos em `audit_logs`: `ea.heartbeat`, `ea.instructions_pulled`, `ea.execution_reported`, `ea.error_reported`, `ea.positions_closed`, etc.
