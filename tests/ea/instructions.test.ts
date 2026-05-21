@@ -1,0 +1,256 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import {
+  InstructionPurpose,
+  OrderLogStatus,
+  LicenseStatus,
+  SubscriptionStatus,
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
+import { canAcceptNewEntries } from "@/lib/licensing/flags";
+import { mapInstructionToEaPayload } from "@/lib/ea/instructions";
+
+vi.mock("@/lib/prisma", () => ({
+  default: {
+    instruction: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+    },
+    instructionStatusLog: { create: vi.fn() },
+    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
+    execution: { create: vi.fn() },
+  },
+}));
+
+vi.mock("@/lib/audit/log", () => ({
+  createAuditLog: vi.fn(),
+}));
+
+vi.mock("@/lib/licensing/instruction-policy", () => ({
+  assertInstructionAllowed: vi.fn(),
+  LicensePolicyError: class LicensePolicyError extends Error {
+    code: string;
+    constructor(message: string, code: string) {
+      super(message);
+      this.code = code;
+    }
+  },
+}));
+
+vi.mock("@/lib/licensing/service", () => ({
+  getLicenseOperationalFlags: vi.fn(),
+}));
+
+import prisma from "@/lib/prisma";
+import { pullInstructionsForEa, reportExecution, reportIgnored } from "@/lib/ea/instructions";
+import { assertInstructionAllowed } from "@/lib/licensing/instruction-policy";
+
+const ctx = {
+  device: { id: "dev1", deviceId: "mt5-1", licenseId: "lic1" },
+  license: {
+    id: "lic1",
+    userId: "user1",
+    status: LicenseStatus.ACTIVE,
+    haltNewEntries: false,
+    haltAllTrading: false,
+    subscription: { status: SubscriptionStatus.ACTIVE, plan: { allowDemo: false } },
+    mt5Account: { login: "123", server: "Broker-Demo" },
+    exposureProfile: null,
+  },
+  requestId: "req-1",
+  deviceIdHeader: "mt5-1",
+  eaVersion: "1.0.0",
+} as const;
+
+describe("Sinal recebido", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(assertInstructionAllowed).mockResolvedValue(undefined);
+  });
+
+  it("retorna instrução autorizada no pull", async () => {
+    const instruction = {
+      id: "inst-1",
+      purpose: InstructionPurpose.ENTRY,
+      symbol: "PETR4",
+      side: "BUY",
+      orderType: "MARKET",
+      quantity: new Decimal(100),
+      stopLoss: new Decimal(28.5),
+      takeProfit: new Decimal(30),
+      expiresAt: new Date(Date.now() + 60_000),
+      idempotencyKey: "key-1",
+      currentStatus: OrderLogStatus.RECEIVED,
+    };
+
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([instruction] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+    expect(result).toHaveLength(1);
+    expect(result[0].instruction_id).toBe("inst-1");
+    expect(result[0].symbol).toBe("PETR4");
+    expect(result[0]).not.toHaveProperty("strategy");
+  });
+});
+
+describe("Ordem ignorada", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("ignora entrada quando licença bloqueia novas operações", async () => {
+    const { LicensePolicyError } = await import(
+      "@/lib/licensing/instruction-policy"
+    );
+    vi.mocked(assertInstructionAllowed).mockRejectedValue(
+      new LicensePolicyError("Novas entradas bloqueadas", "NEW_ENTRIES_BLOCKED")
+    );
+
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-2",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "VALE3",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(50),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "key-2",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+    ] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+    expect(result).toHaveLength(0);
+    expect(prisma.instructionStatusLog.create).toHaveBeenCalled();
+  });
+
+  it("registra ignore explícito do EA", async () => {
+    vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
+      id: "inst-3",
+      licenseId: "lic1",
+    } as never);
+
+    const result = await reportIgnored(ctx as never, "inst-3", "expirada");
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe("Ordem rejeitada", () => {
+  it("persiste execução rejeitada", async () => {
+    vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
+      id: "inst-4",
+      licenseId: "lic1",
+      purpose: InstructionPurpose.ENTRY,
+    } as never);
+
+    const result = await reportExecution(ctx as never, {
+      instruction_id: "inst-4",
+      status: "REJECTED",
+      error_code: "BROKER_REJECT",
+      error_message: "Mercado fechado",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prisma.execution.create).toHaveBeenCalled();
+  });
+});
+
+describe("Payload EA sem estratégia", () => {
+  it("expõe apenas campos de execução", () => {
+    const payload = mapInstructionToEaPayload({
+      id: "x",
+      purpose: InstructionPurpose.EXIT,
+      symbol: "PETR4",
+      side: "SELL",
+      orderType: "MARKET",
+      quantity: new Decimal(100),
+      stopLoss: null,
+      takeProfit: null,
+      expiresAt: new Date(),
+      idempotencyKey: "k",
+    });
+    expect(Object.keys(payload).sort()).toEqual(
+      [
+        "expires_at",
+        "idempotency_key",
+        "instruction_id",
+        "order_type",
+        "purpose",
+        "quantity",
+        "side",
+        "stop_loss",
+        "symbol",
+        "take_profit",
+      ].sort()
+    );
+  });
+});
+
+describe("Licença vencida — flags", () => {
+  it("não permite novas entradas", () => {
+    expect(
+      canAcceptNewEntries({
+        licenseStatus: LicenseStatus.SUSPENDED,
+        subscriptionStatus: SubscriptionStatus.PAST_DUE,
+        haltNewEntries: true,
+        haltAllTrading: false,
+      })
+    ).toBe(false);
+  });
+});
+
+describe("Licença vencida — pull de saída", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(assertInstructionAllowed).mockResolvedValue(undefined);
+  });
+
+  it("entrega instrução EXIT mesmo com política de entrada bloqueada", async () => {
+    const { LicensePolicyError } = await import(
+      "@/lib/licensing/instruction-policy"
+    );
+    vi.mocked(assertInstructionAllowed).mockImplementation(
+      async (_licenseId, purpose) => {
+        if (purpose === InstructionPurpose.ENTRY) {
+          throw new LicensePolicyError("Bloqueado", "NEW_ENTRIES_BLOCKED");
+        }
+      }
+    );
+
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-entry",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "PETR4",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(100),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "k1",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+      {
+        id: "inst-exit",
+        purpose: InstructionPurpose.EXIT,
+        symbol: "PETR4",
+        side: "SELL",
+        orderType: "MARKET",
+        quantity: new Decimal(100),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "k2",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+    ] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+    expect(result).toHaveLength(1);
+    expect(result[0].purpose).toBe(InstructionPurpose.EXIT);
+  });
+});

@@ -1,0 +1,710 @@
+// Mercado da Riqueza AutoTrade — schema alinhado a MERCADO_DA_RIQUEZA_AUTOTRADE_MASTER.md
+// Vault de estratégia (strategy_configs) fica fora deste schema — DB/processo isolado na versão Pro.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  CLIENT
+  SUPPORT
+  OPS
+  FINANCE
+  STRATEGY_OPS
+  SUPERADMIN
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  PAUSED
+}
+
+enum LicenseStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum InstructionSide {
+  BUY
+  SELL
+}
+
+enum InstructionOrderType {
+  MARKET
+  LIMIT
+  STOP
+  STOP_LIMIT
+}
+
+enum InstructionPurpose {
+  ENTRY
+  EXIT
+  ADJUSTMENT
+}
+
+/** Origem da instrução — fila admin de teste/homologação (não exposta ao cliente). */
+enum InstructionSource {
+  TEST
+  HOMOLOGATION
+}
+
+enum OrderLogStatus {
+  RECEIVED
+  SENT
+  EXECUTED
+  REJECTED
+  IGNORED
+  CANCELLED
+}
+
+enum ExecutionStatus {
+  FILLED
+  PARTIAL
+  REJECTED
+  EXPIRED
+}
+
+enum RiskEventType {
+  DRAWDOWN_DAILY
+  DRAWDOWN_MONTHLY
+  LICENSE_SUSPENDED
+  SLIPPAGE_EXCEEDED
+  HEARTBEAT_TIMEOUT
+  KILL_SWITCH
+  INADIMPLENCIA
+  VOLUME_CAP
+  MARKET_HOURS
+  OTHER
+}
+
+enum KillSwitchScope {
+  GLOBAL
+  LICENSE
+  USER
+}
+
+enum AuditActorType {
+  USER
+  ADMIN
+  SYSTEM
+  EA
+}
+
+enum TradeMode {
+  DEMO
+  REAL
+}
+
+// ─── Auth (Auth.js adapter) + usuários ───────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(CLIENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  subscriptions Subscription[]
+  licenses      License[]
+  mt5Accounts   Mt5Account[]
+  auditLogs     AuditLog[]     @relation("AuditLogActor")
+  adminActions  AdminAction[]
+  riskEvents    RiskEvent[]
+  equitySnapshots EquitySnapshot[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Planos e billing ────────────────────────────────────────────────────────
+
+model Plan {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  maxMt5Accounts Int   @default(1) @map("max_mt5_accounts")
+  maxDevices     Int   @default(1) @map("max_devices")
+  allowDemo      Boolean @default(false) @map("allow_demo")
+  sortOrder      Int    @default(0) @map("sort_order")
+  isActive       Boolean @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  prices        PlanPrice[]
+  features      PlanFeature[]
+  planProfiles  PlanExposureProfile[]
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model PlanPrice {
+  id            String   @id @default(cuid())
+  planId        String   @map("plan_id")
+  currency      String   @default("BRL")
+  amountCents   Int      @map("amount_cents")
+  interval      String
+  intervalCount Int      @default(1) @map("interval_count")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, isActive])
+  @@map("plan_prices")
+}
+
+model PlanFeature {
+  id        String   @id @default(cuid())
+  planId    String   @map("plan_id")
+  key       String
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, key])
+  @@map("plan_features")
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String             @map("user_id")
+  planId             String             @map("plan_id")
+  status             SubscriptionStatus @default(INCOMPLETE)
+  gateway            String?
+  gatewayCustomerId  String?            @map("gateway_customer_id")
+  gatewaySubscriptionId String?         @map("gateway_subscription_id")
+  currentPeriodStart DateTime?          @map("current_period_start")
+  currentPeriodEnd   DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  cancelledAt        DateTime?          @map("cancelled_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  invoices Invoice[]
+  licenses License[]
+
+  @@index([userId, status])
+  @@index([planId])
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  subscriptionId  String        @map("subscription_id")
+  status          InvoiceStatus @default(DRAFT)
+  amountCents     Int           @map("amount_cents")
+  currency        String        @default("BRL")
+  gatewayInvoiceId String?      @map("gateway_invoice_id")
+  dueAt           DateTime?     @map("due_at")
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@index([subscriptionId, status])
+  @@map("invoices")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  invoiceId       String        @map("invoice_id")
+  status          PaymentStatus @default(PENDING)
+  amountCents     Int           @map("amount_cents")
+  currency        String        @default("BRL")
+  gatewayPaymentId String?     @map("gateway_payment_id")
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  gateway     String
+  eventId     String   @map("event_id")
+  eventType   String   @map("event_type")
+  payload     Json
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([gateway, eventId])
+  @@index([gateway, eventType])
+  @@map("webhook_events")
+}
+
+// ─── Perfis de exposição (camada comercial — sem estratégia) ─────────────────
+
+model ExposureProfile {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String   @db.Text
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  planProfiles    PlanExposureProfile[]
+  licenseProfiles LicenseExposureProfile[]
+  licenses        License[]
+
+  @@map("exposure_profiles")
+}
+
+model PlanExposureProfile {
+  planId            String @map("plan_id")
+  exposureProfileId String @map("exposure_profile_id")
+
+  plan            Plan            @relation(fields: [planId], references: [id], onDelete: Cascade)
+  exposureProfile ExposureProfile @relation(fields: [exposureProfileId], references: [id], onDelete: Cascade)
+
+  @@id([planId, exposureProfileId])
+  @@map("plan_exposure_profiles")
+}
+
+// ─── Licenciamento e MT5 ─────────────────────────────────────────────────────
+
+model Mt5Account {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  login      String
+  server     String
+  brokerName String?  @map("broker_name")
+  label      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenses License[]
+
+  @@unique([login, server])
+  @@index([userId])
+  @@map("mt5_accounts")
+}
+
+model License {
+  id                   String        @id @default(cuid())
+  userId               String        @map("user_id")
+  subscriptionId       String?       @map("subscription_id")
+  mt5AccountId         String?       @map("mt5_account_id")
+  exposureProfileId    String?       @map("exposure_profile_id")
+  status               LicenseStatus @default(PENDING_ACTIVATION)
+  haltNewEntries       Boolean       @default(false) @map("halt_new_entries")
+  adminHaltNewEntries  Boolean       @default(false) @map("admin_halt_new_entries")
+  haltAllTrading       Boolean       @default(false) @map("halt_all_trading")
+  activatedAt          DateTime?     @map("activated_at")
+  suspendedAt          DateTime?     @map("suspended_at")
+  revokedAt            DateTime?     @map("revoked_at")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription      Subscription?     @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  mt5Account        Mt5Account?       @relation(fields: [mt5AccountId], references: [id], onDelete: SetNull)
+  exposureProfile   ExposureProfile?  @relation(fields: [exposureProfileId], references: [id], onDelete: SetNull)
+  devices           Device[]
+  activationCodes   ActivationCode[]
+  profileHistory    LicenseExposureProfile[]
+  instructions      Instruction[]
+  executions        Execution[]
+  positionSnapshots PositionSnapshot[]
+  dailyPnls         DailyPnl[]
+  riskEvents        RiskEvent[]
+  killSwitchLogs    KillSwitchLog[]
+  eaHeartbeats      EaHeartbeat[]
+  eaErrorReports    EaErrorReport[]
+  equitySnapshots   EquitySnapshot[]
+  portfolioMetrics  PortfolioMetric[]
+
+  @@index([userId, status])
+  @@index([mt5AccountId])
+  @@index([subscriptionId])
+  @@map("licenses")
+}
+
+model LicenseExposureProfile {
+  id                String   @id @default(cuid())
+  licenseId         String   @map("license_id")
+  exposureProfileId String   @map("exposure_profile_id")
+  changedAt         DateTime @default(now()) @map("changed_at")
+  changedByUserId   String?  @map("changed_by_user_id")
+
+  license         License         @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  exposureProfile ExposureProfile @relation(fields: [exposureProfileId], references: [id])
+
+  @@index([licenseId, changedAt])
+  @@map("license_exposure_profiles")
+}
+
+model Device {
+  id           String    @id @default(cuid())
+  licenseId    String    @map("license_id")
+  deviceId     String    @map("device_id")
+  fingerprint  String?
+  eaVersion    String?   @map("ea_version")
+  tokenHash    String    @map("token_hash")
+  lastSeenAt   DateTime? @map("last_seen_at")
+  rotateAfter  DateTime? @map("rotate_after")
+  revokedAt    DateTime? @map("revoked_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, deviceId])
+  @@index([licenseId])
+  @@map("devices")
+}
+
+model ActivationCode {
+  id        String    @id @default(cuid())
+  licenseId String    @map("license_id")
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, expiresAt])
+  @@map("activation_codes")
+}
+
+// ─── Trading (resultado auditável — sem vault de estratégia) ─────────────────
+
+model Instruction {
+  id              String               @id @default(cuid())
+  licenseId       String               @map("license_id")
+  purpose         InstructionPurpose   @default(ENTRY)
+  symbol          String
+  side            InstructionSide
+  orderType       InstructionOrderType @map("order_type")
+  quantity        Decimal              @db.Decimal(18, 6)
+  stopLoss        Decimal?             @map("stop_loss") @db.Decimal(18, 6)
+  takeProfit      Decimal?             @map("take_profit") @db.Decimal(18, 6)
+  idempotencyKey  String               @unique @map("idempotency_key")
+  requestId       String?              @map("request_id")
+  expiresAt       DateTime             @map("expires_at")
+  source          InstructionSource?   @map("source")
+  currentStatus   OrderLogStatus       @default(RECEIVED) @map("current_status")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  license     License                @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  statusLogs  InstructionStatusLog[]
+  executions  Execution[]
+
+  @@index([licenseId, currentStatus, createdAt])
+  @@map("instructions")
+}
+
+model InstructionStatusLog {
+  id             String         @id @default(cuid())
+  instructionId  String         @map("instruction_id")
+  status         OrderLogStatus
+  message        String?        @db.Text
+  metadata       Json?
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  instruction Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+
+  @@index([instructionId, createdAt])
+  @@map("instruction_status_logs")
+}
+
+model Execution {
+  id             String          @id @default(cuid())
+  instructionId  String          @map("instruction_id")
+  licenseId      String          @map("license_id")
+  status         ExecutionStatus
+  brokerTicket   String?         @map("broker_ticket")
+  fillPrice      Decimal?        @map("fill_price") @db.Decimal(18, 6)
+  fillQuantity   Decimal?        @map("fill_quantity") @db.Decimal(18, 6)
+  slippage       Decimal?        @db.Decimal(18, 6)
+  errorCode      String?         @map("error_code")
+  errorMessage   String?         @map("error_message") @db.Text
+  executedAt     DateTime?       @map("executed_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  instruction Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  license     License     @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, createdAt])
+  @@index([instructionId])
+  @@map("executions")
+}
+
+model PositionSnapshot {
+  id         String   @id @default(cuid())
+  licenseId  String   @map("license_id")
+  symbol     String
+  quantity   Decimal  @db.Decimal(18, 6)
+  avgPrice   Decimal  @map("avg_price") @db.Decimal(18, 6)
+  unrealizedPnl Decimal? @map("unrealized_pnl") @db.Decimal(18, 2)
+  snapshotAt DateTime @map("snapshot_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, snapshotAt])
+  @@map("position_snapshots")
+}
+
+model DailyPnl {
+  id           String   @id @default(cuid())
+  licenseId    String   @map("license_id")
+  tradeDate    DateTime @map("trade_date") @db.Date
+  realizedPnl  Decimal  @default(0) @map("realized_pnl") @db.Decimal(18, 2)
+  unrealizedPnl Decimal @default(0) @map("unrealized_pnl") @db.Decimal(18, 2)
+  equityClose  Decimal? @map("equity_close") @db.Decimal(18, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, tradeDate])
+  @@map("daily_pnls")
+}
+
+model RiskEvent {
+  id        String        @id @default(cuid())
+  licenseId String?       @map("license_id")
+  userId    String?       @map("user_id")
+  type      RiskEventType
+  message   String        @db.Text
+  metadata  Json?
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([licenseId, createdAt])
+  @@index([type, createdAt])
+  @@map("risk_events")
+}
+
+model KillSwitchLog {
+  id         String          @id @default(cuid())
+  scope      KillSwitchScope
+  licenseId  String?         @map("license_id")
+  userId     String?         @map("user_id")
+  enabled    Boolean
+  reason     String?         @db.Text
+  actorId    String?         @map("actor_id")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
+
+  @@index([licenseId, createdAt])
+  @@map("kill_switch_logs")
+}
+
+// ─── Reporting (cliente — sem estratégia) ────────────────────────────────────
+
+model EquitySnapshot {
+  id         String    @id @default(cuid())
+  licenseId  String    @map("license_id")
+  userId     String    @map("user_id")
+  equity     Decimal   @db.Decimal(18, 2)
+  balance    Decimal   @db.Decimal(18, 2)
+  margin     Decimal?  @db.Decimal(18, 2)
+  tradeMode  TradeMode? @map("trade_mode")
+  snapshotAt DateTime  @map("snapshot_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, snapshotAt])
+  @@index([userId, snapshotAt])
+  @@map("equity_snapshots")
+}
+
+model BenchmarkIbovDaily {
+  id           String   @id @default(cuid())
+  tradeDate    DateTime @unique @map("trade_date") @db.Date
+  closeValue   Decimal  @map("close_value") @db.Decimal(18, 4)
+  dailyReturn  Decimal? @map("daily_return") @db.Decimal(10, 6)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("benchmark_ibov_daily")
+}
+
+model PortfolioMetric {
+  id            String   @id @default(cuid())
+  licenseId     String   @map("license_id")
+  period        String
+  returnPct     Decimal? @map("return_pct") @db.Decimal(10, 4)
+  benchmarkPct  Decimal? @map("benchmark_pct") @db.Decimal(10, 4)
+  winRate       Decimal? @map("win_rate") @db.Decimal(10, 4)
+  tradeCount    Int?     @map("trade_count")
+  calculatedAt  DateTime @map("calculated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, period, calculatedAt])
+  @@index([licenseId, period])
+  @@map("portfolio_metrics")
+}
+
+// ─── EA telemetria e auditoria ───────────────────────────────────────────────
+
+model EaHeartbeat {
+  id            String    @id @default(cuid())
+  licenseId     String    @map("license_id")
+  deviceId      String    @map("device_id")
+  eaVersion     String?   @map("ea_version")
+  eaStatus      String?   @map("ea_status")
+  equity        Decimal?  @db.Decimal(18, 2)
+  balance       Decimal?  @db.Decimal(18, 2)
+  margin        Decimal?  @db.Decimal(18, 2)
+  tradeMode     TradeMode? @map("trade_mode")
+  positionsHash String?   @map("positions_hash")
+  pendingCount  Int       @default(0) @map("pending_count")
+  reportPayload Json?     @map("report_payload")
+  receivedAt    DateTime  @default(now()) @map("received_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, receivedAt(sort: Desc)])
+  @@map("ea_heartbeats")
+}
+
+model EaErrorReport {
+  id           String   @id @default(cuid())
+  licenseId    String   @map("license_id")
+  deviceId     String   @map("device_id")
+  errorCode    String?  @map("error_code")
+  errorMessage String   @map("error_message") @db.Text
+  context      Json?
+  requestId    String?  @map("request_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, createdAt])
+  @@map("ea_error_reports")
+}
+
+model AuditLog {
+  id         String         @id @default(cuid())
+  actorType  AuditActorType @map("actor_type")
+  actorId    String?        @map("actor_id")
+  action     String
+  entityType String         @map("entity_type")
+  entityId   String?        @map("entity_id")
+  metadata   Json?
+  ipAddress  String?        @map("ip_address")
+  requestId  String?        @map("request_id")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  actor User? @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Ações administrativas (trilha dedicada + audit_logs) ────────────────────
+
+model AdminAction {
+  id         String   @id @default(cuid())
+  actorId    String   @map("actor_id")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String?  @map("target_id")
+  metadata   Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("admin_actions")
+}

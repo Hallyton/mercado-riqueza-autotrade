@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #070708;
+  --color-foreground: #f4f4f5;
+  --color-card: #111113;
+  --color-muted-foreground: #a1a1aa;
+  --color-gold: #c9a227;
+  --color-gold-light: #e4c65b;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgb(201 162 39 / 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgb(201 162 39 / 0.06), transparent);
+}
