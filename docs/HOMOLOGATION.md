@@ -79,6 +79,31 @@ npm run homolog:summary
 4. Conta **demo** só funciona se `homolog:enable-demo` foi executado (`trade_mode: DEMO` no heartbeat).
 5. Confirmar heartbeat e pull de instruções (`docs/EA-API.md`).
 
+## Travas de risco / licença (homologação local)
+
+Scripts para simular bloqueios no banco **sem** usar o painel admin de produção. Abortam se `NODE_ENV=production`.
+
+| Comando | Efeito |
+|---------|--------|
+| `npm run homolog:halt-new` | `halt_new_entries=true` (+ `admin_halt_new_entries`) |
+| `npm run homolog:resume-new` | `halt_new_entries=false` e `syncLicenseFlags` (respeita assinatura ativa) |
+| `npm run homolog:halt-all` | `halt_all_trading=true` |
+| `npm run homolog:resume-all` | `halt_all_trading=false` |
+
+Requer `HOMOLOG_CLIENT_EMAIL` no `.env`.
+
+### Testar bloqueio de nova entrada (ENTRY)
+
+1. EA online (`InpDebugMode=true`), heartbeat OK.
+2. `npm run homolog:halt-new`
+3. Admin: criar instrução **TEST** com `purpose=ENTRY`.
+4. EA puxa instrução; em DebugMode deve **não** reportar `FILLED` (bloqueio em `MR_AT_CanExecuteInstruction` / ignore ou rejeição conforme fluxo).
+5. `GET /api/v1/ea/config` ou heartbeat: `halt_new_entries=true`, `can_accept_new_entries=false`.
+6. `npm run homolog:resume-new`
+7. Repetir instrução ENTRY — deve voltar a simular/execução normal.
+
+Instruções **EXIT** / **ADJUSTMENT** podem seguir permitidas com assinatura ativa mesmo com `halt_new_entries` (gestão de posição — ver `lib/licensing/flags.ts`).
+
 ## Reverter `allow_demo` local
 
 ```bash
