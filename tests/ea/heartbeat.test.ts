@@ -10,12 +10,23 @@ vi.mock("@/lib/prisma", () => ({
       deleteMany: vi.fn(),
       createMany: vi.fn(),
     },
-    instruction: { count: vi.fn().mockResolvedValue(0) },
+    instruction: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 
 vi.mock("@/lib/audit/log", () => ({
   createAuditLog: vi.fn(),
+}));
+
+vi.mock("@/lib/licensing/instruction-policy", () => ({
+  assertInstructionAllowed: vi.fn().mockResolvedValue(undefined),
+  LicensePolicyError: class LicensePolicyError extends Error {
+    code: string;
+    constructor(message: string, code: string) {
+      super(message);
+      this.code = code;
+    }
+  },
 }));
 
 vi.mock("@/lib/licensing/service", () => ({

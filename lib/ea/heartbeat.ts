@@ -1,5 +1,6 @@
 import { AuditActorType, TradeMode } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit/log";
+import { countDeliverableInstructionsForEa } from "@/lib/ea/instructions";
 import { getLicenseOperationalFlags } from "@/lib/licensing/service";
 import prisma from "@/lib/prisma";
 import type { EaAuthContext } from "./auth";
@@ -105,13 +106,10 @@ export async function processHeartbeat(
 
   return {
     server_time: snapshotAt.toISOString(),
-    pending_instructions: await prisma.instruction.count({
-      where: {
-        licenseId: ctx.license.id,
-        currentStatus: { in: ["RECEIVED", "SENT"] },
-        expiresAt: { gt: snapshotAt },
-      },
-    }),
+    pending_instructions: await countDeliverableInstructionsForEa(
+      ctx.license.id,
+      snapshotAt
+    ),
     halt_new_entries: flags.haltNewEntries,
     halt_all_trading: flags.haltAllTrading,
     can_accept_new_entries: flags.canAcceptNewEntries,

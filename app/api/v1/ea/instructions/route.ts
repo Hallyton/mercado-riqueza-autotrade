@@ -6,7 +6,10 @@ import {
 } from "@/lib/ea/auth";
 import { withEaAuth } from "@/lib/ea/handler";
 import { eaJson } from "@/lib/ea/json";
-import { pullInstructionsForEa } from "@/lib/ea/instructions";
+import {
+  auditDeliverableInstructionsForEa,
+  pullInstructionsForEa,
+} from "@/lib/ea/instructions";
 
 export const GET = withEaAuth(
   async (ctx, request) => {
@@ -33,6 +36,48 @@ export const GET = withEaAuth(
   }
 
   const instructions = await pullInstructionsForEa(ctx);
+
+  if (process.env.NODE_ENV === "development") {
+    const audit = await auditDeliverableInstructionsForEa(ctx.license.id);
+    const linked = ctx.license.mt5Account;
+    console.info("[ea/instructions]", {
+      licenseId: ctx.license.id,
+      login: login ?? linked?.login ?? null,
+      server: server ?? linked?.server ?? null,
+      linkedLogin: linked?.login ?? null,
+      linkedServer: linked?.server ?? null,
+      statusesSought: ["RECEIVED", "SENT (sem execução)"],
+      candidateCount: audit.candidateCount,
+      deliverableCount: audit.deliverableCount,
+      deliveredCount: instructions.length,
+      skipped: audit.skipped,
+      subscriptionActive,
+      ...(login &&
+      server &&
+      linked &&
+      (linked.login.trim() !== login.trim() ||
+        linked.server.trim() !== server.trim())
+        ? { notDeliveredReason: "MT5 login/server não conferem com a licença" }
+        : {}),
+      ...(audit.deliverableCount > 0 && instructions.length === 0
+        ? {
+            notDeliveredReason:
+              "candidatas entregáveis no audit mas pull retornou vazio",
+          }
+        : {}),
+      ...(audit.deliverableCount === 0 && instructions.length === 0
+        ? {
+            notDeliveredReason:
+              audit.skipped.length > 0
+                ? "política bloqueou candidatas"
+                : audit.candidateCount === 0
+                  ? "nenhuma candidata na fila entregável"
+                  : undefined,
+          }
+        : {}),
+    });
+  }
+
   return eaJson({
     instructions,
     subscription_active: subscriptionActive,

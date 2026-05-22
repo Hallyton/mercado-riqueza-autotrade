@@ -79,43 +79,142 @@ async function appendStatus(
   ]);
 }
 
-export async function pullInstructionsForEa(ctx: EaAuthContext) {
-  const now = new Date();
-  const pending = await prisma.instruction.findMany({
-    where: {
-      licenseId: ctx.license.id,
-      currentStatus: { in: [OrderLogStatus.RECEIVED, OrderLogStatus.SENT] },
-      expiresAt: { gt: now },
-    },
+/** Candidatas ao EA: RECEIVED ou SENT ainda sem registro de execução, não expiradas. */
+export function deliverableInstructionWhere(
+  licenseId: string,
+  now: Date
+): Prisma.InstructionWhereInput {
+  return {
+    licenseId,
+    expiresAt: { gt: now },
+    OR: [
+      { currentStatus: OrderLogStatus.RECEIVED },
+      {
+        currentStatus: OrderLogStatus.SENT,
+        executions: { none: {} },
+      },
+    ],
+  };
+}
+
+type InstructionRow = {
+  id: string;
+  purpose: InstructionPurpose;
+  symbol: string;
+  side: string;
+  orderType: string;
+  quantity: Prisma.Decimal;
+  stopLoss: Prisma.Decimal | null;
+  takeProfit: Prisma.Decimal | null;
+  expiresAt: Date;
+  idempotencyKey: string;
+  currentStatus: OrderLogStatus;
+};
+
+async function listDeliverableInstructionCandidates(
+  licenseId: string,
+  now = new Date()
+): Promise<InstructionRow[]> {
+  return prisma.instruction.findMany({
+    where: deliverableInstructionWhere(licenseId, now),
     orderBy: { createdAt: "asc" },
     take: 20,
   });
+}
+
+async function evaluateInstructionDeliverability(
+  licenseId: string,
+  instruction: InstructionRow
+): Promise<{ deliver: true } | { deliver: false; reason: string; code?: string }> {
+  try {
+    await assertInstructionAllowed(licenseId, instruction.purpose);
+    return { deliver: true };
+  } catch (e) {
+    if (e instanceof LicensePolicyError) {
+      return { deliver: false, reason: e.message, code: e.code };
+    }
+    throw e;
+  }
+}
+
+export type EaDeliverableInstructionsAudit = {
+  candidateCount: number;
+  deliverableCount: number;
+  skipped: Array<{
+    instructionId: string;
+    currentStatus: OrderLogStatus;
+    reason: string;
+    code?: string;
+  }>;
+};
+
+/** Mesma definição de entregável usada no pull e no heartbeat (sem efeitos colaterais). */
+export async function auditDeliverableInstructionsForEa(
+  licenseId: string,
+  now = new Date()
+): Promise<EaDeliverableInstructionsAudit> {
+  const candidates = await listDeliverableInstructionCandidates(licenseId, now);
+  const skipped: EaDeliverableInstructionsAudit["skipped"] = [];
+  let deliverableCount = 0;
+
+  for (const instruction of candidates) {
+    const check = await evaluateInstructionDeliverability(licenseId, instruction);
+    if (check.deliver) {
+      deliverableCount++;
+    } else {
+      skipped.push({
+        instructionId: instruction.id,
+        currentStatus: instruction.currentStatus,
+        reason: check.reason,
+        code: check.code,
+      });
+    }
+  }
+
+  return {
+    candidateCount: candidates.length,
+    deliverableCount,
+    skipped,
+  };
+}
+
+/** Contagem alinhada com GET /api/v1/ea/instructions (política + fila entregável). */
+export async function countDeliverableInstructionsForEa(
+  licenseId: string,
+  now = new Date()
+): Promise<number> {
+  const audit = await auditDeliverableInstructionsForEa(licenseId, now);
+  return audit.deliverableCount;
+}
+
+export async function pullInstructionsForEa(ctx: EaAuthContext) {
+  const now = new Date();
+  const pending = await listDeliverableInstructionCandidates(ctx.license.id, now);
 
   const deliverable: EaInstructionPayload[] = [];
 
   for (const instruction of pending) {
-    try {
-      await assertInstructionAllowed(ctx.license.id, instruction.purpose);
-    } catch (e) {
-      if (e instanceof LicensePolicyError) {
-        await appendStatus(
-          instruction.id,
-          OrderLogStatus.IGNORED,
-          e.message,
-          { code: e.code }
-        );
-        await createAuditLog({
-          actorType: AuditActorType.EA,
-          actorId: ctx.license.userId,
-          action: "instruction.ignored",
-          entityType: "instruction",
-          entityId: instruction.id,
-          requestId: ctx.requestId,
-          metadata: { code: e.code, licenseId: ctx.license.id },
-        });
-        continue;
-      }
-      throw e;
+    const check = await evaluateInstructionDeliverability(
+      ctx.license.id,
+      instruction
+    );
+    if (!check.deliver) {
+      await appendStatus(
+        instruction.id,
+        OrderLogStatus.IGNORED,
+        check.reason,
+        check.code ? { code: check.code } : undefined
+      );
+      await createAuditLog({
+        actorType: AuditActorType.EA,
+        actorId: ctx.license.userId,
+        action: "instruction.ignored",
+        entityType: "instruction",
+        entityId: instruction.id,
+        requestId: ctx.requestId,
+        metadata: { code: check.code, licenseId: ctx.license.id },
+      });
+      continue;
     }
 
     if (instruction.currentStatus === OrderLogStatus.RECEIVED) {

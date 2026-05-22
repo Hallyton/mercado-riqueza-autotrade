@@ -142,7 +142,11 @@ export function assertMt5AccountAuthorized(
     );
   }
 
-  if (account.login !== login || account.server !== server) {
+  const norm = (value: string) => value.trim();
+  if (
+    norm(account.login) !== norm(login) ||
+    norm(account.server) !== norm(server)
+  ) {
     throw new EaAuthError(
       "Conta MT5 não autorizada para esta licença",
       "MT5_UNAUTHORIZED",

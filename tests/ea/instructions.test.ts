@@ -42,7 +42,14 @@ vi.mock("@/lib/licensing/service", () => ({
 }));
 
 import prisma from "@/lib/prisma";
-import { pullInstructionsForEa, reportExecution, reportIgnored } from "@/lib/ea/instructions";
+import {
+  auditDeliverableInstructionsForEa,
+  countDeliverableInstructionsForEa,
+  deliverableInstructionWhere,
+  pullInstructionsForEa,
+  reportExecution,
+  reportIgnored,
+} from "@/lib/ea/instructions";
 import { assertInstructionAllowed } from "@/lib/licensing/instruction-policy";
 
 const ctx = {
@@ -199,6 +206,140 @@ describe("Licença vencida — flags", () => {
         haltAllTrading: false,
       })
     ).toBe(false);
+  });
+});
+
+describe("Fila entregável ao EA", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(assertInstructionAllowed).mockResolvedValue(undefined);
+  });
+
+  it("consulta RECEIVED ou SENT sem execução e não expiradas", async () => {
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([]);
+
+    await pullInstructionsForEa(ctx as never);
+
+    expect(prisma.instruction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: deliverableInstructionWhere("lic1", expect.any(Date) as Date),
+        orderBy: { createdAt: "asc" },
+        take: 20,
+      })
+    );
+  });
+
+  it("instrução TEST RECEIVED é entregue no pull", async () => {
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-test",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "WDOM26",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(1),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 3600_000),
+        idempotencyKey: "homolog-test",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+    ] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+    expect(result).toHaveLength(1);
+    expect(result[0].symbol).toBe("WDOM26");
+  });
+
+  it("SENT sem execução continua entregável (retry)", async () => {
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-sent",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "PETR4",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(100),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "k-sent",
+        currentStatus: OrderLogStatus.SENT,
+      },
+    ] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+    expect(result).toHaveLength(1);
+    expect(prisma.instruction.update).not.toHaveBeenCalled();
+  });
+
+  it("heartbeat deliverable count alinha com pull autorizado", async () => {
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "a",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "PETR4",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(1),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "k-a",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+      {
+        id: "b",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "VALE3",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(1),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "k-b",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+    ] as never);
+
+    const count = await countDeliverableInstructionsForEa("lic1");
+    const pulled = await pullInstructionsForEa(ctx as never);
+    expect(count).toBe(2);
+    expect(pulled).toHaveLength(2);
+  });
+
+  it("SENT bloqueada por política não conta como entregável", async () => {
+    const { LicensePolicyError } = await import(
+      "@/lib/licensing/instruction-policy"
+    );
+    vi.mocked(assertInstructionAllowed).mockRejectedValue(
+      new LicensePolicyError("Novas entradas bloqueadas", "NEW_ENTRIES_BLOCKED")
+    );
+
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-blocked",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "PETR4",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(100),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "k-blocked",
+        currentStatus: OrderLogStatus.SENT,
+      },
+    ] as never);
+
+    const audit = await auditDeliverableInstructionsForEa("lic1");
+    const pulled = await pullInstructionsForEa(ctx as never);
+
+    expect(audit.deliverableCount).toBe(0);
+    expect(audit.skipped).toHaveLength(1);
+    expect(pulled).toHaveLength(0);
+    expect(prisma.instructionStatusLog.create).toHaveBeenCalled();
   });
 });
 
