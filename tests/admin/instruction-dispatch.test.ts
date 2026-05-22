@@ -43,6 +43,7 @@ import {
   AdminInstructionDispatchError,
   createAdminDispatchedInstruction,
   createAdminInstructionSchema,
+  normalizeOptionalPositiveNumber,
 } from "@/lib/admin/instruction-dispatch";
 import { LicensePolicyError } from "@/lib/licensing/instruction-policy";
 
@@ -72,6 +73,72 @@ describe("createAdminInstructionSchema", () => {
       quantity: 100,
     });
     expect(bad.success).toBe(false);
+  });
+
+  it("aceita payload sem take_profit nem stop_loss", () => {
+    const ok = createAdminInstructionSchema.safeParse({
+      license_id: "lic_1",
+      source: "TEST",
+      symbol: "PETR4",
+      side: "BUY",
+      quantity: 100,
+    });
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.take_profit).toBeUndefined();
+      expect(ok.data.stop_loss).toBeUndefined();
+    }
+  });
+
+  it("trata string vazia e null como ausente no preprocess", () => {
+    expect(normalizeOptionalPositiveNumber("")).toBeUndefined();
+    expect(normalizeOptionalPositiveNumber(null)).toBeUndefined();
+    expect(normalizeOptionalPositiveNumber(undefined)).toBeUndefined();
+    expect(normalizeOptionalPositiveNumber(0)).toBe(0);
+  });
+
+  it("rejeita take_profit 0 quando informado", () => {
+    const bad = createAdminInstructionSchema.safeParse({
+      license_id: "lic_1",
+      source: "TEST",
+      symbol: "PETR4",
+      side: "BUY",
+      quantity: 100,
+      take_profit: 0,
+    });
+    expect(bad.success).toBe(false);
+    if (!bad.success) {
+      expect(bad.error.issues.some((i) => i.path.includes("take_profit"))).toBe(
+        true
+      );
+    }
+  });
+
+  it("rejeita take_profit negativo quando informado", () => {
+    const bad = createAdminInstructionSchema.safeParse({
+      license_id: "lic_1",
+      source: "TEST",
+      symbol: "PETR4",
+      side: "BUY",
+      quantity: 100,
+      take_profit: -1,
+    });
+    expect(bad.success).toBe(false);
+  });
+
+  it("aceita take_profit positivo quando informado", () => {
+    const ok = createAdminInstructionSchema.safeParse({
+      license_id: "lic_1",
+      source: "TEST",
+      symbol: "PETR4",
+      side: "BUY",
+      quantity: 100,
+      take_profit: 32.5,
+    });
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.take_profit).toBe(32.5);
+    }
   });
 });
 

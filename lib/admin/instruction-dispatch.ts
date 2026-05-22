@@ -12,6 +12,18 @@ import { assertInstructionAllowed, LicensePolicyError } from "@/lib/licensing/in
 import prisma from "@/lib/prisma";
 import { randomBytes } from "crypto";
 
+/** Campos SL/TP opcionais: ausente/vazio → omitido; se informado, deve ser > 0. */
+export function normalizeOptionalPositiveNumber(value: unknown): unknown {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string" && value.trim() === "") return undefined;
+  return value;
+}
+
+const optionalPositiveNumber = z.preprocess(
+  normalizeOptionalPositiveNumber,
+  z.number().positive().optional()
+);
+
 export const createAdminInstructionSchema = z.object({
   license_id: z.string().min(1),
   source: z.enum(["TEST", "HOMOLOGATION"]),
@@ -22,8 +34,8 @@ export const createAdminInstructionSchema = z.object({
     .enum(["MARKET", "LIMIT", "STOP", "STOP_LIMIT"])
     .default("MARKET"),
   quantity: z.number().positive(),
-  stop_loss: z.number().positive().optional(),
-  take_profit: z.number().positive().optional(),
+  stop_loss: optionalPositiveNumber,
+  take_profit: optionalPositiveNumber,
   expires_in_minutes: z.number().int().min(5).max(1440).default(60),
   note: z.string().max(500).optional(),
 });

@@ -10,6 +10,24 @@ export type LicenseDispatchOption = {
   mt5Label: string | null;
 };
 
+/** Só inclui no payload se preenchido com número > 0. */
+function parseOptionalPositiveField(
+  raw: string,
+  label: string
+): { ok: true; value?: number } | { ok: false; message: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: true };
+
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n <= 0) {
+    return {
+      ok: false,
+      message: `${label} deve ser um número maior que zero, ou deixe o campo vazio.`,
+    };
+  }
+  return { ok: true, value: n };
+}
+
 export function AdminInstructionForm({
   licenses,
 }: {
@@ -41,6 +59,26 @@ export function AdminInstructionForm({
     setBusy(true);
     setMessage(null);
 
+    const qty = Number(quantity);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setMessage("Quantidade deve ser maior que zero.");
+      setBusy(false);
+      return;
+    }
+
+    const sl = parseOptionalPositiveField(stopLoss, "Stop loss");
+    if (!sl.ok) {
+      setMessage(sl.message);
+      setBusy(false);
+      return;
+    }
+    const tp = parseOptionalPositiveField(takeProfit, "Take profit");
+    if (!tp.ok) {
+      setMessage(tp.message);
+      setBusy(false);
+      return;
+    }
+
     const body: Record<string, unknown> = {
       license_id: licenseId,
       source,
@@ -48,11 +86,11 @@ export function AdminInstructionForm({
       side,
       purpose,
       order_type: orderType,
-      quantity: Number(quantity),
+      quantity: qty,
       expires_in_minutes: Number(expiresIn),
     };
-    if (stopLoss.trim()) body.stop_loss = Number(stopLoss);
-    if (takeProfit.trim()) body.take_profit = Number(takeProfit);
+    if (sl.ok && sl.value !== undefined) body.stop_loss = sl.value;
+    if (tp.ok && tp.value !== undefined) body.take_profit = tp.value;
     if (note.trim()) body.note = note.trim();
 
     const res = await fetch("/api/admin/instructions", {
@@ -201,22 +239,24 @@ export function AdminInstructionForm({
         <label className="block text-sm">
           <span className="text-muted-foreground">Stop loss (opcional)</span>
           <input
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             className="mt-1 w-full rounded-lg border border-white/10 bg-background px-3 py-2 text-sm"
             value={stopLoss}
             onChange={(e) => setStopLoss(e.target.value)}
+            placeholder="Vazio = não enviar"
           />
         </label>
 
         <label className="block text-sm">
           <span className="text-muted-foreground">Take profit (opcional)</span>
           <input
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             className="mt-1 w-full rounded-lg border border-white/10 bg-background px-3 py-2 text-sm"
             value={takeProfit}
             onChange={(e) => setTakeProfit(e.target.value)}
+            placeholder="Vazio = não enviar"
           />
         </label>
 
