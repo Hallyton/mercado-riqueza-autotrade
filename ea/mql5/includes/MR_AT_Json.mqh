@@ -91,3 +91,14 @@ int MR_AT_JsonGetInt(const string json, const string key, const int start = 0)
   {
    return (int)MR_AT_JsonGetDouble(json, key, start);
   }
+
+//+------------------------------------------------------------------+
+//| ISO 8601 UTC para POST /executions (executed_at)                  |
+//+------------------------------------------------------------------+
+string MR_AT_FormatExecutedAtIsoUtc()
+  {
+   MqlDateTime dt;
+   TimeToStruct(TimeGMT(), dt);
+   return StringFormat("%04d-%02d-%02dT%02d:%02d:%02dZ",
+                       dt.year, dt.mon, dt.day, dt.hour, dt.min, dt.sec);
+  }

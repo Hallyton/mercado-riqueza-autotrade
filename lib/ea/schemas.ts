@@ -43,6 +43,25 @@ export const heartbeatBodySchema = z.object({
   open_positions: z.array(openPositionSchema).default([]),
 });
 
+/** Aceita ISO 8601 e formato legado MT5 (2026.05.20 15:30:00). */
+export function normalizeEaExecutedAt(value: unknown): unknown {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string") return value;
+  const s = value.trim();
+  if (!s) return undefined;
+  const mt5 = /^(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/;
+  const m = s.match(mt5);
+  if (m) {
+    return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`;
+  }
+  return s;
+}
+
+const executedAtSchema = z.preprocess(
+  normalizeEaExecutedAt,
+  z.string().datetime().optional()
+);
+
 export const executionBodySchema = z.object({
   instruction_id: z.string().min(1),
   status: z.enum(["FILLED", "PARTIAL", "REJECTED", "EXPIRED"]),
@@ -52,7 +71,7 @@ export const executionBodySchema = z.object({
   slippage: decimalString.optional(),
   error_code: z.string().optional(),
   error_message: z.string().optional(),
-  executed_at: z.string().datetime().optional(),
+  executed_at: executedAtSchema,
 });
 
 export const errorBodySchema = z.object({

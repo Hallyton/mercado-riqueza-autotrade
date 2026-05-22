@@ -18,7 +18,11 @@ export const POST = withEaAuth(
 
   const parsed = executionBodySchema.safeParse(body);
   if (!parsed.success) {
-    return problemJson(400, "VALIDATION_ERROR", "Dados inválidos", parsed.error.message);
+    const detail =
+      process.env.NODE_ENV === "development"
+        ? JSON.stringify(parsed.error.flatten().fieldErrors)
+        : "Verifique instruction_id, status (FILLED|PARTIAL|REJECTED|EXPIRED) e executed_at (ISO 8601).";
+    return problemJson(400, "VALIDATION_ERROR", "Dados inválidos", detail);
   }
 
   const result = await reportExecution(ctx, {

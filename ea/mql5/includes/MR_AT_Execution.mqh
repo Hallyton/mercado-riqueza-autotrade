@@ -76,12 +76,26 @@ bool MR_AT_ReportExecution(
       body += "\"error_code\":" + MR_AT_JsonQuote(error_code) + ",";
    if(StringLen(error_message) > 0)
       body += "\"error_message\":" + MR_AT_JsonQuote(error_message) + ",";
-   body += "\"executed_at\":" + MR_AT_JsonQuote(TimeToString(TimeGMT(), TIME_DATE | TIME_SECONDS));
+   body += "\"executed_at\":" + MR_AT_JsonQuote(MR_AT_FormatExecutedAtIsoUtc());
    body += "}";
 
    string response = "";
    int http = 0;
-   return MR_AT_ApiPost("/api/v1/ea/executions", body, true, response, http) && http >= 200 && http < 300;
+   MR_AT_LogInfo("Execution", "POST /api/v1/ea/executions payload=" + body);
+
+   bool sent = MR_AT_ApiPost("/api/v1/ea/executions", body, true, response, http);
+   if(!sent || http < 200 || http >= 300)
+     {
+      MR_AT_LogError("Execution",
+         "POST /api/v1/ea/executions falhou HTTP=" + IntegerToString(http) +
+         " response=" + response);
+      return false;
+     }
+
+   MR_AT_LogInfo("Execution",
+      "POST /api/v1/ea/executions OK HTTP=" + IntegerToString(http) +
+      " response=" + response);
+   return true;
   }
 
 //+------------------------------------------------------------------+
@@ -241,8 +255,13 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
 
    if(g_debug_mode)
      {
-      MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG", 0, instr.quantity,
-                            "DEBUG_MODE", "Simulação — ordem não enviada ao broker");
+      double sim_price = (instr.side == "BUY") ?
+                         SymbolInfoDouble(instr.symbol, SYMBOL_ASK) :
+                         SymbolInfoDouble(instr.symbol, SYMBOL_BID);
+      if(sim_price <= 0)
+         sim_price = SymbolInfoDouble(instr.symbol, SYMBOL_LAST);
+      MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG",
+                            sim_price, instr.quantity);
       return;
      }
 

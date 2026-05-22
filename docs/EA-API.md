@@ -95,7 +95,22 @@ Payload de instrução (somente execução):
 
 ## POST `/executions`
 
-Reporta resultado: `FILLED`, `PARTIAL`, `REJECTED`, `EXPIRED`.
+Reporta resultado: `FILLED`, `PARTIAL`, `REJECTED`, `EXPIRED` (não use `EXECUTED` — o status da instrução no servidor vira `EXECUTED` após `FILLED`/`PARTIAL`).
+
+Body mínimo (exemplo DebugMode):
+
+```json
+{
+  "instruction_id": "uuid",
+  "status": "FILLED",
+  "broker_ticket": "DEBUG",
+  "fill_price": 28.5,
+  "fill_quantity": 100,
+  "executed_at": "2026-05-20T18:30:00Z"
+}
+```
+
+`executed_at` deve ser ISO 8601 UTC (`...Z`). O EA envia esse formato; a API também aceita legado MT5 `2026.05.20 18:30:00`.
 
 Atualiza trilha: `RECEIVED` → `SENT` → `EXECUTED` | `REJECTED`.
 
