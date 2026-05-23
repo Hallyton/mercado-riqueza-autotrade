@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
+  ExecutionStatus,
   InstructionPurpose,
   OrderLogStatus,
   LicenseStatus,
@@ -13,7 +14,7 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: vi.fn(),
       update: vi.fn(),
     },
-    execution: { create: vi.fn() },
+    execution: { create: vi.fn(), findFirst: vi.fn() },
     instructionStatusLog: { create: vi.fn() },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   },
@@ -96,10 +97,12 @@ describe("reportExecution", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(assertInstructionAllowed).mockResolvedValue(undefined);
+    vi.mocked(prisma.execution.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
       id: "inst-debug-1",
       licenseId: "lic1",
       purpose: InstructionPurpose.ENTRY,
+      currentStatus: OrderLogStatus.SENT,
     } as never);
     vi.mocked(prisma.execution.create).mockResolvedValue({ id: "ex1" } as never);
     vi.mocked(prisma.$transaction).mockImplementation(async (ops) => {
@@ -128,5 +131,49 @@ describe("reportExecution", () => {
         data: { currentStatus: OrderLogStatus.EXECUTED },
       })
     );
+  });
+
+  it("não duplica execution FILLED para o mesmo instruction_id", async () => {
+    vi.mocked(prisma.execution.findFirst).mockResolvedValue({
+      id: "ex-existing",
+      instructionId: "inst-debug-1",
+      status: ExecutionStatus.FILLED,
+      executedAt: new Date(),
+    } as never);
+
+    const result = await reportExecution(ctx as never, debugModePayload);
+
+    expect(result.ok).toBe(true);
+    expect(result.idempotent).toBe(true);
+    expect(result.orderStatus).toBe(OrderLogStatus.EXECUTED);
+    expect(prisma.execution.create).not.toHaveBeenCalled();
+    expect(prisma.instruction.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "inst-debug-1" },
+        data: { currentStatus: OrderLogStatus.EXECUTED },
+      })
+    );
+  });
+
+  it("idempotente quando instrução já está EXECUTED", async () => {
+    vi.mocked(prisma.execution.findFirst).mockResolvedValue({
+      id: "ex-existing",
+      instructionId: "inst-debug-1",
+      status: ExecutionStatus.FILLED,
+      executedAt: new Date(),
+    } as never);
+    vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
+      id: "inst-debug-1",
+      licenseId: "lic1",
+      purpose: InstructionPurpose.ENTRY,
+      currentStatus: OrderLogStatus.EXECUTED,
+    } as never);
+
+    const result = await reportExecution(ctx as never, debugModePayload);
+
+    expect(result.ok).toBe(true);
+    expect(result.idempotent).toBe(true);
+    expect(prisma.execution.create).not.toHaveBeenCalled();
+    expect(prisma.instruction.update).not.toHaveBeenCalled();
   });
 });

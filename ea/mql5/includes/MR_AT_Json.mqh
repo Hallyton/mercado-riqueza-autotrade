@@ -93,6 +93,70 @@ int MR_AT_JsonGetInt(const string json, const string key, const int start = 0)
   }
 
 //+------------------------------------------------------------------+
+//| Trecho resumido do JSON para log (sem vazar token)                |
+//+------------------------------------------------------------------+
+string MR_AT_JsonSummarize(const string json, const int max_len = 480)
+  {
+   string s = json;
+   StringReplace(s, "\r", "");
+   StringReplace(s, "\n", "");
+   if(StringLen(s) <= max_len)
+      return s;
+   return StringSubstr(s, 0, max_len) + "...";
+  }
+
+//+------------------------------------------------------------------+
+//| Extrai objeto JSON que contém "instruction_id" a partir de cursor |
+//+------------------------------------------------------------------+
+bool MR_AT_JsonExtractInstructionObject(
+   const string json,
+   const int search_from,
+   int &cursor,
+   string &obj_out
+)
+  {
+   obj_out = "";
+   int id_pos = StringFind(json, "\"instruction_id\"", search_from);
+   if(id_pos < 0)
+      return false;
+
+   int obj_start = id_pos;
+   while(obj_start > search_from)
+     {
+      if(StringGetCharacter(json, obj_start) == '{')
+         break;
+      obj_start--;
+     }
+   if(obj_start <= search_from || StringGetCharacter(json, obj_start) != '{')
+      return false;
+
+   int depth = 0;
+   int obj_end = -1;
+   int len = StringLen(json);
+   for(int i = obj_start; i < len; i++)
+     {
+      ushort ch = StringGetCharacter(json, i);
+      if(ch == '{')
+         depth++;
+      else if(ch == '}')
+        {
+         depth--;
+         if(depth == 0)
+           {
+            obj_end = i;
+            break;
+           }
+        }
+     }
+   if(obj_end < 0)
+      return false;
+
+   obj_out = StringSubstr(json, obj_start, obj_end - obj_start + 1);
+   cursor = obj_end + 1;
+   return true;
+  }
+
+//+------------------------------------------------------------------+
 //| ISO 8601 UTC para POST /executions (executed_at)                  |
 //+------------------------------------------------------------------+
 string MR_AT_FormatExecutedAtIsoUtc()

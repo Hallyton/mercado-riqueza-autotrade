@@ -34,36 +34,61 @@ bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
   }
 
 //+------------------------------------------------------------------+
+void MR_AT_LogInstructionParsed(const MRInstruction &instr, const int index)
+  {
+   MR_AT_LogDebug("Signal",
+      "#" + IntegerToString(index) + " id=" + instr.instruction_id +
+      " symbol=" + instr.symbol +
+      " side=" + instr.side +
+      " order_type=" + instr.order_type +
+      " purpose=" + instr.purpose +
+      " quantity=" + DoubleToString(instr.quantity, 8));
+  }
+
+//+------------------------------------------------------------------+
 int MR_AT_ExtractInstructions(const string response, MRInstruction &instructions[])
   {
    ArrayResize(instructions, 0);
-   int arr_start = StringFind(response, "\"instructions\"");
-   if(arr_start < 0)
-      return 0;
 
-   int cursor = arr_start;
+   int arr_key = StringFind(response, "\"instructions\"");
+   if(arr_key < 0)
+     {
+      if(MR_AT_IsVerboseLog())
+         MR_AT_LogDebug("Signal", "Parse: chave \"instructions\" ausente no JSON");
+      return 0;
+     }
+
+   int arr_open = StringFind(response, "[", arr_key);
+   if(arr_open < 0)
+     {
+      if(MR_AT_IsVerboseLog())
+         MR_AT_LogDebug("Signal", "Parse: array \"instructions\" não encontrado");
+      return 0;
+     }
+
+   int cursor = arr_open;
    int count = 0;
 
    while(count < MR_AT_MAX_INSTRUCTIONS)
      {
-      int id_pos = StringFind(response, "\"instruction_id\"", cursor);
-      if(id_pos < 0)
+      string obj = "";
+      if(!MR_AT_JsonExtractInstructionObject(response, cursor, cursor, obj))
          break;
 
-      int obj_start = StringFind(response, "{", id_pos);
-      int obj_end = StringFind(response, "}", id_pos);
-      if(obj_start < 0 || obj_end < 0)
-         break;
-
-      string obj = StringSubstr(response, obj_start, obj_end - obj_start + 1);
       MRInstruction instr;
       if(MR_AT_ParseInstructionObject(obj, instr))
         {
          ArrayResize(instructions, count + 1);
          instructions[count] = instr;
+         if(MR_AT_IsVerboseLog())
+            MR_AT_LogInstructionParsed(instr, count);
          count++;
         }
-      cursor = obj_end + 1;
+      else if(MR_AT_IsVerboseLog())
+        {
+         MR_AT_LogDebug("Signal",
+            "Parse: objeto inválido trecho=" + MR_AT_JsonSummarize(obj, 200));
+        }
      }
 
    return count;
@@ -80,11 +105,21 @@ int MR_AT_FetchAndProcessSignals()
    string response = "";
    int status = 0;
    if(!MR_AT_ApiGet(path, true, response, status))
+     {
+      MR_AT_LogError("Signal", "Pull falhou (WebRequest) path=" + path);
       return 0;
+     }
+
+   if(MR_AT_IsVerboseLog())
+     {
+      MR_AT_LogDebug("Signal", "GET /instructions HTTP=" + IntegerToString(status));
+      MR_AT_LogDebug("Signal", "GET body=" + MR_AT_JsonSummarize(response));
+     }
 
    if(status < 200 || status >= 300)
      {
-      MR_AT_LogError("Signal", "Pull HTTP " + IntegerToString(status));
+      MR_AT_LogError("Signal", "Pull HTTP " + IntegerToString(status) +
+                     " body=" + MR_AT_JsonSummarize(response, 200));
       return 0;
      }
 
@@ -94,9 +129,13 @@ int MR_AT_FetchAndProcessSignals()
 
    MRInstruction instructions[];
    int n = MR_AT_ExtractInstructions(response, instructions);
+
+   if(MR_AT_IsVerboseLog())
+      MR_AT_LogDebug("Signal", "Instruções parseadas: " + IntegerToString(n));
+
    if(n == 0)
      {
-      MR_AT_LogDebug("Signal", "Nenhuma instrução pendente");
+      MR_AT_LogDebug("Signal", "Nenhuma instrução pendente no payload");
       return 0;
      }
 
@@ -105,9 +144,27 @@ int MR_AT_FetchAndProcessSignals()
      {
       if(instructions[i].order_type != "MARKET")
         {
-         MR_AT_ReportIgnored(instructions[i].instruction_id, "Tipo de ordem não suportado no MVP");
+         string reason = "Tipo de ordem não suportado no MVP: " + instructions[i].order_type;
+         MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+         MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
          continue;
         }
+      if(instructions[i].purpose == "ENTRY" && !g_can_accept_new_entries)
+        {
+         string reason = "ENTRY bloqueada (halt/assinatura)";
+         MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+         MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+         continue;
+        }
+      if((instructions[i].purpose == "EXIT" || instructions[i].purpose == "ADJUSTMENT") &&
+         !g_can_manage_open_positions)
+        {
+         string reason = "Gestão de posição bloqueada";
+         MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+         MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+         continue;
+        }
+
       MR_AT_ProcessInstruction(instructions[i]);
      }
 

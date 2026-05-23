@@ -18,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     instructionStatusLog: { create: vi.fn() },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
-    execution: { create: vi.fn() },
+    execution: { create: vi.fn(), findFirst: vi.fn().mockResolvedValue(null) },
   },
 }));
 
@@ -162,6 +162,43 @@ describe("Ordem rejeitada", () => {
 
     expect(result.ok).toBe(true);
     expect(prisma.execution.create).toHaveBeenCalled();
+  });
+});
+
+describe("Contrato GET /instructions", () => {
+  it("envelope com array instructions e campos snake_case do EA-API", () => {
+    const item = mapInstructionToEaPayload({
+      id: "inst-contract",
+      purpose: InstructionPurpose.ENTRY,
+      symbol: "WDOM26",
+      side: "BUY",
+      orderType: "MARKET",
+      quantity: new Decimal(1),
+      stopLoss: null,
+      takeProfit: null,
+      expiresAt: new Date("2026-05-20T18:00:00.000Z"),
+      idempotencyKey: "idem-1",
+    });
+
+    const envelope = {
+      instructions: [item],
+      subscription_active: true,
+    };
+
+    expect(envelope.instructions).toHaveLength(1);
+    expect(envelope).not.toHaveProperty("data");
+    expect(item).toEqual({
+      instruction_id: "inst-contract",
+      purpose: InstructionPurpose.ENTRY,
+      symbol: "WDOM26",
+      side: "BUY",
+      order_type: "MARKET",
+      quantity: 1,
+      stop_loss: null,
+      take_profit: null,
+      expires_at: "2026-05-20T18:00:00.000Z",
+      idempotency_key: "idem-1",
+    });
   });
 });
 

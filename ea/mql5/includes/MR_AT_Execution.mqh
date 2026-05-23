@@ -246,8 +246,9 @@ bool MR_AT_ExecuteMarketOrder(const MRInstruction &instr, ulong &ticket, string 
 //+------------------------------------------------------------------+
 void MR_AT_ProcessInstruction(const MRInstruction &instr)
   {
-   MR_AT_LogInfo("Execution", "Instrução " + instr.instruction_id + " " +
-                 instr.purpose + " " + instr.side + " " + instr.symbol);
+   MR_AT_LogInfo("Execution", "Processando " + instr.instruction_id + " " +
+                 instr.purpose + " " + instr.side + " " + instr.symbol +
+                 " qty=" + DoubleToString(instr.quantity, 8));
 
    ulong ticket = 0;
    string err = "";
@@ -260,8 +261,13 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
                          SymbolInfoDouble(instr.symbol, SYMBOL_BID);
       if(sim_price <= 0)
          sim_price = SymbolInfoDouble(instr.symbol, SYMBOL_LAST);
-      MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG",
-                            sim_price, instr.quantity);
+      if(MR_AT_IsVerboseLog())
+         MR_AT_LogDebug("Execution",
+            "DEBUG_MODE — POST /executions FILLED id=" + instr.instruction_id);
+      if(!MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG",
+                            sim_price, instr.quantity))
+         MR_AT_LogError("Execution",
+            "DEBUG_MODE — falha ao reportar FILLED id=" + instr.instruction_id);
       return;
      }
 

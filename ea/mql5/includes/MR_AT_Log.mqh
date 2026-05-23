@@ -36,3 +36,9 @@ void MR_AT_LogDebug(const string tag, const string message)
   {
    MR_AT_Log(MR_AT_LOG_DEBUG, tag, message);
   }
+
+//+------------------------------------------------------------------+
+bool MR_AT_IsVerboseLog()
+  {
+   return g_log_level >= MR_AT_LOG_DEBUG;
+  }

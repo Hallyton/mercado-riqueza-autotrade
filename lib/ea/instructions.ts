@@ -239,6 +239,22 @@ export async function pullInstructionsForEa(ctx: EaAuthContext) {
   return deliverable;
 }
 
+const TERMINAL_EXECUTION_STATUSES: ExecutionStatus[] = [
+  ExecutionStatus.FILLED,
+  ExecutionStatus.PARTIAL,
+  ExecutionStatus.REJECTED,
+  ExecutionStatus.EXPIRED,
+];
+
+function orderStatusFromExecutionStatus(
+  status: ExecutionStatus
+): OrderLogStatus {
+  return status === ExecutionStatus.FILLED ||
+    status === ExecutionStatus.PARTIAL
+    ? OrderLogStatus.EXECUTED
+    : OrderLogStatus.REJECTED;
+}
+
 export async function reportExecution(
   ctx: EaAuthContext,
   body: {
@@ -262,6 +278,32 @@ export async function reportExecution(
 
   if (!instruction) {
     return { ok: false as const, code: "INSTRUCTION_NOT_FOUND" };
+  }
+
+  const existingTerminal = await prisma.execution.findFirst({
+    where: {
+      instructionId: instruction.id,
+      status: { in: TERMINAL_EXECUTION_STATUSES },
+    },
+    orderBy: { executedAt: "desc" },
+  });
+
+  if (existingTerminal) {
+    const orderStatus = orderStatusFromExecutionStatus(existingTerminal.status);
+    const terminalInstructionStatuses: OrderLogStatus[] = [
+      OrderLogStatus.EXECUTED,
+      OrderLogStatus.REJECTED,
+      OrderLogStatus.IGNORED,
+      OrderLogStatus.CANCELLED,
+    ];
+    if (!terminalInstructionStatuses.includes(instruction.currentStatus)) {
+      await appendStatus(
+        instruction.id,
+        orderStatus,
+        `Execução idempotente (${existingTerminal.status})`
+      );
+    }
+    return { ok: true as const, orderStatus, idempotent: true };
   }
 
   if (body.status === "FILLED" || body.status === "PARTIAL") {
