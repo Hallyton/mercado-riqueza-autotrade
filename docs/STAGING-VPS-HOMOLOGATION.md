@@ -152,7 +152,7 @@ Marque na ordem sugerida. Objetivo: equivaler aos 18 itens de [`docs/HOMOLOGATIO
 ### Fase B — Cliente web
 
 - [ ] **B1.** Login em `https://autotrade-staging.seudominio.com/login` (cliente homolog).
-- [ ] **B2.** `/dashboard/assinatura` — vincular MT5 demo (login + server iguais aos usados no terminal VPS).
+- [ ] **B2.** `/dashboard/assinatura` — vincular MT5 demo (login + server iguais aos usados no terminal VPS). Se digitou conta errada, use **Alterar conta MT5** e reative o EA com novo código.
 - [ ] **B3.** Gerar código de ativação; guardar para o EA.
 
 ### Fase C — EA na VPS

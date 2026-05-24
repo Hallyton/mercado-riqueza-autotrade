@@ -78,6 +78,7 @@ npm run homolog:summary
 3. Inputs: `InpApiBaseUrl=http://localhost:3000`, `InpActivationCode=<código>`, `InpDebugMode=true`.
 4. Conta **demo** só funciona se `homolog:enable-demo` foi executado (`trade_mode: DEMO` no heartbeat).
 5. Confirmar heartbeat e pull de instruções (`docs/EA-API.md`).
+6. Se a conta MT5 for alterada em `/dashboard/assinatura` (**Alterar conta MT5**), os dispositivos/EA anteriores são desvinculados — gere um **novo código de ativação** e reative o EA no gráfico.
 
 ## Travas de risco / licença (homologação local)
 

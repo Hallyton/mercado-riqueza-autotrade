@@ -408,7 +408,12 @@ export async function getClientSubscriptionOverview(userId: string) {
       const subActive = subscription.status === SubscriptionStatus.ACTIVE;
       const canLinkMt5 =
         subActive &&
-        lic.status !== LicenseStatus.REVOKED;
+        lic.status !== LicenseStatus.REVOKED &&
+        !lic.mt5Account;
+      const canChangeMt5 =
+        subActive &&
+        lic.status !== LicenseStatus.REVOKED &&
+        !!lic.mt5Account;
       const canIssueActivationCode =
         subActive &&
         !!lic.mt5Account &&
@@ -422,6 +427,7 @@ export async function getClientSubscriptionOverview(userId: string) {
         deviceCount,
         maxDevices: subscription.plan.maxDevices,
         canLinkMt5,
+        canChangeMt5,
         canIssueActivationCode,
       };
     })

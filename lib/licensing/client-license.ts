@@ -8,6 +8,29 @@ import { createActivationCodeForLicense } from "@/lib/ea/activate";
 import prisma from "@/lib/prisma";
 import { assertLicenseAccess } from "./service";
 
+function normalizeMt5Credentials(login: string, server: string) {
+  const normalizedLogin = login.trim();
+  const normalizedServer = server.trim();
+
+  if (!normalizedLogin || !normalizedServer) {
+    throw new ClientLicenseError(
+      "Login e servidor MT5 são obrigatórios.",
+      "VALIDATION_ERROR",
+      400
+    );
+  }
+
+  if (!/^\d+$/.test(normalizedLogin)) {
+    throw new ClientLicenseError(
+      "Login MT5 deve conter apenas números.",
+      "INVALID_MT5_LOGIN",
+      400
+    );
+  }
+
+  return { login: normalizedLogin, server: normalizedServer };
+}
+
 export class ClientLicenseError extends Error {
   constructor(
     message: string,
@@ -70,7 +93,35 @@ function assertLicenseEligibleForOnboarding(
   }
 }
 
+async function revokeLicenseDevicesAndPendingCodes(licenseId: string) {
+  const now = new Date();
+
+  const devices = await prisma.device.updateMany({
+    where: { licenseId, revokedAt: null },
+    data: { revokedAt: now },
+  });
+
+  await prisma.activationCode.updateMany({
+    where: { licenseId, usedAt: null },
+    data: { usedAt: now },
+  });
+
+  return devices.count;
+}
+
 export async function linkMt5AccountToLicense(input: {
+  userId: string;
+  licenseId: string;
+  login: string;
+  server: string;
+  brokerName?: string;
+  ipAddress?: string | null;
+}) {
+  return updateMt5AccountForLicense(input);
+}
+
+/** Vincula ou altera a conta MT5 da licença do próprio cliente. */
+export async function updateMt5AccountForLicense(input: {
   userId: string;
   licenseId: string;
   login: string;
@@ -82,15 +133,29 @@ export async function linkMt5AccountToLicense(input: {
   assertSubscriptionActiveForOnboarding(license);
   assertLicenseEligibleForOnboarding(license);
 
-  const login = input.login.trim();
-  const server = input.server.trim();
-  if (!login || !server) {
-    throw new ClientLicenseError("Login e servidor MT5 são obrigatórios.", "VALIDATION_ERROR", 400);
+  const { login, server } = normalizeMt5Credentials(input.login, input.server);
+  const plan = license.subscription!.plan;
+  const isChange = Boolean(license.mt5AccountId && license.mt5Account);
+  const sameAccount =
+    isChange &&
+    license.mt5Account!.login === login &&
+    license.mt5Account!.server === server;
+
+  if (sameAccount) {
+    return {
+      licenseId: license.id,
+      mt5AccountId: license.mt5AccountId!,
+      login,
+      server,
+      changed: false as const,
+      devicesRevoked: 0,
+    };
   }
 
-  const plan = license.subscription!.plan;
-
-  if (!license.mt5AccountId) {
+  let devicesRevoked = 0;
+  if (isChange) {
+    devicesRevoked = await revokeLicenseDevicesAndPendingCodes(license.id);
+  } else {
     const linkedOnSub = await prisma.license.count({
       where: {
         subscriptionId: license.subscriptionId!,
@@ -155,6 +220,9 @@ export async function linkMt5AccountToLicense(input: {
     );
   }
 
+  const previousLogin = license.mt5Account?.login;
+  const previousServer = license.mt5Account?.server;
+
   await prisma.license.update({
     where: { id: license.id },
     data: { mt5AccountId: mt5.id },
@@ -163,10 +231,21 @@ export async function linkMt5AccountToLicense(input: {
   await createAuditLog({
     actorType: AuditActorType.USER,
     actorId: input.userId,
-    action: "license.mt5_linked",
+    action: isChange ? "license.mt5_changed" : "license.mt5_linked",
     entityType: "license",
     entityId: license.id,
-    metadata: { login, server, mt5AccountId: mt5.id },
+    metadata: {
+      login,
+      server,
+      mt5AccountId: mt5.id,
+      ...(isChange
+        ? {
+            previousLogin,
+            previousServer,
+            devicesRevoked,
+          }
+        : {}),
+    },
     ipAddress: input.ipAddress,
   });
 
@@ -175,6 +254,8 @@ export async function linkMt5AccountToLicense(input: {
     mt5AccountId: mt5.id,
     login: mt5.login,
     server: mt5.server,
+    changed: isChange as boolean,
+    devicesRevoked,
   };
 }
 
