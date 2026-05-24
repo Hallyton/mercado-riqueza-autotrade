@@ -127,7 +127,8 @@ Sem isso, heartbeat e pull retornam erro de WebRequest no terminal.
 
 1. Copiar `ea/mql5/` para `MetaTrader 5/MQL5/Experts/` (manter pasta `includes/`).
 2. Compilar `MR_AutoTrade_Executor.mq5` no MetaEditor.
-3. Anexar o EA ao gráfico na VPS com os inputs acima.
+3. Anexar o EA ao gráfico na VPS com os inputs acima (`InpApiBaseUrl` **sem** barra final).
+4. Após corrigir conta MT5 no dashboard: novo código de ativação + EA remove token antigo ao receber 401 `INVALID_TOKEN`.
 
 Contrato da API: [`docs/EA-API.md`](EA-API.md).
 
@@ -192,6 +193,8 @@ Marque na ordem sugerida. Objetivo: equivaler aos 18 itens de [`docs/HOMOLOGATIO
 | Sintoma | Verificar |
 |---------|-----------|
 | EA offline | WebRequest URL; token; `InpApiBaseUrl`; firewall 443 |
+| **HTTP 401 `INVALID_TOKEN`** | Token antigo/revogado (ex.: após **Alterar conta MT5** no dashboard). O EA limpa credenciais locais e tenta reativar **uma vez** com `InpActivationCode`. Gere **novo código** em `/dashboard/assinatura`, cole em `InpActivationCode`, **recompile/reanexe** o EA se necessário. O campo `type` com URL `mercadodariqueza.com.br/errors/invalid_token` é só identificador do erro — não é a URL da API. |
+| `InpApiBaseUrl` com barra final | Use sem `/` no fim, ex.: `https://mercado-riqueza-autotrade-staging.vercel.app` (o EA normaliza automaticamente). |
 | HTTP 403 em `/instructions` | Login/server no GET devem coincidir com MT5 vinculado na licença |
 | Instrução presa em **SENT** | EA antigo sem parser corrigido — recompilar EA; ou POST executions idempotente |
 | Heartbeat `pendentes` ≠ pull | Deploy com correção de fila entregável (`lib/ea/instructions.ts`) |

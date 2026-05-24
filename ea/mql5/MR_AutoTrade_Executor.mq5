@@ -27,6 +27,7 @@ input bool   InpDebugMode       = true;                                  // true
 #include "includes/MR_AT_Log.mqh"
 #include "includes/MR_AT_Json.mqh"
 #include "includes/MR_AT_Http.mqh"
+#include "includes/MR_AT_Auth.mqh"
 #include "includes/MR_AT_Equity.mqh"
 #include "includes/MR_AT_Position.mqh"
 #include "includes/MR_AT_Orders.mqh"
@@ -79,12 +80,14 @@ void MR_AT_UpdatePanel()
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   g_api_base_url = InpApiBaseUrl;
+   g_api_base_url = MR_AT_NormalizeBaseUrl(InpApiBaseUrl);
    g_device_id = MR_AT_ResolveDeviceId();
    g_log_level = InpLogLevel;
    g_debug_mode = InpDebugMode;
 
+   MR_AT_ResetTokenRecoveryState();
    MR_AT_LogInfo("Init", MR_AT_EA_NAME + " v" + MR_AT_EA_VERSION + " iniciando");
+   MR_AT_LogInfo("Init", "API base: " + g_api_base_url);
 
    if(StringLen(g_api_base_url) < 8)
      {
@@ -99,18 +102,18 @@ int OnInit()
 
    bool has_token = MR_AT_LoadCredentials();
 
-   if(!has_token && StringLen(InpActivationCode) > 0)
+   if(!has_token)
      {
+      if(StringLen(InpActivationCode) < 4)
+        {
+         MR_AT_LogError("Init", "Informe InpActivationCode (novo código do dashboard)");
+         return INIT_PARAMETERS_INCORRECT;
+        }
       if(!MR_AT_Activate(InpActivationCode))
         {
          MR_AT_LogError("Init", "Falha na ativação — verifique o código");
          return INIT_FAILED;
         }
-     }
-   else if(!has_token)
-     {
-      MR_AT_LogError("Init", "Informe InpActivationCode ou ative previamente nesta conta");
-      return INIT_PARAMETERS_INCORRECT;
      }
 
    if(!MR_AT_FetchConfig())
@@ -140,8 +143,19 @@ void OnTimer()
 
    if(!MR_AT_IsLicensed())
      {
-      MR_AT_LogError("Timer", "Sem licença válida — reative com InpActivationCode");
-      return;
+      if(StringLen(InpActivationCode) >= 4 && !MR_AT_IsTokenRecoveryExhausted())
+        {
+         if(MR_AT_Activate(InpActivationCode))
+           {
+            MR_AT_FetchConfig();
+            EventSetTimer(g_heartbeat_interval_sec);
+           }
+         }
+      if(!MR_AT_IsLicensed())
+        {
+         MR_AT_LogError("Timer", "Sem licença válida — gere novo código e InpActivationCode");
+         return;
+        }
      }
 
    if(!MR_AT_SendHeartbeat())

@@ -22,7 +22,9 @@ EA **executor licenciado** do Mercado da Riqueza AutoTrade — sem lógica estra
 
 | Arquivo | Responsabilidade |
 |---------|------------------|
-| `MR_AT_License.mqh` | Ativação, token, config |
+| `MR_AT_Auth.mqh` | Credenciais locais, limpeza em 401 INVALID_TOKEN |
+| `MR_AT_License.mqh` | Ativação, config, API autenticada |
+| `MR_AT_ApiAuth.mqh` | Protótipos GET/POST autenticados |
 | `MR_AT_Heartbeat.mqh` | Telemetria (equity, posições, pendentes) |
 | `MR_AT_Signal.mqh` | Pull de instruções |
 | `MR_AT_Execution.mqh` | Execução MARKET + reporte |

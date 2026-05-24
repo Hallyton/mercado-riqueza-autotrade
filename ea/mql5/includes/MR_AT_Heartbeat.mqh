@@ -6,6 +6,7 @@
 #include "MR_AT_Log.mqh"
 #include "MR_AT_Json.mqh"
 #include "MR_AT_Http.mqh"
+#include "MR_AT_ApiAuth.mqh"
 #include "MR_AT_Equity.mqh"
 #include "MR_AT_Position.mqh"
 #include "MR_AT_Orders.mqh"
@@ -39,12 +40,13 @@ bool MR_AT_SendHeartbeat()
 
    string response = "";
    int status = 0;
-   if(!MR_AT_ApiPost("/api/v1/ea/heartbeat", body, true, response, status))
+   if(!MR_AT_ApiPostAuth("/api/v1/ea/heartbeat", body, response, status))
       return false;
 
    if(status < 200 || status >= 300)
      {
-      MR_AT_LogError("Heartbeat", "HTTP " + IntegerToString(status) + " " + response);
+      MR_AT_LogError("Heartbeat", "HTTP " + IntegerToString(status) + " " +
+                     MR_AT_JsonSummarize(response, 160));
       return false;
      }
 

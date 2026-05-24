@@ -7,6 +7,7 @@
 #include "MR_AT_Log.mqh"
 #include "MR_AT_Json.mqh"
 #include "MR_AT_Http.mqh"
+#include "MR_AT_ApiAuth.mqh"
 #include "MR_AT_Equity.mqh"
 #include "MR_AT_Execution.mqh"
 
@@ -104,7 +105,7 @@ int MR_AT_FetchAndProcessSignals()
 
    string response = "";
    int status = 0;
-   if(!MR_AT_ApiGet(path, true, response, status))
+   if(!MR_AT_ApiGetAuth(path, response, status))
      {
       MR_AT_LogError("Signal", "Pull falhou (WebRequest) path=" + path);
       return 0;

@@ -6,6 +6,7 @@
 #include "MR_AT_Log.mqh"
 #include "MR_AT_Json.mqh"
 #include "MR_AT_Http.mqh"
+#include "MR_AT_ApiAuth.mqh"
 
 //+------------------------------------------------------------------+
 bool MR_AT_ReportError(const string error_code, const string error_message)
@@ -17,7 +18,7 @@ bool MR_AT_ReportError(const string error_code, const string error_message)
 
    string response = "";
    int status = 0;
-   if(!MR_AT_ApiPost("/api/v1/ea/errors", body, true, response, status))
+   if(!MR_AT_ApiPostAuth("/api/v1/ea/errors", body, response, status))
       return false;
 
    if(status < 200 || status >= 300)

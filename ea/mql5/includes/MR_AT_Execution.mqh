@@ -7,6 +7,7 @@
 #include "MR_AT_Log.mqh"
 #include "MR_AT_Json.mqh"
 #include "MR_AT_Http.mqh"
+#include "MR_AT_ApiAuth.mqh"
 #include "MR_AT_Error.mqh"
 
 extern bool g_debug_mode;
@@ -83,7 +84,7 @@ bool MR_AT_ReportExecution(
    int http = 0;
    MR_AT_LogInfo("Execution", "POST /api/v1/ea/executions payload=" + body);
 
-   bool sent = MR_AT_ApiPost("/api/v1/ea/executions", body, true, response, http);
+   bool sent = MR_AT_ApiPostAuth("/api/v1/ea/executions", body, response, http);
    if(!sent || http < 200 || http >= 300)
      {
       MR_AT_LogError("Execution",
@@ -108,7 +109,7 @@ bool MR_AT_ReportIgnored(const string instruction_id, const string reason)
 
    string response = "";
    int http = 0;
-   return MR_AT_ApiPost("/api/v1/ea/instructions/ignore", body, true, response, http) && http >= 200 && http < 300;
+   return MR_AT_ApiPostAuth("/api/v1/ea/instructions/ignore", body, response, http) && http >= 200 && http < 300;
   }
 
 //+------------------------------------------------------------------+
