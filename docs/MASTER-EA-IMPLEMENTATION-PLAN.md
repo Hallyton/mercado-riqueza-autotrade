@@ -337,6 +337,23 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Referência homologação atual:** [`docs/STAGING-VPS-HOMOLOGATION-RESULTS.md`](STAGING-VPS-HOMOLOGATION-RESULTS.md).
 
+### Status de implementação (atualizado)
+
+| Fase | Status | Notas |
+|------|--------|-------|
+| **2.4** | Concluída | `lib/master-signals/` — validação Zod + `rawPayloadRedacted` (sem persistência) |
+| **2.5** | Concluída | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência; **sem dispatch** |
+
+**Fase 2.5 — detalhes operacionais:**
+
+- Rota: `POST /api/master/signals`
+- Auth: `Authorization: Bearer <MASTER_EA_API_SECRET>` ou header `X-Master-EA-Secret`
+- Resposta: `dispatch: "NOT_STARTED"`; status persistido `VALIDATED` após validação
+- **Não** cria `MasterSignalDispatch` nem `Instruction` nesta fase
+- Variável obrigatória no ambiente que for testar o endpoint: `MASTER_EA_API_SECRET` (não configurar na Vercel nesta etapa sem gate explícito)
+- **Staging online:** o endpoint só funcionará após `prisma migrate deploy` da migration `20260524123425_add_master_signal_models` no Neon staging (ainda pendente)
+- Rate limit dedicado: **TODO** (Fase 2.6+); não bloqueia intake atual
+
 ---
 
 ## 13. Riscos e cuidados
