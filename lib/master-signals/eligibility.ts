@@ -43,6 +43,12 @@ export type LicenseEligibilityCandidate = Prisma.LicenseGetPayload<{
   include: typeof licenseCandidateInclude;
 }>;
 
+export function normalizeProfileSlugForCompare(slug: string | null | undefined): string | null {
+  if (slug == null) return null;
+  const normalized = slug.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+}
+
 export function evaluateLicenseEligibility(
   signal: Pick<MasterSignal, "purpose" | "profileSlug" | "expiresAt">,
   license: LicenseEligibilityInput,
@@ -115,10 +121,10 @@ export function evaluateLicenseEligibility(
     };
   }
 
-  if (signal.profileSlug) {
-    const wanted = signal.profileSlug.trim().toLowerCase();
-    const actual = license.exposureProfileSlug?.trim().toLowerCase() ?? null;
-    if (actual !== wanted) {
+  const wantedProfile = normalizeProfileSlugForCompare(signal.profileSlug);
+  if (wantedProfile) {
+    const actualProfile = normalizeProfileSlugForCompare(license.exposureProfileSlug);
+    if (actualProfile !== wantedProfile) {
       return {
         eligible: false,
         code: "PROFILE_MISMATCH",
@@ -221,7 +227,22 @@ async function countUserActiveMt5Licenses(userId: string): Promise<number> {
   });
 }
 
+/** Candidatos amplos — sem filtro de profile no SQL (auditoria em evaluate). */
+export async function listLicenseCandidatesForMasterDispatch(): Promise<
+  LicenseEligibilityCandidate[]
+> {
+  return prisma.license.findMany({
+    where: {
+      status: LicenseStatus.ACTIVE,
+      subscription: { is: { status: SubscriptionStatus.ACTIVE } },
+      mt5AccountId: { not: null },
+    },
+    include: licenseCandidateInclude,
+  });
+}
+
 export type EligibleLicenseSelection = {
+  candidatesCount: number;
   eligible: LicenseEligibilityCandidate[];
   skipped: Array<{ licenseId: string; code: string; reason: string }>;
 };
@@ -229,19 +250,7 @@ export type EligibleLicenseSelection = {
 export async function selectEligibleLicensesForMasterSignal(
   signal: Pick<MasterSignal, "purpose" | "profileSlug" | "expiresAt">
 ): Promise<EligibleLicenseSelection> {
-  const profileFilter = signal.profileSlug?.trim().toLowerCase();
-
-  const candidates = await prisma.license.findMany({
-    where: {
-      status: LicenseStatus.ACTIVE,
-      subscription: { status: SubscriptionStatus.ACTIVE },
-      mt5AccountId: { not: null },
-      ...(profileFilter
-        ? { exposureProfile: { slug: profileFilter } }
-        : {}),
-    },
-    include: licenseCandidateInclude,
-  });
+  const candidates = await listLicenseCandidatesForMasterDispatch();
 
   const mt5CountByUser = new Map<string, number>();
   const eligible: LicenseEligibilityCandidate[] = [];
@@ -271,5 +280,5 @@ export async function selectEligibleLicensesForMasterSignal(
     }
   }
 
-  return { eligible, skipped };
+  return { candidatesCount: candidates.length, eligible, skipped };
 }

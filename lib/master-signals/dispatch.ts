@@ -32,6 +32,8 @@ export type DispatchMasterSignalResult = {
   skipped: number;
   failed: number;
   idempotent: boolean;
+  candidatesCount?: number;
+  noEligibleLicenses?: boolean;
 };
 
 export function buildMasterInstructionIdempotencyKey(
@@ -97,11 +99,56 @@ async function summarizeExistingDispatch(masterSignalId: string) {
   return { instructionsCreated, skipped, failed, total: rows.length };
 }
 
+async function recordSkippedDispatch(
+  signal: MasterSignal,
+  licenseId: string,
+  code: string
+): Promise<void> {
+  await prisma.masterSignalDispatch.upsert({
+    where: {
+      masterSignalId_licenseId: {
+        masterSignalId: signal.id,
+        licenseId,
+      },
+    },
+    create: {
+      masterSignalId: signal.id,
+      licenseId,
+      status: MasterSignalDispatchStatus.SKIPPED,
+      reason: code,
+    },
+    update: {
+      status: MasterSignalDispatchStatus.SKIPPED,
+      reason: code,
+      instructionId: null,
+    },
+  });
+}
+
+type FinalizeDispatchInput = {
+  created: number;
+  failed: number;
+  eligibleCount: number;
+};
+
 async function finalizeMasterSignalStatus(
   masterSignalId: string,
-  created: number,
-  failed: number
+  input: FinalizeDispatchInput
 ): Promise<MasterSignalStatus> {
+  const { created, failed, eligibleCount } = input;
+
+  if (created === 0 && failed === 0 && eligibleCount === 0) {
+    await prisma.masterSignal.update({
+      where: { id: masterSignalId },
+      data: {
+        status: MasterSignalStatus.VALIDATED,
+        rejectedReason: "NO_ELIGIBLE_LICENSES",
+        dispatchedAt: null,
+      },
+    });
+    return MasterSignalStatus.VALIDATED;
+  }
+
   const status =
     failed > 0 && created > 0
       ? MasterSignalStatus.PARTIALLY_DISPATCHED
@@ -111,15 +158,39 @@ async function finalizeMasterSignalStatus(
 
   await prisma.masterSignal.update({
     where: { id: masterSignalId },
-    data: {
-      status,
-      ...(status === MasterSignalStatus.FAILED
-        ? { failedAt: new Date() }
-        : { dispatchedAt: new Date() }),
-    },
+    data:
+      status === MasterSignalStatus.FAILED
+        ? {
+            status,
+            failedAt: new Date(),
+            rejectedReason: "DISPATCH_FAILED",
+          }
+        : {
+            status,
+            rejectedReason: null,
+            dispatchedAt: new Date(),
+            failedAt: null,
+          },
   });
 
   return status;
+}
+
+async function resetEmptyDispatchedSignal(signal: MasterSignal): Promise<MasterSignal> {
+  const summary = await summarizeExistingDispatch(signal.id);
+  if (summary.instructionsCreated > 0 || summary.total > 0) {
+    return signal;
+  }
+
+  return prisma.masterSignal.update({
+    where: { id: signal.id },
+    data: {
+      status: MasterSignalStatus.VALIDATED,
+      rejectedReason: null,
+      dispatchedAt: null,
+      failedAt: null,
+    },
+  });
 }
 
 type CreateInstructionForLicenseResult =
@@ -232,7 +303,7 @@ async function createInstructionForLicense(
 export async function dispatchValidatedMasterSignal(
   masterSignalKey: string
 ): Promise<DispatchMasterSignalResult> {
-  const signal = await findMasterSignalByKey(masterSignalKey);
+  let signal = await findMasterSignalByKey(masterSignalKey);
   if (!signal) {
     throw new MasterSignalDispatchError(
       "Sinal mestre não encontrado",
@@ -250,25 +321,29 @@ export async function dispatchValidatedMasterSignal(
 
   if (terminalDispatchStatuses().includes(signal.status)) {
     const summary = await summarizeExistingDispatch(signal.id);
-    return {
-      ok: true,
-      masterSignalId: signal.masterSignalId,
-      status: signal.status,
-      instructionsCreated: summary.instructionsCreated,
-      skipped: summary.skipped,
-      failed: summary.failed,
-      idempotent: true,
-    };
+    if (summary.instructionsCreated === 0 && summary.total === 0) {
+      signal = await resetEmptyDispatchedSignal(signal);
+    } else {
+      return {
+        ok: true,
+        masterSignalId: signal.masterSignalId,
+        status: signal.status,
+        instructionsCreated: summary.instructionsCreated,
+        skipped: summary.skipped,
+        failed: summary.failed,
+        idempotent: true,
+      };
+    }
   }
 
   if (signal.status === MasterSignalStatus.DISPATCHING) {
     const summary = await summarizeExistingDispatch(signal.id);
     if (summary.total > 0) {
-      const status = await finalizeMasterSignalStatus(
-        signal.id,
-        summary.instructionsCreated,
-        summary.failed
-      );
+      const status = await finalizeMasterSignalStatus(signal.id, {
+        created: summary.instructionsCreated,
+        failed: summary.failed,
+        eligibleCount: summary.instructionsCreated,
+      });
       return {
         ok: true,
         masterSignalId: signal.masterSignalId,
@@ -306,13 +381,16 @@ export async function dispatchValidatedMasterSignal(
 
   const quantity = resolveMasterSignalDispatchQuantity();
   const expiresAt = resolveInstructionExpiresAt(signal, now);
-  const { eligible, skipped: eligibilitySkipped } =
-    await selectEligibleLicensesForMasterSignal(signal);
+  const selection = await selectEligibleLicensesForMasterSignal(signal);
+
+  for (const skip of selection.skipped) {
+    await recordSkippedDispatch(signal, skip.licenseId, skip.code);
+  }
 
   let created = 0;
   let failed = 0;
 
-  for (const license of eligible) {
+  for (const license of selection.eligible) {
     const outcome = await createInstructionForLicense(
       signal,
       license.id,
@@ -326,16 +404,25 @@ export async function dispatchValidatedMasterSignal(
     }
   }
 
-  const status = await finalizeMasterSignalStatus(signal.id, created, failed);
+  const status = await finalizeMasterSignalStatus(signal.id, {
+    created,
+    failed,
+    eligibleCount: selection.eligible.length,
+  });
+
+  const noEligibleLicenses =
+    selection.eligible.length === 0 && created === 0 && failed === 0;
 
   return {
     ok: true,
     masterSignalId: signal.masterSignalId,
     status,
     instructionsCreated: created,
-    skipped: eligibilitySkipped.length,
+    skipped: selection.skipped.length,
     failed,
     idempotent: false,
+    candidatesCount: selection.candidatesCount,
+    noEligibleLicenses,
   };
 }
 

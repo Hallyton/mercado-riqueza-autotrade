@@ -392,7 +392,15 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Deploy / Neon staging | **Não aplicado** nesta entrega |
 | Homologação online 2.6 | **Pendente** (após gate explícito) |
 
-**Notas v1:** `Instruction.source` permanece `null` (TODO: enum `MASTER_DISPATCH` no schema). Quantidade padrão `1` (`MASTER_SIGNAL_DISPATCH_QUANTITY` ou constante interna). Licenças inelegíveis não geram row `SKIPPED` em massa — apenas elegíveis recebem dispatch/instruction.
+**Notas v1:** `Instruction.source` permanece `null` (TODO: enum `MASTER_DISPATCH` no schema). Quantidade padrão `1` (`MASTER_SIGNAL_DISPATCH_QUANTITY` ou constante interna).
+
+**Correção elegibilidade (pós-homolog staging):**
+
+- Candidatos amplos no SQL (`ACTIVE` + assinatura `ACTIVE` + MT5); **sem** filtro antecipado de `profileSlug` (evita 0 candidatos / 0 skipped).
+- Regras aplicadas em `evaluateLicenseEligibility` com `skipped` auditável (`PROFILE_MISMATCH`, `NO_ACTIVE_DEVICE`, `DEMO_NOT_ALLOWED`, etc.).
+- `MasterSignalDispatch` `SKIPPED` gravado por licença rejeitada.
+- Sem elegíveis: status volta para `VALIDATED` + `rejectedReason=NO_ELIGIBLE_LICENSES` (não `DISPATCHED` silencioso).
+- `DISPATCHED` vazio (homologação anterior) pode ser reprocessado (reset para `VALIDATED` se não houver dispatches).
 
 ---
 

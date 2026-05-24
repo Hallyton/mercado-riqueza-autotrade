@@ -153,7 +153,7 @@ function eligibleLicenseRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe("master signal eligibility", () => {
-  it("seleciona licença elegível", async () => {
+  it("seleciona licença elegível sem filtrar profile no SQL", async () => {
     licenseFindMany.mockResolvedValue([eligibleLicenseRow()]);
     licenseCount.mockResolvedValue(1);
     heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
@@ -166,6 +166,77 @@ describe("master signal eligibility", () => {
 
     expect(result.eligible).toHaveLength(1);
     expect(result.skipped).toHaveLength(0);
+    expect(licenseFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: LicenseStatus.ACTIVE,
+          subscription: { is: { status: SubscriptionStatus.ACTIVE } },
+          mt5AccountId: { not: null },
+        },
+      })
+    );
+    expect(licenseFindMany.mock.calls[0][0].where).not.toHaveProperty("exposureProfile");
+  });
+
+  it("licença conservador é elegível para MasterSignal profile conservador", async () => {
+    licenseFindMany.mockResolvedValue([
+      eligibleLicenseRow({
+        id: "lic-staging",
+        exposureProfile: { slug: "conservador" },
+      }),
+    ]);
+    licenseCount.mockResolvedValue(1);
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
+
+    const result = await selectEligibleLicensesForMasterSignal({
+      purpose: InstructionPurpose.ENTRY,
+      profileSlug: "conservador",
+      expiresAt: new Date(Date.now() + 120_000),
+    });
+
+    expect(result.eligible).toHaveLength(1);
+    expect(result.eligible[0].id).toBe("lic-staging");
+  });
+
+  it("profile mismatch retorna skipped PROFILE_MISMATCH", async () => {
+    licenseFindMany.mockResolvedValue([
+      eligibleLicenseRow({ exposureProfile: { slug: "moderado" } }),
+    ]);
+    licenseCount.mockResolvedValue(1);
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+
+    const result = await selectEligibleLicensesForMasterSignal({
+      purpose: InstructionPurpose.ENTRY,
+      profileSlug: "conservador",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    expect(result.eligible).toHaveLength(0);
+    expect(result.skipped).toHaveLength(1);
+    expect(result.skipped[0].code).toBe("PROFILE_MISMATCH");
+  });
+
+  it("candidatos existentes com rejeição preenchem skipped reasons", async () => {
+    licenseFindMany.mockResolvedValue([
+      eligibleLicenseRow({ id: "lic-a", exposureProfile: { slug: "start" } }),
+      eligibleLicenseRow({
+        id: "lic-b",
+        exposureProfile: { slug: "moderado" },
+        devices: [],
+      }),
+    ]);
+    licenseCount.mockResolvedValue(1);
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+
+    const result = await selectEligibleLicensesForMasterSignal({
+      purpose: InstructionPurpose.ENTRY,
+      profileSlug: "start",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    expect(result.candidatesCount).toBe(2);
+    expect(result.skipped.length).toBeGreaterThan(0);
+    expect(result.skipped.some((s) => s.code === "NO_ACTIVE_DEVICE")).toBe(true);
   });
 
   it("ignora licença inativa", () => {
@@ -352,7 +423,7 @@ describe("dispatchValidatedMasterSignal", () => {
     expect(masterUpdateMany).not.toHaveBeenCalled();
   });
 
-  it("7) atualiza MasterSignal para DISPATCHED", async () => {
+  it("7) atualiza MasterSignal para DISPATCHED quando cria instruction", async () => {
     masterFindUnique.mockResolvedValue(validatedSignal());
     await dispatchValidatedMasterSignal("msig-dispatch-001");
     expect(masterUpdate).toHaveBeenCalledWith(
@@ -362,7 +433,55 @@ describe("dispatchValidatedMasterSignal", () => {
     );
   });
 
-  it("8) atualiza para FAILED quando criação falha", async () => {
+  it("7b) cenário staging conservador cria 1 instruction", async () => {
+    masterFindUnique.mockResolvedValue(
+      validatedSignal({ masterSignalId: "test-dispatch-002", profileSlug: "conservador" })
+    );
+    licenseFindMany.mockResolvedValue([
+      eligibleLicenseRow({
+        id: "cmpj3wby70005sx18ot5e939p",
+        exposureProfile: { slug: "conservador" },
+      }),
+    ]);
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
+
+    const result = await dispatchValidatedMasterSignal("test-dispatch-002");
+    expect(result.instructionsCreated).toBe(1);
+    expect(result.status).toBe(MasterSignalStatus.DISPATCHED);
+  });
+
+  it("7c) nenhuma elegível não marca DISPATCHED silencioso", async () => {
+    masterFindUnique.mockResolvedValue(
+      validatedSignal({ profileSlug: "conservador" })
+    );
+    licenseFindMany.mockResolvedValue([
+      eligibleLicenseRow({ exposureProfile: { slug: "moderado" } }),
+    ]);
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+
+    const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
+    expect(result.instructionsCreated).toBe(0);
+    expect(result.noEligibleLicenses).toBe(true);
+    expect(result.status).toBe(MasterSignalStatus.VALIDATED);
+    expect(masterUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: MasterSignalStatus.VALIDATED,
+          rejectedReason: "NO_ELIGIBLE_LICENSES",
+        }),
+      })
+    );
+    expect(dispatchUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          status: MasterSignalDispatchStatus.SKIPPED,
+          reason: "PROFILE_MISMATCH",
+        }),
+      })
+    );
+  });
+
+  it("8) atualiza para FAILED quando criação falha com elegível", async () => {
     masterFindUnique.mockResolvedValue(validatedSignal());
     transaction.mockRejectedValueOnce(new Error("db fail"));
     dispatchUpsert.mockResolvedValue({});
