@@ -277,7 +277,7 @@ VALIDATED → DISPATCHING
 
 ## 10. Painel admin (Fases 2.7–2.8)
 
-**Rota admin:** `/admin/master-signals` (trigger homologado em staging; acompanhamento consolidado na Fase 2.8)
+**Rota admin:** `/admin/master-signals` (trigger e acompanhamento consolidado homologados em staging — maio/2026)
 
 | Bloco | Conteúdo |
 |-------|----------|
@@ -345,7 +345,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch automático** |
 | **2.6** | Concluída + homologação online staging | `eligibility.ts` + `dispatch.ts` — dispatch manual/script; `Instruction.source=MASTER_SIGNAL`; **sem** dispatch automático no POST |
 | **2.7** | Concluída + homologação online staging | Admin trigger `/admin/master-signals` — intake + revisão + preview + disparo manual; **POST sem dispatch automático** |
-| **2.8** | Implementada localmente | Painel de acompanhamento consolidado (MasterSignal → Dispatch → Instruction → Execution); **homologação staging pendente** |
+| **2.8** | Concluída + homologação online staging | Painel de tracking consolidado; status consolidado na lista; **POST sem dispatch automático** |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -459,23 +459,40 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.7 homologada online em staging. O fluxo admin-trigger está aprovado: intake sem dispatch automático, revisão e preview no painel, disparo manual idempotente para licenças elegíveis, rastreio com `MASTER_SIGNAL` no EA em DebugMode.
 
-**Próximo passo (produto):** homologação online da Fase 2.8 (tracking) após deploy; depois EA Mãe MQL5 (Fase 2.9).
-
-### Fase 2.8 — Painel de acompanhamento (implementação local — maio/2026)
+### Fase 2.8 — Painel de acompanhamento (implementação — maio/2026)
 
 | Item | Status |
 |------|--------|
 | `getMasterSignalTrackingForAdmin` | OK — resumo + linhas por licença + executions |
 | `lib/master-signals/admin-tracking.ts` | OK — contagens e status consolidado (sem migration) |
 | Detalhe `/admin/master-signals/[id]` | OK — seção **Acompanhamento do sinal** (cards + tabela por cliente) |
-| Lista `/admin/master-signals` | OK — colunas dispatch/instruction/executed + status consolidado |
+| Lista `/admin/master-signals` | OK — colunas Consolidado, Exec., Disp., Instr. + status consolidado |
 | Status consolidado (exibição) | `NOT_DISPATCHED`, `DISPATCHED_PENDING`, `PARTIALLY_EXECUTED`, `EXECUTED`, `FAILED`, `EXPIRED` |
 | `POST /api/master/signals` | **Inalterado** — sem dispatch automático |
 | EA cliente / contrato `/api/v1/ea/instructions` | **Inalterados** |
 | Botão **Disparar para clientes** | **Inalterado** — só `VALIDATED` |
-| Homologação online staging | **Pendente** — após deploy |
 
 **Fluxo de dados:** `MasterSignal` → `MasterSignalDispatch` (por licença) → `Instruction` (`source: MASTER_SIGNAL`) → `Execution` (status do EA). Preview de elegibilidade permanece somente leitura antes do disparo.
+
+### Homologação online staging — Fase 2.8 aprovada (maio/2026)
+
+**Ambiente:** `https://autotrade-staging.mercadodariqueza.com.br`
+
+| Item | Status |
+|------|--------|
+| Deploy Vercel staging (`vercel --prod --force`) | OK — alias staging ativo |
+| Lista `/admin/master-signals` | OK — colunas **Consolidado**, **Exec.**, **Disp.**, **Instr.** |
+| Sinal já disparado/executado | OK — acompanhamento consolidado visível (ex.: sinal homologado na Fase 2.7) |
+| Detalhe — **Acompanhamento do sinal** | OK — cards; `instructionCount >= 1`; `executedCount >= 1`; `source: MASTER_SIGNAL`; execução reportada pelo EA |
+| Intake `test-tracking-not-dispatched-001` | OK — POST `VALIDATED`, `dispatch: NOT_STARTED` |
+| Painel — sinal não disparado | OK — Consolidado **NOT_DISPATCHED**; Disp. 0; Instr. 0; Exec. 0; mensagem *ainda não foi disparado* |
+| `POST /api/master/signals` | **Sem dispatch automático** — nenhuma `Instruction` até disparo admin |
+| EA cliente | **Inalterado** |
+| DARF / billing / dashboard cliente | **Inalterados** |
+
+**Conclusão:** Fase 2.8 homologada online em staging. O painel admin permite acompanhar sinais mestre com status consolidado, contagens de dispatches, instructions e executions, e diferencia sinais executados de sinais ainda não disparados. O intake continua seguro e sem dispatch automático.
+
+**Próximo passo (produto):** EA Mãe MQL5 ou simulador HTTP (Fase 2.9); gate produção (Fase 2.11).
 
 ---
 
