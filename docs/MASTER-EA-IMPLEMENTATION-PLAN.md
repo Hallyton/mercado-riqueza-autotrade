@@ -342,7 +342,8 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Fase | Status | Notas |
 |------|--------|-------|
 | **2.4** | Concluída | `lib/master-signals/` — validação Zod + `rawPayloadRedacted` (sem persistência) |
-| **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch** |
+| **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch automático** |
+| **2.6** | Concluída localmente | `lib/master-signals/eligibility.ts` + `dispatch.ts` — dispatch interno para licenças elegíveis; **sem** acoplamento automático ao POST; **sem** homologação online Neon |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -377,6 +378,21 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | EA cliente | **Sem impacto** nesta fase (nenhuma instrução despachada) |
 
 **Conclusão:** Fase 2.5 online aprovada em staging. O endpoint recebe e valida sinal mestre, persiste `MasterSignal`, valida idempotência e conflitos, mas ainda **não faz dispatch** (Fase 2.6).
+
+### Fase 2.6 — dispatch interno (local — maio/2026)
+
+| Item | Status |
+|------|--------|
+| Service `selectEligibleLicensesForMasterSignal` | OK — assinatura/licença ativas, MT5, device ativo, `allow_demo`, `max_devices` / `max_mt5`, perfil (`profileSlug`), halts via `lib/licensing/flags` |
+| Service `dispatchValidatedMasterSignal` | OK — só `VALIDATED` → `DISPATCHING` → `DISPATCHED` / `PARTIALLY_DISPATCHED` / `FAILED` |
+| `MasterSignalDispatch` + `Instruction` | OK — uma instrução por licença elegível; idempotência `master:{master_signal_id}:{license_id}` |
+| `POST /api/master/signals` | **Inalterado** — continua `dispatch: NOT_STARTED` (sem dispatch automático) |
+| Contrato EA `/api/v1/ea/instructions` | **Inalterado** — payload via `mapInstructionToEaPayload` |
+| EA cliente MQL5 | **Inalterado** |
+| Deploy / Neon staging | **Não aplicado** nesta entrega |
+| Homologação online 2.6 | **Pendente** (após gate explícito) |
+
+**Notas v1:** `Instruction.source` permanece `null` (TODO: enum `MASTER_DISPATCH` no schema). Quantidade padrão `1` (`MASTER_SIGNAL_DISPATCH_QUANTITY` ou constante interna). Licenças inelegíveis não geram row `SKIPPED` em massa — apenas elegíveis recebem dispatch/instruction.
 
 ---
 
