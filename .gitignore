@@ -11,3 +11,6 @@ dist/
 
 # MetaTrader compiled binaries
 *.ex5
+
+# Vercel local project metadata
+.vercel
