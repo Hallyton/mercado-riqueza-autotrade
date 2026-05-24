@@ -60,6 +60,12 @@ function makeRequest(
 }
 
 function existingRow(overrides: Record<string, unknown> = {}) {
+  const {
+    rawPayloadRedacted: rawOverride,
+    expiresAt: expiresAtOverride,
+    ...rowOverrides
+  } = overrides;
+
   return {
     id: "row-1",
     masterSignalId: "msig-route-001",
@@ -71,8 +77,23 @@ function existingRow(overrides: Record<string, unknown> = {}) {
     purpose: "ENTRY",
     profileSlug: "start",
     status: MasterSignalStatus.VALIDATED,
-    expiresAt: new Date(Date.now() + 60_000),
-    ...overrides,
+    expiresAt:
+      expiresAtOverride !== undefined
+        ? expiresAtOverride
+        : new Date(Date.now() - 120_000),
+    rawPayloadRedacted: {
+      master_signal_id: "msig-route-001",
+      source: "MASTER_EA",
+      symbol: "WDOM26",
+      side: "BUY",
+      order_type: "MARKET",
+      purpose: "ENTRY",
+      profile: "start",
+      expires_in_seconds: 60,
+      idempotency_key: "idem-route-001",
+      ...(typeof rawOverride === "object" && rawOverride !== null ? rawOverride : {}),
+    },
+    ...rowOverrides,
   };
 }
 
@@ -241,5 +262,91 @@ describe("POST /api/master/signals", () => {
     const res = await POST(makeRequest(validPayload()));
     const body = await res.json();
     expect(body.dispatch).toBe("NOT_STARTED");
+  });
+
+  it("16) retry do mesmo payload com expires_in_seconds retorna 200 idempotent:true", async () => {
+    masterFindUnique.mockImplementation(async ({ where }) => {
+      if ("masterSignalId" in where && where.masterSignalId === "msig-route-001") {
+        return existingRow();
+      }
+      if ("idempotencyKey" in where && where.idempotencyKey === "idem-route-001") {
+        return existingRow();
+      }
+      return null;
+    });
+
+    const res = await POST(makeRequest(validPayload()));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.idempotent).toBe(true);
+    expect(body.ok).toBe(true);
+    expect(masterCreate).not.toHaveBeenCalled();
+  });
+
+  it("17) retry não falha por expiresAt recalculado no servidor", async () => {
+    masterFindUnique.mockImplementation(async ({ where }) => {
+      if ("masterSignalId" in where || "idempotencyKey" in where) {
+        return existingRow({
+          expiresAt: new Date(Date.now() + 999_999),
+          rawPayloadRedacted: { expires_in_seconds: 60 },
+        });
+      }
+      return null;
+    });
+
+    const res = await POST(makeRequest(validPayload({ expires_in_seconds: 60 })));
+    expect(res.status).toBe(200);
+    expect((await res.json()).idempotent).toBe(true);
+    expect(masterCreate).not.toHaveBeenCalled();
+  });
+
+  it("18) mesmo idempotency_key com side diferente retorna 409", async () => {
+    masterFindUnique.mockImplementation(async ({ where }) => {
+      if ("idempotencyKey" in where && where.idempotencyKey === "idem-route-001") {
+        return existingRow({ side: "SELL" });
+      }
+      return null;
+    });
+
+    const res = await POST(makeRequest(validPayload()));
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe("MASTER_SIGNAL_CONFLICT");
+  });
+
+  it("19) mesmo master_signal_id com payload de negócio diferente retorna 409", async () => {
+    masterFindUnique.mockImplementation(async ({ where }) => {
+      if ("masterSignalId" in where && where.masterSignalId === "msig-route-001") {
+        return existingRow({
+          symbol: "PETR4",
+          rawPayloadRedacted: { expires_in_seconds: 60, symbol: "PETR4" },
+        });
+      }
+      return null;
+    });
+
+    const res = await POST(makeRequest(validPayload()));
+    expect(res.status).toBe(409);
+  });
+
+  it("20) retorno idempotente mantém dispatch NOT_STARTED", async () => {
+    masterFindUnique.mockImplementation(async () => existingRow());
+
+    const res = await POST(makeRequest(validPayload()));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.idempotent).toBe(true);
+    expect(body.dispatch).toBe("NOT_STARTED");
+  });
+
+  it("21) retry idempotente não cria MasterSignalDispatch", async () => {
+    masterFindUnique.mockImplementation(async () => existingRow());
+    await POST(makeRequest(validPayload()));
+    expect(dispatchCreate).not.toHaveBeenCalled();
+  });
+
+  it("22) retry idempotente não cria Instruction", async () => {
+    masterFindUnique.mockImplementation(async () => existingRow());
+    await POST(makeRequest(validPayload()));
+    expect(instructionCreate).not.toHaveBeenCalled();
   });
 });

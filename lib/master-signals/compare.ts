@@ -1,7 +1,23 @@
 import type { MasterSignal } from "@prisma/client";
 import type { MasterSignalNormalizedPayload } from "@/lib/master-signals/types";
 
-/** Comparação mínima segura para idempotência (Fase 2.5). */
+function readStoredExpiresInSeconds(
+  rawPayloadRedacted: MasterSignal["rawPayloadRedacted"]
+): number | null {
+  if (
+    rawPayloadRedacted == null ||
+    typeof rawPayloadRedacted !== "object" ||
+    Array.isArray(rawPayloadRedacted)
+  ) {
+    return null;
+  }
+  const value = (rawPayloadRedacted as Record<string, unknown>).expires_in_seconds;
+  if (value === undefined || value === null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return null;
+}
+
+/** Comparação mínima segura para idempotência (Fase 2.5) — sem expiresAt derivado. */
 export function masterSignalPayloadMatches(
   existing: Pick<
     MasterSignal,
@@ -13,7 +29,7 @@ export function masterSignalPayloadMatches(
     | "orderType"
     | "purpose"
     | "profileSlug"
-    | "expiresAt"
+    | "rawPayloadRedacted"
   >,
   normalized: MasterSignalNormalizedPayload
 ): boolean {
@@ -26,9 +42,6 @@ export function masterSignalPayloadMatches(
   if (existing.purpose !== normalized.purpose) return false;
   if ((existing.profileSlug ?? null) !== normalized.profileSlug) return false;
 
-  if (existing.expiresAt == null && normalized.expiresAt == null) return true;
-  if (existing.expiresAt == null || normalized.expiresAt == null) return false;
-  const existingSec = Math.floor(existing.expiresAt.getTime() / 1000);
-  const normalizedSec = Math.floor(new Date(normalized.expiresAt).getTime() / 1000);
-  return existingSec === normalizedSec;
+  const storedExpires = readStoredExpiresInSeconds(existing.rawPayloadRedacted);
+  return storedExpires === normalized.expiresInSeconds;
 }
