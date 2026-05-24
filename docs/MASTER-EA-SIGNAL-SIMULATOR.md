@@ -11,6 +11,23 @@ Ferramenta local para enviar sinais mestres ao endpoint `POST /api/master/signal
 
 **Não é** o EA Mãe em produção. **Não** cria `Instruction` nem dispara clientes automaticamente.
 
+## Homologação staging (aprovada — maio/2026)
+
+Validado em `https://autotrade-staging.mercadodariqueza.com.br` com `npm run master:signal`:
+
+| Campo / métrica | Resultado |
+|----------------|-----------|
+| `master_signal_id` | `sim-master-001` |
+| `source` | `MASTER_EA` |
+| `symbol` / `side` / `purpose` / `profile` | `WDOM26` / `BUY` / `ENTRY` / `conservador` |
+| Status DB | `VALIDATED` |
+| Consolidado no painel | **Não disparado** |
+| Dispatches | 0 |
+| Instructions | 0 |
+| Executions | 0 |
+
+Isso confirma que o simulador realiza **somente intake** via `POST /api/master/signals`; o disparo para clientes continua no painel admin (**Disparar para clientes**).
+
 ## Variáveis de ambiente (local — nunca commitar)
 
 PowerShell:
