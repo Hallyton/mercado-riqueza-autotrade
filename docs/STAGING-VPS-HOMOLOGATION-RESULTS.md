@@ -1,8 +1,10 @@
 # Resultado da homologação staging/VPS — Mercado da Riqueza AutoTrade
 
-Registro formal da homologação **online** (Vercel + Neon + EA na VPS/demo) **aprovada** na branch `staging-vps-homologacao`.
+Registro formal da homologação **online** (Vercel + Neon + EA na VPS/demo) **aprovada** na branch `staging-vps-homologacao`, incluindo **domínio próprio de staging** validado ponta a ponta.
 
 Documentos relacionados: [`docs/STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLOGATION.md), [`docs/HOMOLOGATION-RESULTS.md`](HOMOLOGATION-RESULTS.md).
+
+**Status:** homologação staging com domínio próprio **aprovada**.
 
 ---
 
@@ -11,7 +13,9 @@ Documentos relacionados: [`docs/STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLO
 | Campo | Valor |
 |-------|--------|
 | **Ambiente** | Vercel staging + Neon PostgreSQL staging (separado de produção e de homologação local) |
-| **URL pública da API/web** | [https://mercado-riqueza-autotrade-staging.vercel.app](https://mercado-riqueza-autotrade-staging.vercel.app) |
+| **URL oficial (API/web/EA)** | [https://autotrade-staging.mercadodariqueza.com.br](https://autotrade-staging.mercadodariqueza.com.br) |
+| **Fallback técnico** | [https://mercado-riqueza-autotrade-staging.vercel.app](https://mercado-riqueza-autotrade-staging.vercel.app) — apenas contingência; não é o padrão operacional |
+| **`AUTH_URL` (Vercel staging)** | `https://autotrade-staging.mercadodariqueza.com.br` (Production e Preview) |
 | **Branch de referência** | `staging-vps-homologacao` |
 | **Projeto Vercel** | `mercado-riqueza-autotrade-staging` |
 | **Banco** | Neon staging (instância/projeto dedicado; não localhost, não produção) |
@@ -25,7 +29,8 @@ Documentos relacionados: [`docs/STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLO
 | **Cliente homologação** | `cliente.staging@mercadodariqueza.com.br` |
 | **Conta MT5** | Login **52609973**, servidor **XPMT5-DEMO** |
 | **EA** | `MR_AutoTrade_Executor.mq5` |
-| **Inputs EA** | `InpDebugMode=true`, `InpLogLevel=2`, `InpApiBaseUrl=https://mercado-riqueza-autotrade-staging.vercel.app` (sem barra final) |
+| **Inputs EA** | `InpDebugMode=true`, `InpLogLevel=2`, `InpApiBaseUrl=https://autotrade-staging.mercadodariqueza.com.br` (sem barra final) |
+| **WebRequest MT5** | `https://autotrade-staging.mercadodariqueza.com.br` liberado em *Permitir WebRequest* |
 | **Scripts homolog** | Cliente, assinatura ACTIVE, licença ACTIVE, `allow_demo=true` no plano (staging) |
 | **Migrations** | Aplicadas com sucesso (`prisma migrate deploy`) |
 | **Seed** | Executado com sucesso (`db:seed`) |
@@ -56,6 +61,35 @@ Documentos relacionados: [`docs/STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLO
 
 ---
 
+## Homologação com domínio próprio (aprovada)
+
+Subdomínio oficial de staging: **`autotrade-staging.mercadodariqueza.com.br`**
+
+| Verificação | Resultado |
+|-------------|-----------|
+| DNS (registro **A** `autotrade-staging` → `76.76.21.21`) | OK |
+| TLS / certificado SSL | OK |
+| `AUTH_URL` alinhada ao subdomínio | OK (Production + Preview) |
+| Login admin | OK |
+| Login cliente staging | OK |
+| `/dashboard/assinatura` | OK |
+| EA — ativação | OK |
+| Heartbeat | OK |
+| **GET** `/api/v1/ea/instructions` | HTTP **200** |
+| Admin — instrução **TEST** | OK |
+| EA — recebe instrução (`InpDebugMode=true`, sem ordem real) | OK |
+| **POST** `/api/v1/ea/executions` | OK |
+| Painel admin — status **EXECUTED** | OK |
+
+### Domínios explicitamente fora do escopo de staging
+
+| Host | Motivo |
+|------|--------|
+| `www.mercadodariqueza.com.br` | Institucional / outro produto — **não** usar para AutoTrade staging |
+| `autotrade.mercadodariqueza.com.br` | Reservado para **produção** AutoTrade futura |
+
+---
+
 ## Estado final esperado (após homologação aprovada)
 
 | Componente | Estado |
@@ -76,19 +110,19 @@ Documentos relacionados: [`docs/STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLO
 
 | Item | Ação recomendada |
 |------|------------------|
-| **URL do Deploy Hook** | Foi exposta durante a homologação — **revogar/regenerar** o hook no Vercel e não reutilizar a URL em canais públicos. |
-| **DATABASE_URL do Neon** | Foi exposta durante a homologação — **rotacionar a senha** do usuário/banco no Neon e atualizar a variável `DATABASE_URL` no projeto Vercel staging. |
+| **URL do Deploy Hook** | Exposta durante homologação inicial — **revogada**; não reutilizar URL antiga. |
+| **DATABASE_URL do Neon** | Exposta durante homologação inicial — senha **rotacionada** e variável atualizada no Vercel staging. |
 
 ### Domínios e staging
 
-- **Não** usar `www.mercadodariqueza.com.br` para o ambiente AutoTrade staging (produção / outro produto).
+- **Não** usar `www.mercadodariqueza.com.br` para o ambiente AutoTrade staging (institucional / outro produto).
+- **Não** usar `autotrade.mercadodariqueza.com.br` nesta fase — reservado para produção futura.
+- Padrão operacional: **`https://autotrade-staging.mercadodariqueza.com.br`** (EA, WebRequest, `AUTH_URL`, bookmarks).
 - A ferramenta **DARF** permanece em projeto e domínio **separados** — fora do escopo deste registro.
 
-### Próximo passo de infraestrutura (recomendado)
+### Infraestrutura de domínio staging
 
-- Subdomínio dedicado para staging AutoTrade, por exemplo:  
-  **`autotrade-staging.mercadodariqueza.com.br`**  
-  apontando para o deploy Vercel staging, com TLS e `AUTH_URL` alinhada.
+- **Concluído:** `autotrade-staging.mercadodariqueza.com.br` no projeto Vercel `mercado-riqueza-autotrade-staging`, DNS, TLS e homologação EA/web revalidados no subdomínio.
 
 ---
 
@@ -104,9 +138,10 @@ Documentos relacionados: [`docs/STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLO
 
 | Papel | Situação |
 |-------|----------|
-| Homologação staging/VPS online | **Aprovada** |
+| Homologação staging/VPS online (`.vercel.app`) | **Aprovada** |
+| Homologação staging com domínio próprio | **Aprovada** — `autotrade-staging.mercadodariqueza.com.br` |
 | Homologação local (baseline) | Ver [`docs/HOMOLOGATION-RESULTS.md`](HOMOLOGATION-RESULTS.md) |
-| Próximo gate sugerido | Domínio staging dedicado + rotação de secrets expostos + gate de produção |
+| Próximo gate sugerido | Gate de produção em `autotrade.mercadodariqueza.com.br` (futuro), billing live e `allow_demo=false` em produção |
 
 ---
 

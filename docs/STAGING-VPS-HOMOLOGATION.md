@@ -4,6 +4,21 @@ Checklist e orientações para repetir a homologação ponta a ponta **aprovada 
 
 **Branch de referência:** `staging-vps-homologacao`
 
+**URL oficial de staging (homologação aprovada):** [https://autotrade-staging.mercadodariqueza.com.br](https://autotrade-staging.mercadodariqueza.com.br)
+
+**Fallback técnico (Vercel):** [https://mercado-riqueza-autotrade-staging.vercel.app](https://mercado-riqueza-autotrade-staging.vercel.app) — usar apenas se o subdomínio estiver indisponível; o padrão operacional é o subdomínio.
+
+---
+
+## Domínios — staging × produção × institucional
+
+| Host | Uso |
+|------|-----|
+| `https://autotrade-staging.mercadodariqueza.com.br` | **Staging AutoTrade** (oficial; `AUTH_URL`, EA, WebRequest) |
+| `https://mercado-riqueza-autotrade-staging.vercel.app` | Fallback técnico do deploy Vercel staging |
+| `www.mercadodariqueza.com.br` | **Não** usar para staging AutoTrade (site institucional / outro produto) |
+| `autotrade.mercadodariqueza.com.br` | **Reservado** para produção AutoTrade futura — **não** configurar nesta fase |
+
 ---
 
 ## Isolamento: AutoTrade × DARF × produção
@@ -11,7 +26,7 @@ Checklist e orientações para repetir a homologação ponta a ponta **aprovada 
 | Ambiente | Escopo | Regra |
 |----------|--------|--------|
 | **DARF** | Outro endereço / outro projeto / outro deploy | O AutoTrade **não** altera rotas, middleware, landing, auth nem banco da DARF. |
-| **Staging AutoTrade** | Deploy, banco e secrets **próprios** | URL exemplo: `https://autotrade-staging.seudominio.com` — separado de produção e da DARF. |
+| **Staging AutoTrade** | Deploy, banco e secrets **próprios** | `https://autotrade-staging.mercadodariqueza.com.br` — separado de produção e da DARF. |
 | **Produção AutoTrade** | Clientes reais | **Não** usar este checklist em produção sem gate de release formal. |
 
 ---
@@ -42,7 +57,7 @@ Configurar no painel do provedor (Vercel, VPS, Docker, etc.) ou em `.env` **some
 |----------|-------------|-----|
 | `DATABASE_URL` | Sim | PostgreSQL **staging** (`postgresql://...`) |
 | `AUTH_SECRET` | Sim | Secret forte (ex.: `openssl rand -base64 32`); Auth.js / NextAuth |
-| `AUTH_URL` | Sim | URL pública do staging, ex.: `https://autotrade-staging.seudominio.com` |
+| `AUTH_URL` | Sim | URL pública do staging: `https://autotrade-staging.mercadodariqueza.com.br` (sem barra final; Production e Preview no Vercel staging) |
 | `BILLING_WEBHOOK_SECRET` | Sim | Secret para validar `POST /api/webhooks/billing` (obrigatório se `NODE_ENV=production` no staging) |
 | `ADMIN_EMAIL` | Sim | Admin inicial (seed) |
 | `ADMIN_PASSWORD` | Sim | Senha do admin (seed; mínimo seguro) |
@@ -105,9 +120,9 @@ Os scripts em `scripts/homologation/` **abortam** se `NODE_ENV=production` — i
 
 O EA **não** pode usar `localhost`. Toda comunicação HTTPS deve ir para o host de staging.
 
-| Input EA | Valor staging (exemplo) |
+| Input EA | Valor staging (oficial) |
 |----------|-------------------------|
-| `InpApiBaseUrl` | `https://autotrade-staging.seudominio.com` |
+| `InpApiBaseUrl` | `https://autotrade-staging.mercadodariqueza.com.br` |
 | `InpActivationCode` | Código gerado no dashboard (`/dashboard/assinatura`) |
 | `InpDeviceId` | Opcional; vazio = auto (`mt5-<login>-<server>`) |
 | `InpDebugMode` | `true` na homologação (sem ordens reais; reporta `FILLED` com ticket `DEBUG`) |
@@ -118,8 +133,8 @@ O EA **não** pode usar `localhost`. Toda comunicação HTTPS deve ir para o hos
 Em **Ferramentas → Opções → Expert Advisors**:
 
 - [ ] Marcar *Permitir WebRequest para as URLs listadas abaixo*
-- [ ] Adicionar exatamente a origem do staging, ex.:
-  - `https://autotrade-staging.seudominio.com`
+- [ ] Adicionar exatamente a origem do staging:
+  - `https://autotrade-staging.mercadodariqueza.com.br`
 
 Sem isso, heartbeat e pull retornam erro de WebRequest no terminal.
 
@@ -152,7 +167,7 @@ Marque na ordem sugerida. Objetivo: equivaler aos 18 itens de [`docs/HOMOLOGATIO
 
 ### Fase B — Cliente web
 
-- [ ] **B1.** Login em `https://autotrade-staging.seudominio.com/login` (cliente homolog).
+- [ ] **B1.** Login em `https://autotrade-staging.mercadodariqueza.com.br/login` (cliente homolog).
 - [ ] **B2.** `/dashboard/assinatura` — vincular MT5 demo (login + server iguais aos usados no terminal VPS). Se digitou conta errada, use **Alterar conta MT5** e reative o EA com novo código.
 - [ ] **B3.** Gerar código de ativação; guardar para o EA.
 
@@ -194,7 +209,7 @@ Marque na ordem sugerida. Objetivo: equivaler aos 18 itens de [`docs/HOMOLOGATIO
 |---------|-----------|
 | EA offline | WebRequest URL; token; `InpApiBaseUrl`; firewall 443 |
 | **HTTP 401 `INVALID_TOKEN`** | Token antigo/revogado (ex.: após **Alterar conta MT5** no dashboard). O EA limpa credenciais locais e tenta reativar **uma vez** com `InpActivationCode`. Gere **novo código** em `/dashboard/assinatura`, cole em `InpActivationCode`, **recompile/reanexe** o EA se necessário. O campo `type` com URL `mercadodariqueza.com.br/errors/invalid_token` é só identificador do erro — não é a URL da API. |
-| `InpApiBaseUrl` com barra final | Use sem `/` no fim, ex.: `https://mercado-riqueza-autotrade-staging.vercel.app` (o EA normaliza automaticamente). |
+| `InpApiBaseUrl` com barra final | Use sem `/` no fim, ex.: `https://autotrade-staging.mercadodariqueza.com.br` (o EA normaliza automaticamente). Fallback: `.vercel.app` apenas se o subdomínio estiver fora do ar. |
 | HTTP 403 em `/instructions` | Login/server no GET devem coincidir com MT5 vinculado na licença |
 | Instrução presa em **SENT** | EA antigo sem parser corrigido — recompilar EA; ou POST executions idempotente |
 | Heartbeat `pendentes` ≠ pull | Deploy com correção de fila entregável (`lib/ea/instructions.ts`) |
@@ -228,7 +243,9 @@ Marque na ordem sugerida. Objetivo: equivaler aos 18 itens de [`docs/HOMOLOGATIO
 
 1. Homologação com conta demo real fora do operador local (cliente/VPS distinto).
 2. Testes de assinatura vencida, troca de plano e `max_devices`.
-3. Gate de produção com secrets e `allow_demo=false` garantidos no seed/deploy.
+3. Gate de produção em `autotrade.mercadodariqueza.com.br` (futuro), com secrets e `allow_demo=false` garantidos no seed/deploy — **sem** reutilizar `www` ou staging para clientes reais.
+
+**Concluído:** subdomínio `autotrade-staging.mercadodariqueza.com.br` com DNS, TLS, `AUTH_URL` e fluxo EA TEST — ver [`docs/STAGING-VPS-HOMOLOGATION-RESULTS.md`](STAGING-VPS-HOMOLOGATION-RESULTS.md).
 
 ---
 
