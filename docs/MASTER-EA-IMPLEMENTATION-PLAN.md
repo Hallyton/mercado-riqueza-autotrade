@@ -275,9 +275,9 @@ VALIDATED → DISPATCHING
 
 ---
 
-## 10. Painel futuro (não implementar agora)
+## 10. Painel admin (Fase 2.7)
 
-**Rota admin planejada:** `/admin/master-signals`
+**Rota admin:** `/admin/master-signals` (implementado — homologação staging pendente)
 
 | Bloco | Conteúdo |
 |-------|----------|
@@ -344,6 +344,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.4** | Concluída | `lib/master-signals/` — validação Zod + `rawPayloadRedacted` (sem persistência) |
 | **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch automático** |
 | **2.6** | Concluída + homologação online staging | `eligibility.ts` + `dispatch.ts` — dispatch manual/script; `Instruction.source=MASTER_SIGNAL`; **sem** dispatch automático no POST |
+| **2.7** | Implementada localmente | Admin trigger `/admin/master-signals` + API dispatch com sessão; **homologação staging pendente** |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -419,7 +420,24 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.6 homologada em staging via dispatch manual. O `MasterSignal` foi transformado em `Instruction` individual para licença elegível, com `source: MASTER_SIGNAL`, rastreável no painel e recebida pelo EA cliente. `DebugMode` impediu ordem real. Retry idempotente não duplicou `Instruction`.
 
-**Próximo passo (produto):** decidir se o dispatch será automático no POST, admin-triggered ou worker/job (Fase 2.7+).
+**Próximo passo (produto):** homologação online da Fase 2.7 (admin trigger) após deploy em staging.
+
+### Fase 2.7 — Admin trigger (implementação local — maio/2026)
+
+| Item | Status |
+|------|--------|
+| `lib/master-signals/admin.ts` | OK — listagem, detalhes, pré-visualização de elegibilidade (sem persistir) |
+| `lib/master-signals/admin-dispatch.ts` | OK — `dispatchMasterSignalFromAdmin` + `admin_actions` / audit |
+| Painel `/admin/master-signals` | OK — lista + detalhe + botão **Disparar para clientes** (só `VALIDATED`) |
+| API `POST /api/admin/master-signals/[id]/dispatch` | OK — sessão admin (SUPERADMIN/OPS); **não** usa `MASTER_EA_API_SECRET` |
+| Confirmação UI | OK — checkbox + `confirm()` com aviso DebugMode em homologação |
+| `POST /api/master/signals` | **Inalterado** — continua sem dispatch automático (`dispatch: NOT_STARTED`) |
+| Contrato EA `/api/v1/ea/instructions` | **Inalterado** |
+| EA cliente MQL5 | **Inalterado** |
+| Testes `tests/master-signals/admin.test.ts` | OK — service, permissões, preview, idempotência (mock) |
+| Homologação online staging | **Pendente** — após deploy em `https://autotrade-staging.mercadodariqueza.com.br` |
+
+**Fluxo admin:** lista sinais → detalhe (payload redigido, preview elegível/skipped, dispatches/instructions) → disparo manual idempotente via `dispatchValidatedMasterSignal`.
 
 ---
 

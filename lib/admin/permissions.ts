@@ -15,3 +15,8 @@ export const INSTRUCTION_DISPATCH_ROLES = new Set(["SUPERADMIN", "OPS"]);
 export function canDispatchAdminInstructions(adminRole: string): boolean {
   return INSTRUCTION_DISPATCH_ROLES.has(adminRole);
 }
+
+/** Disparo manual de sinais mestre validados (Fase 2.7 — mesmos papéis que fila de instruções). */
+export function canDispatchMasterSignals(adminRole: string): boolean {
+  return canDispatchAdminInstructions(adminRole);
+}

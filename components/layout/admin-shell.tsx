@@ -5,6 +5,7 @@ import { SectionNav } from "@/components/layout/section-nav";
 const NAV = [
   { href: "/admin", label: "Centro de operações" },
   { href: "/admin/clientes", label: "Clientes e licenças" },
+  { href: "/admin/master-signals", label: "Sinais mestre" },
   { href: "/admin/instrucoes", label: "Instruções (teste)" },
 ];
 
