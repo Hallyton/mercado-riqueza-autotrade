@@ -70,10 +70,43 @@ enum InstructionPurpose {
   ADJUSTMENT
 }
 
-/** Origem da instrução — fila admin de teste/homologação (não exposta ao cliente). */
+/**
+ * Origem da instrução — fila admin de teste/homologação (não exposta ao cliente).
+ */
 enum InstructionSource {
   TEST
   HOMOLOGATION
+}
+
+/**
+ * Sinal mestre (EA Mãe) — ciclo de vida na plataforma.
+ */
+enum MasterSignalStatus {
+  RECEIVED
+  VALIDATED
+  REJECTED
+  DISPATCHING
+  DISPATCHED
+  PARTIALLY_DISPATCHED
+  FAILED
+}
+
+/**
+ * Dispatch de um sinal mestre para uma licença.
+ */
+enum MasterSignalDispatchStatus {
+  SKIPPED
+  INSTRUCTION_CREATED
+  FAILED
+}
+
+/**
+ * Origem do sinal mestre.
+ */
+enum MasterSignalSource {
+  MASTER_EA
+  ADMIN_TEST
+  SIMULATOR
 }
 
 enum OrderLogStatus {
@@ -136,14 +169,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  subscriptions Subscription[]
-  licenses      License[]
-  mt5Accounts   Mt5Account[]
-  auditLogs     AuditLog[]     @relation("AuditLogActor")
-  adminActions  AdminAction[]
-  riskEvents    RiskEvent[]
+  accounts        Account[]
+  sessions        Session[]
+  subscriptions   Subscription[]
+  licenses        License[]
+  mt5Accounts     Mt5Account[]
+  auditLogs       AuditLog[]       @relation("AuditLogActor")
+  adminActions    AdminAction[]
+  riskEvents      RiskEvent[]
   equitySnapshots EquitySnapshot[]
 
   @@index([role])
@@ -195,17 +228,17 @@ model VerificationToken {
 // ─── Planos e billing ────────────────────────────────────────────────────────
 
 model Plan {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  description String?  @db.Text
-  maxMt5Accounts Int   @default(1) @map("max_mt5_accounts")
-  maxDevices     Int   @default(1) @map("max_devices")
-  allowDemo      Boolean @default(false) @map("allow_demo")
-  sortOrder      Int    @default(0) @map("sort_order")
-  isActive       Boolean @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String?  @db.Text
+  maxMt5Accounts Int      @default(1) @map("max_mt5_accounts")
+  maxDevices     Int      @default(1) @map("max_devices")
+  allowDemo      Boolean  @default(false) @map("allow_demo")
+  sortOrder      Int      @default(0) @map("sort_order")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   prices        PlanPrice[]
   features      PlanFeature[]
@@ -245,19 +278,19 @@ model PlanFeature {
 }
 
 model Subscription {
-  id                 String             @id @default(cuid())
-  userId             String             @map("user_id")
-  planId             String             @map("plan_id")
-  status             SubscriptionStatus @default(INCOMPLETE)
-  gateway            String?
-  gatewayCustomerId  String?            @map("gateway_customer_id")
-  gatewaySubscriptionId String?         @map("gateway_subscription_id")
-  currentPeriodStart DateTime?          @map("current_period_start")
-  currentPeriodEnd   DateTime?          @map("current_period_end")
-  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
-  cancelledAt        DateTime?          @map("cancelled_at")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
+  id                    String             @id @default(cuid())
+  userId                String             @map("user_id")
+  planId                String             @map("plan_id")
+  status                SubscriptionStatus @default(INCOMPLETE)
+  gateway               String?
+  gatewayCustomerId     String?            @map("gateway_customer_id")
+  gatewaySubscriptionId String?            @map("gateway_subscription_id")
+  currentPeriodStart    DateTime?          @map("current_period_start")
+  currentPeriodEnd      DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd     Boolean            @default(false) @map("cancel_at_period_end")
+  cancelledAt           DateTime?          @map("cancelled_at")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan     Plan      @relation(fields: [planId], references: [id])
@@ -270,15 +303,15 @@ model Subscription {
 }
 
 model Invoice {
-  id              String        @id @default(cuid())
-  subscriptionId  String        @map("subscription_id")
-  status          InvoiceStatus @default(DRAFT)
-  amountCents     Int           @map("amount_cents")
-  currency        String        @default("BRL")
-  gatewayInvoiceId String?      @map("gateway_invoice_id")
-  dueAt           DateTime?     @map("due_at")
-  paidAt          DateTime?     @map("paid_at")
-  createdAt       DateTime      @default(now()) @map("created_at")
+  id               String        @id @default(cuid())
+  subscriptionId   String        @map("subscription_id")
+  status           InvoiceStatus @default(DRAFT)
+  amountCents      Int           @map("amount_cents")
+  currency         String        @default("BRL")
+  gatewayInvoiceId String?       @map("gateway_invoice_id")
+  dueAt            DateTime?     @map("due_at")
+  paidAt           DateTime?     @map("paid_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   payments     Payment[]
@@ -288,14 +321,14 @@ model Invoice {
 }
 
 model Payment {
-  id              String        @id @default(cuid())
-  invoiceId       String        @map("invoice_id")
-  status          PaymentStatus @default(PENDING)
-  amountCents     Int           @map("amount_cents")
-  currency        String        @default("BRL")
-  gatewayPaymentId String?     @map("gateway_payment_id")
-  paidAt          DateTime?     @map("paid_at")
-  createdAt       DateTime      @default(now()) @map("created_at")
+  id               String        @id @default(cuid())
+  invoiceId        String        @map("invoice_id")
+  status           PaymentStatus @default(PENDING)
+  amountCents      Int           @map("amount_cents")
+  currency         String        @default("BRL")
+  gatewayPaymentId String?       @map("gateway_payment_id")
+  paidAt           DateTime?     @map("paid_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -304,13 +337,13 @@ model Payment {
 }
 
 model WebhookEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   gateway     String
-  eventId     String   @map("event_id")
-  eventType   String   @map("event_type")
+  eventId     String    @map("event_id")
+  eventType   String    @map("event_type")
   payload     Json
   processedAt DateTime? @map("processed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   @@unique([gateway, eventId])
   @@index([gateway, eventType])
@@ -368,38 +401,39 @@ model Mt5Account {
 }
 
 model License {
-  id                   String        @id @default(cuid())
-  userId               String        @map("user_id")
-  subscriptionId       String?       @map("subscription_id")
-  mt5AccountId         String?       @map("mt5_account_id")
-  exposureProfileId    String?       @map("exposure_profile_id")
-  status               LicenseStatus @default(PENDING_ACTIVATION)
-  haltNewEntries       Boolean       @default(false) @map("halt_new_entries")
-  adminHaltNewEntries  Boolean       @default(false) @map("admin_halt_new_entries")
-  haltAllTrading       Boolean       @default(false) @map("halt_all_trading")
-  activatedAt          DateTime?     @map("activated_at")
-  suspendedAt          DateTime?     @map("suspended_at")
-  revokedAt            DateTime?     @map("revoked_at")
-  createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
+  id                  String        @id @default(cuid())
+  userId              String        @map("user_id")
+  subscriptionId      String?       @map("subscription_id")
+  mt5AccountId        String?       @map("mt5_account_id")
+  exposureProfileId   String?       @map("exposure_profile_id")
+  status              LicenseStatus @default(PENDING_ACTIVATION)
+  haltNewEntries      Boolean       @default(false) @map("halt_new_entries")
+  adminHaltNewEntries Boolean       @default(false) @map("admin_halt_new_entries")
+  haltAllTrading      Boolean       @default(false) @map("halt_all_trading")
+  activatedAt         DateTime?     @map("activated_at")
+  suspendedAt         DateTime?     @map("suspended_at")
+  revokedAt           DateTime?     @map("revoked_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
 
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription      Subscription?     @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  mt5Account        Mt5Account?       @relation(fields: [mt5AccountId], references: [id], onDelete: SetNull)
-  exposureProfile   ExposureProfile?  @relation(fields: [exposureProfileId], references: [id], onDelete: SetNull)
-  devices           Device[]
-  activationCodes   ActivationCode[]
-  profileHistory    LicenseExposureProfile[]
-  instructions      Instruction[]
-  executions        Execution[]
-  positionSnapshots PositionSnapshot[]
-  dailyPnls         DailyPnl[]
-  riskEvents        RiskEvent[]
-  killSwitchLogs    KillSwitchLog[]
-  eaHeartbeats      EaHeartbeat[]
-  eaErrorReports    EaErrorReport[]
-  equitySnapshots   EquitySnapshot[]
-  portfolioMetrics  PortfolioMetric[]
+  user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription           Subscription?            @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  mt5Account             Mt5Account?              @relation(fields: [mt5AccountId], references: [id], onDelete: SetNull)
+  exposureProfile        ExposureProfile?         @relation(fields: [exposureProfileId], references: [id], onDelete: SetNull)
+  devices                Device[]
+  activationCodes        ActivationCode[]
+  profileHistory         LicenseExposureProfile[]
+  instructions           Instruction[]
+  executions             Execution[]
+  positionSnapshots      PositionSnapshot[]
+  dailyPnls              DailyPnl[]
+  riskEvents             RiskEvent[]
+  killSwitchLogs         KillSwitchLog[]
+  eaHeartbeats           EaHeartbeat[]
+  eaErrorReports         EaErrorReport[]
+  equitySnapshots        EquitySnapshot[]
+  portfolioMetrics       PortfolioMetric[]
+  masterSignalDispatches MasterSignalDispatch[]
 
   @@index([userId, status])
   @@index([mt5AccountId])
@@ -422,16 +456,16 @@ model LicenseExposureProfile {
 }
 
 model Device {
-  id           String    @id @default(cuid())
-  licenseId    String    @map("license_id")
-  deviceId     String    @map("device_id")
-  fingerprint  String?
-  eaVersion    String?   @map("ea_version")
-  tokenHash    String    @map("token_hash")
-  lastSeenAt   DateTime? @map("last_seen_at")
-  rotateAfter  DateTime? @map("rotate_after")
-  revokedAt    DateTime? @map("revoked_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id          String    @id @default(cuid())
+  licenseId   String    @map("license_id")
+  deviceId    String    @map("device_id")
+  fingerprint String?
+  eaVersion   String?   @map("ea_version")
+  tokenHash   String    @map("token_hash")
+  lastSeenAt  DateTime? @map("last_seen_at")
+  rotateAfter DateTime? @map("rotate_after")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
 
@@ -457,38 +491,39 @@ model ActivationCode {
 // ─── Trading (resultado auditável — sem vault de estratégia) ─────────────────
 
 model Instruction {
-  id              String               @id @default(cuid())
-  licenseId       String               @map("license_id")
-  purpose         InstructionPurpose   @default(ENTRY)
-  symbol          String
-  side            InstructionSide
-  orderType       InstructionOrderType @map("order_type")
-  quantity        Decimal              @db.Decimal(18, 6)
-  stopLoss        Decimal?             @map("stop_loss") @db.Decimal(18, 6)
-  takeProfit      Decimal?             @map("take_profit") @db.Decimal(18, 6)
-  idempotencyKey  String               @unique @map("idempotency_key")
-  requestId       String?              @map("request_id")
-  expiresAt       DateTime             @map("expires_at")
-  source          InstructionSource?   @map("source")
-  currentStatus   OrderLogStatus       @default(RECEIVED) @map("current_status")
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
+  id             String               @id @default(cuid())
+  licenseId      String               @map("license_id")
+  purpose        InstructionPurpose   @default(ENTRY)
+  symbol         String
+  side           InstructionSide
+  orderType      InstructionOrderType @map("order_type")
+  quantity       Decimal              @db.Decimal(18, 6)
+  stopLoss       Decimal?             @map("stop_loss") @db.Decimal(18, 6)
+  takeProfit     Decimal?             @map("take_profit") @db.Decimal(18, 6)
+  idempotencyKey String               @unique @map("idempotency_key")
+  requestId      String?              @map("request_id")
+  expiresAt      DateTime             @map("expires_at")
+  source         InstructionSource?   @map("source")
+  currentStatus  OrderLogStatus       @default(RECEIVED) @map("current_status")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
 
-  license     License                @relation(fields: [licenseId], references: [id], onDelete: Cascade)
-  statusLogs  InstructionStatusLog[]
-  executions  Execution[]
+  license              License                @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  statusLogs           InstructionStatusLog[]
+  executions           Execution[]
+  masterSignalDispatch MasterSignalDispatch?
 
   @@index([licenseId, currentStatus, createdAt])
   @@map("instructions")
 }
 
 model InstructionStatusLog {
-  id             String         @id @default(cuid())
-  instructionId  String         @map("instruction_id")
-  status         OrderLogStatus
-  message        String?        @db.Text
-  metadata       Json?
-  createdAt      DateTime       @default(now()) @map("created_at")
+  id            String         @id @default(cuid())
+  instructionId String         @map("instruction_id")
+  status        OrderLogStatus
+  message       String?        @db.Text
+  metadata      Json?
+  createdAt     DateTime       @default(now()) @map("created_at")
 
   instruction Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
 
@@ -496,19 +531,77 @@ model InstructionStatusLog {
   @@map("instruction_status_logs")
 }
 
+// ─── Master Signal (EA Mãe — distribuição centralizada) ───────────────────────
+
+/// Sinal mestre recebido do EA Mãe ou simulador; não exposto ao cliente.
+model MasterSignal {
+  id                 String               @id @default(cuid())
+  masterSignalId     String               @unique @map("master_signal_id")
+  source             MasterSignalSource
+  symbol             String
+  side               InstructionSide
+  orderType          InstructionOrderType @map("order_type")
+  purpose            InstructionPurpose
+  profileSlug        String?              @map("profile_slug")
+  status             MasterSignalStatus   @default(RECEIVED)
+  idempotencyKey     String               @unique @map("idempotency_key")
+  expiresAt          DateTime?            @map("expires_at")
+  receivedAt         DateTime             @default(now()) @map("received_at")
+  validatedAt        DateTime?            @map("validated_at")
+  dispatchedAt       DateTime?            @map("dispatched_at")
+  rejectedAt         DateTime?            @map("rejected_at")
+  failedAt           DateTime?            @map("failed_at")
+  rejectedReason     String?              @map("rejected_reason")
+  rawPayloadRedacted Json?                @map("raw_payload_redacted")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  dispatches MasterSignalDispatch[]
+
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@index([dispatchedAt])
+  @@index([profileSlug])
+  @@map("master_signals")
+}
+
+/// Trilha sinal mestre × licença → instrução individual (quando criada).
+model MasterSignalDispatch {
+  id             String                     @id @default(cuid())
+  masterSignalId String                     @map("master_signal_id")
+  licenseId      String                     @map("license_id")
+  instructionId  String?                    @unique @map("instruction_id")
+  status         MasterSignalDispatchStatus
+  reason         String?
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+
+  masterSignal MasterSignal @relation(fields: [masterSignalId], references: [id], onDelete: Cascade)
+  license      License      @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  instruction  Instruction? @relation(fields: [instructionId], references: [id], onDelete: SetNull)
+
+  @@unique([masterSignalId, licenseId])
+  @@index([licenseId])
+  @@index([instructionId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("master_signal_dispatches")
+}
+
 model Execution {
-  id             String          @id @default(cuid())
-  instructionId  String          @map("instruction_id")
-  licenseId      String          @map("license_id")
-  status         ExecutionStatus
-  brokerTicket   String?         @map("broker_ticket")
-  fillPrice      Decimal?        @map("fill_price") @db.Decimal(18, 6)
-  fillQuantity   Decimal?        @map("fill_quantity") @db.Decimal(18, 6)
-  slippage       Decimal?        @db.Decimal(18, 6)
-  errorCode      String?         @map("error_code")
-  errorMessage   String?         @map("error_message") @db.Text
-  executedAt     DateTime?       @map("executed_at")
-  createdAt      DateTime        @default(now()) @map("created_at")
+  id            String          @id @default(cuid())
+  instructionId String          @map("instruction_id")
+  licenseId     String          @map("license_id")
+  status        ExecutionStatus
+  brokerTicket  String?         @map("broker_ticket")
+  fillPrice     Decimal?        @map("fill_price") @db.Decimal(18, 6)
+  fillQuantity  Decimal?        @map("fill_quantity") @db.Decimal(18, 6)
+  slippage      Decimal?        @db.Decimal(18, 6)
+  errorCode     String?         @map("error_code")
+  errorMessage  String?         @map("error_message") @db.Text
+  executedAt    DateTime?       @map("executed_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
 
   instruction Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
   license     License     @relation(fields: [licenseId], references: [id], onDelete: Cascade)
@@ -519,14 +612,14 @@ model Execution {
 }
 
 model PositionSnapshot {
-  id         String   @id @default(cuid())
-  licenseId  String   @map("license_id")
-  symbol     String
-  quantity   Decimal  @db.Decimal(18, 6)
-  avgPrice   Decimal  @map("avg_price") @db.Decimal(18, 6)
+  id            String   @id @default(cuid())
+  licenseId     String   @map("license_id")
+  symbol        String
+  quantity      Decimal  @db.Decimal(18, 6)
+  avgPrice      Decimal  @map("avg_price") @db.Decimal(18, 6)
   unrealizedPnl Decimal? @map("unrealized_pnl") @db.Decimal(18, 2)
-  snapshotAt DateTime @map("snapshot_at")
-  createdAt  DateTime @default(now()) @map("created_at")
+  snapshotAt    DateTime @map("snapshot_at")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
 
@@ -535,13 +628,13 @@ model PositionSnapshot {
 }
 
 model DailyPnl {
-  id           String   @id @default(cuid())
-  licenseId    String   @map("license_id")
-  tradeDate    DateTime @map("trade_date") @db.Date
-  realizedPnl  Decimal  @default(0) @map("realized_pnl") @db.Decimal(18, 2)
-  unrealizedPnl Decimal @default(0) @map("unrealized_pnl") @db.Decimal(18, 2)
-  equityClose  Decimal? @map("equity_close") @db.Decimal(18, 2)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  licenseId     String   @map("license_id")
+  tradeDate     DateTime @map("trade_date") @db.Date
+  realizedPnl   Decimal  @default(0) @map("realized_pnl") @db.Decimal(18, 2)
+  unrealizedPnl Decimal  @default(0) @map("unrealized_pnl") @db.Decimal(18, 2)
+  equityClose   Decimal? @map("equity_close") @db.Decimal(18, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
 
@@ -567,14 +660,14 @@ model RiskEvent {
 }
 
 model KillSwitchLog {
-  id         String          @id @default(cuid())
-  scope      KillSwitchScope
-  licenseId  String?         @map("license_id")
-  userId     String?         @map("user_id")
-  enabled    Boolean
-  reason     String?         @db.Text
-  actorId    String?         @map("actor_id")
-  createdAt  DateTime        @default(now()) @map("created_at")
+  id        String          @id @default(cuid())
+  scope     KillSwitchScope
+  licenseId String?         @map("license_id")
+  userId    String?         @map("user_id")
+  enabled   Boolean
+  reason    String?         @db.Text
+  actorId   String?         @map("actor_id")
+  createdAt DateTime        @default(now()) @map("created_at")
 
   license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
 
@@ -585,15 +678,15 @@ model KillSwitchLog {
 // ─── Reporting (cliente — sem estratégia) ────────────────────────────────────
 
 model EquitySnapshot {
-  id         String    @id @default(cuid())
-  licenseId  String    @map("license_id")
-  userId     String    @map("user_id")
-  equity     Decimal   @db.Decimal(18, 2)
-  balance    Decimal   @db.Decimal(18, 2)
-  margin     Decimal?  @db.Decimal(18, 2)
+  id         String     @id @default(cuid())
+  licenseId  String     @map("license_id")
+  userId     String     @map("user_id")
+  equity     Decimal    @db.Decimal(18, 2)
+  balance    Decimal    @db.Decimal(18, 2)
+  margin     Decimal?   @db.Decimal(18, 2)
   tradeMode  TradeMode? @map("trade_mode")
-  snapshotAt DateTime  @map("snapshot_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  snapshotAt DateTime   @map("snapshot_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -604,25 +697,25 @@ model EquitySnapshot {
 }
 
 model BenchmarkIbovDaily {
-  id           String   @id @default(cuid())
-  tradeDate    DateTime @unique @map("trade_date") @db.Date
-  closeValue   Decimal  @map("close_value") @db.Decimal(18, 4)
-  dailyReturn  Decimal? @map("daily_return") @db.Decimal(10, 6)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id          String   @id @default(cuid())
+  tradeDate   DateTime @unique @map("trade_date") @db.Date
+  closeValue  Decimal  @map("close_value") @db.Decimal(18, 4)
+  dailyReturn Decimal? @map("daily_return") @db.Decimal(10, 6)
+  createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("benchmark_ibov_daily")
 }
 
 model PortfolioMetric {
-  id            String   @id @default(cuid())
-  licenseId     String   @map("license_id")
-  period        String
-  returnPct     Decimal? @map("return_pct") @db.Decimal(10, 4)
-  benchmarkPct  Decimal? @map("benchmark_pct") @db.Decimal(10, 4)
-  winRate       Decimal? @map("win_rate") @db.Decimal(10, 4)
-  tradeCount    Int?     @map("trade_count")
-  calculatedAt  DateTime @map("calculated_at")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id           String   @id @default(cuid())
+  licenseId    String   @map("license_id")
+  period       String
+  returnPct    Decimal? @map("return_pct") @db.Decimal(10, 4)
+  benchmarkPct Decimal? @map("benchmark_pct") @db.Decimal(10, 4)
+  winRate      Decimal? @map("win_rate") @db.Decimal(10, 4)
+  tradeCount   Int?     @map("trade_count")
+  calculatedAt DateTime @map("calculated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
 
@@ -634,19 +727,19 @@ model PortfolioMetric {
 // ─── EA telemetria e auditoria ───────────────────────────────────────────────
 
 model EaHeartbeat {
-  id            String    @id @default(cuid())
-  licenseId     String    @map("license_id")
-  deviceId      String    @map("device_id")
-  eaVersion     String?   @map("ea_version")
-  eaStatus      String?   @map("ea_status")
-  equity        Decimal?  @db.Decimal(18, 2)
-  balance       Decimal?  @db.Decimal(18, 2)
-  margin        Decimal?  @db.Decimal(18, 2)
+  id            String     @id @default(cuid())
+  licenseId     String     @map("license_id")
+  deviceId      String     @map("device_id")
+  eaVersion     String?    @map("ea_version")
+  eaStatus      String?    @map("ea_status")
+  equity        Decimal?   @db.Decimal(18, 2)
+  balance       Decimal?   @db.Decimal(18, 2)
+  margin        Decimal?   @db.Decimal(18, 2)
   tradeMode     TradeMode? @map("trade_mode")
-  positionsHash String?   @map("positions_hash")
-  pendingCount  Int       @default(0) @map("pending_count")
-  reportPayload Json?     @map("report_payload")
-  receivedAt    DateTime  @default(now()) @map("received_at")
+  positionsHash String?    @map("positions_hash")
+  pendingCount  Int        @default(0) @map("pending_count")
+  reportPayload Json?      @map("report_payload")
+  receivedAt    DateTime   @default(now()) @map("received_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
 
