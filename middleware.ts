@@ -13,6 +13,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/api/webhooks/billing") return true;
   if (pathname === "/api/v1/ea/activate") return true;
   if (pathname.startsWith("/api/v1/ea")) return true;
+  if (pathname === "/api/master/signals") return true;
   return false;
 }
 
