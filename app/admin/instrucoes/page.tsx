@@ -60,7 +60,8 @@ export default async function AdminInstrucoesPage() {
         <CardHeader className="p-6 pb-0">
           <CardTitle>Instruções despachadas</CardTitle>
           <CardDescription>
-            TEST e HOMOLOGATION — rastreio via status logs e execuções do EA
+            TEST, HOMOLOGATION e MASTER_SIGNAL — rastreio via status logs e execuções
+            do EA
           </CardDescription>
         </CardHeader>
 
@@ -84,7 +85,7 @@ export default async function AdminInstrucoesPage() {
                     colSpan={7}
                     className="px-6 py-8 text-muted-foreground"
                   >
-                    Nenhuma instrução de teste/homologação ainda.
+                    Nenhuma instrução despachada (teste, homologação ou sinal mestre) ainda.
                   </td>
                 </tr>
               ) : (

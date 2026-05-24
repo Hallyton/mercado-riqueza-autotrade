@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   InstructionPurpose,
   InstructionSide,
+  InstructionSource,
   LicenseStatus,
   MasterSignalDispatchStatus,
   MasterSignalSource,
@@ -376,9 +377,24 @@ describe("dispatchValidatedMasterSignal", () => {
           symbol: "WDOM26",
           currentStatus: OrderLogStatus.RECEIVED,
           quantity: MASTER_SIGNAL_DISPATCH_DEFAULT_QUANTITY,
+          source: InstructionSource.MASTER_SIGNAL,
         }),
       })
     );
+  });
+
+  it("3b) instruction criada pelo master dispatch não usa source null", async () => {
+    masterFindUnique.mockResolvedValue(validatedSignal());
+    await dispatchValidatedMasterSignal("msig-dispatch-001");
+    expect(instructionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          source: InstructionSource.MASTER_SIGNAL,
+        }),
+      })
+    );
+    const createArg = instructionCreate.mock.calls[0][0];
+    expect(createArg.data.source).not.toBeNull();
   });
 
   it("4) cria MasterSignalDispatch com INSTRUCTION_CREATED", async () => {

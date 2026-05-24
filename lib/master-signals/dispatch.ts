@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { mapInstructionToEaPayload } from "@/lib/ea/instructions";
 import { selectEligibleLicensesForMasterSignal } from "@/lib/master-signals/eligibility";
+import { MASTER_SIGNAL_INSTRUCTION_SOURCE } from "@/lib/master-signals/instruction-source";
 import prisma from "@/lib/prisma";
 
 /** Quantidade padrão até o MasterSignal carregar volume no servidor (Fase 2.6 v1). */
@@ -235,8 +236,7 @@ async function createInstructionForLicense(
           ),
           requestId: `master-dispatch-${signal.masterSignalId}`,
           expiresAt,
-          // TODO(Fase 2.7+): enum InstructionSource.MASTER_DISPATCH quando existir no schema.
-          source: null,
+          source: MASTER_SIGNAL_INSTRUCTION_SOURCE,
           currentStatus: OrderLogStatus.RECEIVED,
         },
       });

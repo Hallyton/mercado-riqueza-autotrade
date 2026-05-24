@@ -392,7 +392,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Deploy / Neon staging | **Não aplicado** nesta entrega |
 | Homologação online 2.6 | **Pendente** (após gate explícito) |
 
-**Notas v1:** `Instruction.source` permanece `null` (TODO: enum `MASTER_DISPATCH` no schema). Quantidade padrão `1` (`MASTER_SIGNAL_DISPATCH_QUANTITY` ou constante interna).
+**Notas v1:** `Instruction.source = MASTER_SIGNAL` (enum `InstructionSource`; migration `20260524180000_add_instruction_source_master_signal`). Painel `/admin/instrucoes` lista TEST, HOMOLOGATION e MASTER_SIGNAL. Quantidade padrão `1` (`MASTER_SIGNAL_DISPATCH_QUANTITY` ou constante interna).
 
 **Correção elegibilidade (pós-homolog staging):**
 

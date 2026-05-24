@@ -71,11 +71,12 @@ enum InstructionPurpose {
 }
 
 /**
- * Origem da instrução — fila admin de teste/homologação (não exposta ao cliente).
+ * Origem da instrução — fila admin / dispatch do sinal mestre (não exposta ao cliente).
  */
 enum InstructionSource {
   TEST
   HOMOLOGATION
+  MASTER_SIGNAL
 }
 
 /**

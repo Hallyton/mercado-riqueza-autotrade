@@ -166,10 +166,17 @@ export async function createAdminDispatchedInstruction(
   };
 }
 
+/** Origens listadas no painel admin /admin/instrucoes. */
+export const ADMIN_LISTED_INSTRUCTION_SOURCES: InstructionSource[] = [
+  InstructionSource.TEST,
+  InstructionSource.HOMOLOGATION,
+  InstructionSource.MASTER_SIGNAL,
+];
+
 export async function listAdminDispatchedInstructions(limit = 30) {
   return prisma.instruction.findMany({
     where: {
-      source: { in: [InstructionSource.TEST, InstructionSource.HOMOLOGATION] },
+      source: { in: ADMIN_LISTED_INSTRUCTION_SOURCES },
     },
     orderBy: { createdAt: "desc" },
     take: limit,
