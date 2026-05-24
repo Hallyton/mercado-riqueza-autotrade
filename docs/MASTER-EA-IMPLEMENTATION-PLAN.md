@@ -275,9 +275,9 @@ VALIDATED → DISPATCHING
 
 ---
 
-## 10. Painel admin (Fase 2.7)
+## 10. Painel admin (Fases 2.7–2.8)
 
-**Rota admin:** `/admin/master-signals` (implementado e homologado em staging — maio/2026)
+**Rota admin:** `/admin/master-signals` (trigger homologado em staging; acompanhamento consolidado na Fase 2.8)
 
 | Bloco | Conteúdo |
 |-------|----------|
@@ -345,6 +345,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch automático** |
 | **2.6** | Concluída + homologação online staging | `eligibility.ts` + `dispatch.ts` — dispatch manual/script; `Instruction.source=MASTER_SIGNAL`; **sem** dispatch automático no POST |
 | **2.7** | Concluída + homologação online staging | Admin trigger `/admin/master-signals` — intake + revisão + preview + disparo manual; **POST sem dispatch automático** |
+| **2.8** | Implementada localmente | Painel de acompanhamento consolidado (MasterSignal → Dispatch → Instruction → Execution); **homologação staging pendente** |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -458,7 +459,23 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.7 homologada online em staging. O fluxo admin-trigger está aprovado: intake sem dispatch automático, revisão e preview no painel, disparo manual idempotente para licenças elegíveis, rastreio com `MASTER_SIGNAL` no EA em DebugMode.
 
-**Próximo passo (produto):** EA Mãe MQL5 ou simulador HTTP (Fase 2.9); gate produção (Fase 2.11).
+**Próximo passo (produto):** homologação online da Fase 2.8 (tracking) após deploy; depois EA Mãe MQL5 (Fase 2.9).
+
+### Fase 2.8 — Painel de acompanhamento (implementação local — maio/2026)
+
+| Item | Status |
+|------|--------|
+| `getMasterSignalTrackingForAdmin` | OK — resumo + linhas por licença + executions |
+| `lib/master-signals/admin-tracking.ts` | OK — contagens e status consolidado (sem migration) |
+| Detalhe `/admin/master-signals/[id]` | OK — seção **Acompanhamento do sinal** (cards + tabela por cliente) |
+| Lista `/admin/master-signals` | OK — colunas dispatch/instruction/executed + status consolidado |
+| Status consolidado (exibição) | `NOT_DISPATCHED`, `DISPATCHED_PENDING`, `PARTIALLY_EXECUTED`, `EXECUTED`, `FAILED`, `EXPIRED` |
+| `POST /api/master/signals` | **Inalterado** — sem dispatch automático |
+| EA cliente / contrato `/api/v1/ea/instructions` | **Inalterados** |
+| Botão **Disparar para clientes** | **Inalterado** — só `VALIDATED` |
+| Homologação online staging | **Pendente** — após deploy |
+
+**Fluxo de dados:** `MasterSignal` → `MasterSignalDispatch` (por licença) → `Instruction` (`source: MASTER_SIGNAL`) → `Execution` (status do EA). Preview de elegibilidade permanece somente leitura antes do disparo.
 
 ---
 

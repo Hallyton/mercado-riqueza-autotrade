@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  ExecutionStatus,
   InstructionPurpose,
   InstructionSide,
   InstructionSource,
@@ -78,7 +79,12 @@ vi.mock("@/auth", () => ({
 }));
 
 import {
+  deriveConsolidatedTrackingStatus,
+  buildTrackingSummaryFromDispatches,
+} from "@/lib/master-signals/admin-tracking";
+import {
   getMasterSignalDetailsForAdmin,
+  getMasterSignalTrackingForAdmin,
   listMasterSignalsForAdmin,
   previewMasterSignalDispatch,
   sanitizeRawPayloadForAdmin,
@@ -122,13 +128,24 @@ describe("listMasterSignalsForAdmin", () => {
     masterFindMany.mockReset();
   });
 
-  it("lista sinais com dispatchCount e instructionCount", async () => {
+  it("lista sinais com dispatchCount, instructionCount e executedCount", async () => {
     masterFindMany.mockResolvedValue([
       {
         ...baseSignal,
+        status: MasterSignalStatus.DISPATCHED,
         dispatches: [
-          { instructionId: "inst-1" },
-          { instructionId: null },
+          {
+            status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+            instruction: {
+              currentStatus: OrderLogStatus.EXECUTED,
+              expiresAt: new Date(Date.now() + 3600_000),
+              executions: [{ status: ExecutionStatus.FILLED }],
+            },
+          },
+          {
+            status: MasterSignalDispatchStatus.SKIPPED,
+            instruction: null,
+          },
         ],
       },
     ]);
@@ -138,6 +155,234 @@ describe("listMasterSignalsForAdmin", () => {
     expect(rows[0].masterSignalId).toBe("ms-test-001");
     expect(rows[0].dispatchCount).toBe(2);
     expect(rows[0].instructionCount).toBe(1);
+    expect(rows[0].executedCount).toBe(1);
+    expect(rows[0].consolidatedStatus).toBe("EXECUTED");
+  });
+});
+
+describe("getMasterSignalTrackingForAdmin", () => {
+  beforeEach(() => {
+    masterFindUnique.mockReset();
+    dispatchFindMany.mockReset();
+    selectEligible.mockReset();
+    userFindMany.mockReset();
+  });
+
+  it("retorna resumo vazio quando não há dispatch", async () => {
+    masterFindUnique.mockResolvedValue(baseSignal);
+    dispatchFindMany.mockResolvedValue([]);
+    selectEligible.mockResolvedValue({
+      candidatesCount: 3,
+      eligible: [],
+      skipped: [{ licenseId: "lic-x", code: "PROFILE_MISMATCH", reason: "Perfil" }],
+    });
+
+    const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+    expect(tracking).not.toBeNull();
+    expect(tracking!.notDispatchedYet).toBe(true);
+    expect(tracking!.summary.dispatchCount).toBe(0);
+    expect(tracking!.summary.instructionCount).toBe(0);
+    expect(tracking!.summary.skippedCount).toBe(0);
+    expect(tracking!.skipped).toHaveLength(1);
+    expect(tracking!.consolidatedStatus).toBe("NOT_DISPATCHED");
+    expect(dispatchValidated).not.toHaveBeenCalled();
+  });
+
+  it("retorna executedCount quando há execution executada", async () => {
+    masterFindUnique.mockResolvedValue({
+      ...baseSignal,
+      status: MasterSignalStatus.DISPATCHED,
+    });
+    dispatchFindMany.mockResolvedValue([
+      {
+        id: "disp-1",
+        licenseId: "lic-1",
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        reason: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        license: {
+          id: "lic-1",
+          status: LicenseStatus.ACTIVE,
+          user: { email: "c@test.com", name: "Cliente" },
+          subscription: { plan: { name: "Start", slug: "start" } },
+          mt5Account: { login: "1", server: "S" },
+          exposureProfile: { slug: "conservador" },
+          devices: [],
+          eaHeartbeats: [],
+        },
+        instruction: {
+          id: "inst-1",
+          source: InstructionSource.MASTER_SIGNAL,
+          currentStatus: OrderLogStatus.EXECUTED,
+          symbol: "PETR4",
+          side: InstructionSide.BUY,
+          orderType: "MARKET",
+          purpose: InstructionPurpose.ENTRY,
+          quantity: 1,
+          expiresAt: new Date(Date.now() + 3600_000),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          executions: [
+            {
+              id: "ex-1",
+              status: ExecutionStatus.FILLED,
+              brokerTicket: "123",
+              errorCode: null,
+              errorMessage: null,
+              executedAt: new Date(),
+              createdAt: new Date(),
+            },
+          ],
+        },
+      },
+    ]);
+
+    const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+    expect(tracking!.summary.instructionCount).toBe(1);
+    expect(tracking!.summary.executedCount).toBe(1);
+    expect(tracking!.rows[0].instruction?.source).toBe(MASTER_SIGNAL_INSTRUCTION_SOURCE);
+    expect(tracking!.rows[0].executionStatus).toBe("EXECUTED");
+    expect(tracking!.consolidatedStatus).toBe("EXECUTED");
+  });
+
+  it("retorna pendingCount quando há instruction sem execution", async () => {
+    masterFindUnique.mockResolvedValue({
+      ...baseSignal,
+      status: MasterSignalStatus.DISPATCHED,
+    });
+    dispatchFindMany.mockResolvedValue([
+      {
+        id: "disp-1",
+        licenseId: "lic-1",
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        reason: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        license: {
+          id: "lic-1",
+          status: LicenseStatus.ACTIVE,
+          user: { email: "c@test.com", name: null },
+          subscription: null,
+          mt5Account: null,
+          exposureProfile: null,
+          devices: [],
+          eaHeartbeats: [],
+        },
+        instruction: {
+          id: "inst-1",
+          source: InstructionSource.MASTER_SIGNAL,
+          currentStatus: OrderLogStatus.SENT,
+          symbol: "PETR4",
+          side: InstructionSide.BUY,
+          orderType: "MARKET",
+          purpose: InstructionPurpose.ENTRY,
+          quantity: 1,
+          expiresAt: new Date(Date.now() + 3600_000),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          executions: [],
+        },
+      },
+    ]);
+
+    const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+    expect(tracking!.summary.pendingCount).toBe(1);
+    expect(tracking!.rows[0].hint).toBe("Aguardando EA processar");
+    expect(tracking!.consolidatedStatus).toBe("DISPATCHED_PENDING");
+  });
+
+  it("retorna skippedCount e reasons nos dispatches", async () => {
+    masterFindUnique.mockResolvedValue({
+      ...baseSignal,
+      status: MasterSignalStatus.VALIDATED,
+    });
+    dispatchFindMany.mockResolvedValue([
+      {
+        id: "disp-skip",
+        licenseId: "lic-2",
+        status: MasterSignalDispatchStatus.SKIPPED,
+        reason: "PROFILE_MISMATCH",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        license: {
+          id: "lic-2",
+          status: LicenseStatus.ACTIVE,
+          user: { email: "x@test.com", name: null },
+          subscription: null,
+          mt5Account: null,
+          exposureProfile: null,
+          devices: [],
+          eaHeartbeats: [],
+        },
+        instruction: null,
+      },
+    ]);
+
+    const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+    expect(tracking!.summary.skippedCount).toBe(1);
+    expect(tracking!.skipped[0].code).toBe("PROFILE_MISMATCH");
+  });
+
+  it("não expõe secrets no payload do tracking", async () => {
+    masterFindUnique.mockResolvedValue({
+      ...baseSignal,
+      rawPayloadRedacted: { symbol: "PETR4", api_secret: "nope" },
+    });
+    dispatchFindMany.mockResolvedValue([]);
+    selectEligible.mockResolvedValue({
+      candidatesCount: 0,
+      eligible: [],
+      skipped: [],
+    });
+
+    const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+    const json = JSON.stringify(tracking!.masterSignal.rawPayloadRedacted ?? {});
+    expect(json.toLowerCase()).not.toContain("nope");
+    expect(json).not.toContain("api_secret");
+  });
+});
+
+describe("tracking summary helpers", () => {
+  it("buildTrackingSummaryFromDispatches conta pending e executed", () => {
+    const summary = buildTrackingSummaryFromDispatches([
+      {
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        instruction: {
+          currentStatus: OrderLogStatus.RECEIVED,
+          expiresAt: new Date(Date.now() + 60_000),
+          executions: [],
+        },
+      },
+      {
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        instruction: {
+          currentStatus: OrderLogStatus.EXECUTED,
+          expiresAt: new Date(Date.now() + 60_000),
+          executions: [{ status: ExecutionStatus.FILLED }],
+        },
+      },
+    ]);
+    expect(summary.instructionCount).toBe(2);
+    expect(summary.executedCount).toBe(1);
+    expect(summary.pendingCount).toBe(1);
+  });
+
+  it("deriveConsolidatedTrackingStatus retorna NOT_DISPATCHED sem dispatch", () => {
+    expect(
+      deriveConsolidatedTrackingStatus({
+        masterStatus: MasterSignalStatus.VALIDATED,
+        summary: {
+          dispatchCount: 0,
+          instructionCount: 0,
+          executedCount: 0,
+          failedCount: 0,
+          pendingCount: 0,
+          expiredCount: 0,
+        },
+        expiresAt: new Date(Date.now() + 3600_000),
+      })
+    ).toBe("NOT_DISPATCHED");
   });
 });
 

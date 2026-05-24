@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MasterSignalStatus } from "@prisma/client";
 import { MasterSignalDispatchButton } from "@/components/admin/master-signal-dispatch-button";
+import { MasterSignalTrackingPanel } from "@/components/admin/master-signal-tracking-panel";
+import { canDispatchMasterSignals } from "@/lib/admin/permissions";
 import {
-  canDispatchMasterSignals,
-} from "@/lib/admin/permissions";
-import {
-  getMasterSignalDetailsForAdmin,
+  getMasterSignalTrackingForAdmin,
   previewMasterSignalDispatch,
 } from "@/lib/master-signals/admin";
 import { requireAppRole } from "@/lib/auth/session";
@@ -30,14 +29,14 @@ export default async function AdminMasterSignalDetailPage({
   const canDispatch = canDispatchMasterSignals(adminRole);
   const { masterSignalId } = await params;
 
-  const [details, preview] = await Promise.all([
-    getMasterSignalDetailsForAdmin(masterSignalId),
+  const [tracking, preview] = await Promise.all([
+    getMasterSignalTrackingForAdmin(masterSignalId),
     previewMasterSignalDispatch(masterSignalId),
   ]);
 
-  if (!details) notFound();
+  if (!tracking) notFound();
 
-  const { signal, dispatches, instructions } = details;
+  const signal = tracking.masterSignal;
   const canTriggerDispatch =
     canDispatch && signal.status === MasterSignalStatus.VALIDATED;
 
@@ -78,9 +77,10 @@ export default async function AdminMasterSignalDetailPage({
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Dispatches / instruções</dt>
+            <dt className="text-muted-foreground">Dispatches / instruções / executadas</dt>
             <dd>
-              {signal.dispatchCount} / {signal.instructionCount}
+              {tracking.summary.dispatchCount} / {tracking.summary.instructionCount} /{" "}
+              {tracking.summary.executedCount}
             </dd>
           </div>
           {signal.rejectedReason && (
@@ -102,7 +102,17 @@ export default async function AdminMasterSignalDetailPage({
         )}
       </Card>
 
-      {preview && (
+      <Card className="p-6">
+        <CardHeader className="p-0 pb-4">
+          <CardTitle>Acompanhamento do sinal</CardTitle>
+          <CardDescription>
+            Visão consolidada MasterSignal → Dispatch → Instruction → Execution
+          </CardDescription>
+        </CardHeader>
+        <MasterSignalTrackingPanel tracking={tracking} />
+      </Card>
+
+      {preview && tracking.notDispatchedYet && (
         <Card className="p-6">
           <CardHeader className="p-0 pb-4">
             <CardTitle>Pré-visualização de elegibilidade</CardTitle>
@@ -135,31 +145,6 @@ export default async function AdminMasterSignalDetailPage({
               </table>
             </div>
           )}
-          {preview.skipped.length > 0 && (
-            <div className="overflow-x-auto">
-              <p className="mb-2 text-xs uppercase text-muted-foreground">
-                Ignoradas ({preview.skipped.length})
-              </p>
-              <table className="w-full min-w-[600px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-xs uppercase text-muted-foreground">
-                    <th className="py-2 pr-4">Licença</th>
-                    <th className="py-2 pr-4">Código</th>
-                    <th className="py-2">Motivo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.skipped.map((row) => (
-                    <tr key={row.licenseId} className="border-b border-white/5">
-                      <td className="py-2 font-mono text-xs">{row.licenseId}</td>
-                      <td className="py-2">{row.code}</td>
-                      <td className="py-2 text-muted-foreground">{row.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </Card>
       )}
 
@@ -178,87 +163,6 @@ export default async function AdminMasterSignalDetailPage({
                 : undefined
           }
         />
-      </Card>
-
-      <Card className="overflow-hidden p-0">
-        <CardHeader className="p-6 pb-0">
-          <CardTitle>Dispatches</CardTitle>
-          <CardDescription>Trilha sinal × licença</CardDescription>
-        </CardHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-white/10 text-xs uppercase text-muted-foreground">
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Licença</th>
-                <th className="px-6 py-3">Cliente</th>
-                <th className="px-6 py-3">Instruction</th>
-                <th className="px-6 py-3">Motivo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dispatches.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-6 text-muted-foreground">
-                    Nenhum dispatch registrado.
-                  </td>
-                </tr>
-              ) : (
-                dispatches.map((d) => (
-                  <tr key={d.id} className="border-b border-white/5">
-                    <td className="px-6 py-3">{d.status}</td>
-                    <td className="px-6 py-3 font-mono text-xs">{d.licenseId}</td>
-                    <td className="px-6 py-3">{d.license.clientEmail}</td>
-                    <td className="px-6 py-3 font-mono text-xs">
-                      {d.instructionId ?? "—"}
-                    </td>
-                    <td className="px-6 py-3 text-muted-foreground">
-                      {d.reason ?? "—"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      <Card className="overflow-hidden p-0">
-        <CardHeader className="p-6 pb-0">
-          <CardTitle>Instruções e execuções</CardTitle>
-        </CardHeader>
-        <div className="space-y-4 p-6">
-          {instructions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma instrução vinculada.</p>
-          ) : (
-            instructions.map((inst) => (
-              <div
-                key={inst.id}
-                className="rounded border border-white/10 p-4 text-sm"
-              >
-                <p>
-                  <span className="font-mono text-xs">{inst.id}</span> ·{" "}
-                  {inst.currentStatus} · origem {inst.source ?? "—"}
-                </p>
-                <p className="text-muted-foreground">
-                  {inst.symbol} {inst.side} · {inst.purpose} · licença{" "}
-                  {inst.licenseId}
-                </p>
-                {inst.executions.length > 0 && (
-                  <ul className="mt-2 list-inside list-disc text-xs text-muted-foreground">
-                    {inst.executions.map((ex) => (
-                      <li key={ex.id}>
-                        {ex.status}
-                        {ex.brokerTicket ? ` · ticket ${ex.brokerTicket}` : ""}
-                        {ex.executedAt ? ` · ${fmtDate(ex.executedAt)}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))
-          )}
-        </div>
       </Card>
     </div>
   );
