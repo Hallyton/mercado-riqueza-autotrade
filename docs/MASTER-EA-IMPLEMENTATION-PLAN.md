@@ -346,6 +346,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.6** | Concluída + homologação online staging | `eligibility.ts` + `dispatch.ts` — dispatch manual/script; `Instruction.source=MASTER_SIGNAL`; **sem** dispatch automático no POST |
 | **2.7** | Concluída + homologação online staging | Admin trigger `/admin/master-signals` — intake + revisão + preview + disparo manual; **POST sem dispatch automático** |
 | **2.8** | Concluída + homologação online staging | Painel de tracking consolidado; status consolidado na lista; **POST sem dispatch automático** |
+| **2.9** | Implementada localmente | Simulador HTTP/CLI (`npm run master:signal`); **não** é EA Mãe MQL5; homologação staging pendente |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -492,7 +493,23 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.8 homologada online em staging. O painel admin permite acompanhar sinais mestre com status consolidado, contagens de dispatches, instructions e executions, e diferencia sinais executados de sinais ainda não disparados. O intake continua seguro e sem dispatch automático.
 
-**Próximo passo (produto):** EA Mãe MQL5 ou simulador HTTP (Fase 2.9); gate produção (Fase 2.11).
+### Fase 2.9 — Simulador HTTP/CLI do EA Mãe (implementação local — maio/2026)
+
+| Item | Status |
+|------|--------|
+| `scripts/master-signals/send-master-signal.ts` | OK — CLI `tsx` |
+| `lib/master-signals/simulator.ts` | OK — parse, validação Zod, dry-run, HTTP |
+| `npm run master:signal` | OK — atalho no `package.json` |
+| Env local | `MASTER_SIGNAL_API_URL` + `MASTER_EA_API_SECRET` — **nunca commitar** |
+| `POST /api/master/signals` | **Inalterado** — sem dispatch automático |
+| EA Mãe MQL5 | **Não criado** nesta fase |
+| EA cliente | **Inalterado** |
+| Documentação | [`docs/MASTER-EA-SIGNAL-SIMULATOR.md`](MASTER-EA-SIGNAL-SIMULATOR.md) |
+| Homologação online staging | **Pendente** |
+
+**Uso:** o simulador envia `MasterSignal` para intake; o admin dispara manualmente; serve para validar payload, idempotência, 409 e fluxo admin-trigger sem MT5.
+
+**Próximo passo (produto):** homologar simulador em staging (enviar sinal + conferir painel); depois EA Mãe MQL5 real ou gate produção (Fase 2.11).
 
 ---
 

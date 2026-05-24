@@ -23,7 +23,8 @@
     "homolog:halt-new": "tsx scripts/homologation/enable-halt-new-entries.ts",
     "homolog:resume-new": "tsx scripts/homologation/disable-halt-new-entries.ts",
     "homolog:halt-all": "tsx scripts/homologation/enable-halt-all-trading.ts",
-    "homolog:resume-all": "tsx scripts/homologation/disable-halt-all-trading.ts"
+    "homolog:resume-all": "tsx scripts/homologation/disable-halt-all-trading.ts",
+    "master:signal": "tsx scripts/master-signals/send-master-signal.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
