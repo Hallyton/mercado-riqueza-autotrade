@@ -354,6 +354,19 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 - **Staging online:** o endpoint só funcionará após `prisma migrate deploy` da migration `20260524123425_add_master_signal_models` no Neon staging (ainda pendente)
 - Rate limit dedicado: **TODO** (Fase 2.6+); não bloqueia intake atual
 
+### Homologação staging do intake (parcial — maio/2026)
+
+| Item | Status |
+|------|--------|
+| Deploy Vercel staging (`vercel --prod --force`) | OK — alias `https://autotrade-staging.mercadodariqueza.com.br` |
+| `MASTER_EA_API_SECRET` em Production | OK |
+| `MASTER_EA_API_SECRET` em Preview (`staging-vps-homologacao`) | OK |
+| `prisma migrate deploy` no Neon staging via CLI local | **Pendente** — `vercel env pull` não exporta valores de secrets; `.env` local aponta para `localhost` |
+| `POST /api/master/signals` online | **Bloqueado** — `middleware.ts` redireciona rota para `/login` (não está em `PUBLIC_PATHS`); requer ajuste mínimo de middleware na próxima entrega |
+| Dispatch / Instruction | Não testado online (endpoint não alcançável); permanecem **NOT_STARTED** / não criados |
+
+**Para concluir homologação online:** (1) aplicar migration `20260524123425_add_master_signal_models` no Neon com `DATABASE_URL` do staging; (2) liberar `/api/master/signals` no middleware (auth própria via `MASTER_EA_API_SECRET`); (3) repetir POST + idempotência + 409.
+
 ---
 
 ## 13. Riscos e cuidados
