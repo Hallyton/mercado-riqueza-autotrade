@@ -343,7 +343,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 |------|--------|-------|
 | **2.4** | Concluída | `lib/master-signals/` — validação Zod + `rawPayloadRedacted` (sem persistência) |
 | **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch automático** |
-| **2.6** | Concluída localmente | `lib/master-signals/eligibility.ts` + `dispatch.ts` — dispatch interno para licenças elegíveis; **sem** acoplamento automático ao POST; **sem** homologação online Neon |
+| **2.6** | Concluída + homologação online staging | `eligibility.ts` + `dispatch.ts` — dispatch manual/script; `Instruction.source=MASTER_SIGNAL`; **sem** dispatch automático no POST |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -379,28 +379,47 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.5 online aprovada em staging. O endpoint recebe e valida sinal mestre, persiste `MasterSignal`, valida idempotência e conflitos, mas ainda **não faz dispatch** (Fase 2.6).
 
-### Fase 2.6 — dispatch interno (local — maio/2026)
+### Fase 2.6 — dispatch interno (implementação — maio/2026)
 
 | Item | Status |
 |------|--------|
-| Service `selectEligibleLicensesForMasterSignal` | OK — assinatura/licença ativas, MT5, device ativo, `allow_demo`, `max_devices` / `max_mt5`, perfil (`profileSlug`), halts via `lib/licensing/flags` |
-| Service `dispatchValidatedMasterSignal` | OK — só `VALIDATED` → `DISPATCHING` → `DISPATCHED` / `PARTIALLY_DISPATCHED` / `FAILED` |
+| Service `selectEligibleLicensesForMasterSignal` | OK — candidatos amplos + regras em `evaluateLicenseEligibility` |
+| Service `dispatchValidatedMasterSignal` | OK — `VALIDATED` → dispatch → `DISPATCHED` / `PARTIALLY_DISPATCHED` / `FAILED` / `VALIDATED` (sem elegíveis) |
 | `MasterSignalDispatch` + `Instruction` | OK — uma instrução por licença elegível; idempotência `master:{master_signal_id}:{license_id}` |
-| `POST /api/master/signals` | **Inalterado** — continua `dispatch: NOT_STARTED` (sem dispatch automático) |
-| Contrato EA `/api/v1/ea/instructions` | **Inalterado** — payload via `mapInstructionToEaPayload` |
+| `Instruction.source` | **`MASTER_SIGNAL`** (migration `20260524180000_add_instruction_source_master_signal`) |
+| `POST /api/master/signals` | **Inalterado** — continua `dispatch: NOT_STARTED` (dispatch manual/script) |
+| Contrato EA `/api/v1/ea/instructions` | **Inalterado** |
 | EA cliente MQL5 | **Inalterado** |
-| Deploy / Neon staging | **Não aplicado** nesta entrega |
-| Homologação online 2.6 | **Pendente** (após gate explícito) |
+| Painel `/admin/instrucoes` | Lista TEST, HOMOLOGATION e **MASTER_SIGNAL** |
 
-**Notas v1:** `Instruction.source = MASTER_SIGNAL` (enum `InstructionSource`; migration `20260524180000_add_instruction_source_master_signal`). Painel `/admin/instrucoes` lista TEST, HOMOLOGATION e MASTER_SIGNAL. Quantidade padrão `1` (`MASTER_SIGNAL_DISPATCH_QUANTITY` ou constante interna).
+**Correções aplicadas durante homologação staging:**
 
-**Correção elegibilidade (pós-homolog staging):**
+1. **`eligibleCount: 0` / `skipped: []`:** filtro SQL antecipado em `profileSlug` excluía licenças antes da avaliação. Corrigido para query ampla (`ACTIVE` + assinatura `ACTIVE` + MT5) e rejeições com `skipped` auditável (`PROFILE_MISMATCH`, `NO_ACTIVE_DEVICE`, etc.).
+2. **`DISPATCHED` sem instructions:** status não marca sucesso silencioso quando `eligibleCount=0`; volta para `VALIDATED` + `NO_ELIGIBLE_LICENSES`.
+3. **`source: null`:** instructions do dispatch passam a usar `InstructionSource.MASTER_SIGNAL`; aparecem no painel admin. Instructions antigas com `source` null (ex.: testes iniciais) podem ser ignoradas ou tratadas só como histórico.
 
-- Candidatos amplos no SQL (`ACTIVE` + assinatura `ACTIVE` + MT5); **sem** filtro antecipado de `profileSlug` (evita 0 candidatos / 0 skipped).
-- Regras aplicadas em `evaluateLicenseEligibility` com `skipped` auditável (`PROFILE_MISMATCH`, `NO_ACTIVE_DEVICE`, `DEMO_NOT_ALLOWED`, etc.).
-- `MasterSignalDispatch` `SKIPPED` gravado por licença rejeitada.
-- Sem elegíveis: status volta para `VALIDATED` + `rejectedReason=NO_ELIGIBLE_LICENSES` (não `DISPATCHED` silencioso).
-- `DISPATCHED` vazio (homologação anterior) pode ser reprocessado (reset para `VALIDATED` se não houver dispatches).
+### Homologação online staging — Fase 2.6 aprovada (maio/2026)
+
+**Ambiente:** `https://autotrade-staging.mercadodariqueza.com.br`  
+**Fluxo:** `POST /api/master/signals` (intake) + **`dispatchValidatedMasterSignal` via script** (não automático no POST)
+
+| Item | Status |
+|------|--------|
+| Migration `MASTER_SIGNAL` no Neon staging | OK |
+| Deploy Vercel staging | OK |
+| MasterSignal novo (perfil **conservador**) | OK — `VALIDATED` após POST |
+| Licença elegível | OK — `cmpj3wby70005sx18ot5e939p` |
+| `MasterSignalDispatch` | OK — 1 registro `INSTRUCTION_CREATED` |
+| `Instruction` | OK — 1 criada; `source: MASTER_SIGNAL` |
+| Painel admin `/admin/instrucoes` | OK — instruction visível com origem **MASTER_SIGNAL** |
+| EA cliente (`InpDebugMode=true`) | OK — recebeu instruction; **nenhuma ordem real** |
+| `POST /api/v1/ea/executions` | OK — execução reportada |
+| Painel — status/execução | OK |
+| Retry dispatch idempotente | OK — instruction count inalterado (sem duplicata) |
+
+**Conclusão:** Fase 2.6 homologada em staging via dispatch manual. O `MasterSignal` foi transformado em `Instruction` individual para licença elegível, com `source: MASTER_SIGNAL`, rastreável no painel e recebida pelo EA cliente. `DebugMode` impediu ordem real. Retry idempotente não duplicou `Instruction`.
+
+**Próximo passo (produto):** decidir se o dispatch será automático no POST, admin-triggered ou worker/job (Fase 2.7+).
 
 ---
 
