@@ -342,30 +342,41 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Fase | Status | Notas |
 |------|--------|-------|
 | **2.4** | Concluída | `lib/master-signals/` — validação Zod + `rawPayloadRedacted` (sem persistência) |
-| **2.5** | Concluída | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência; **sem dispatch** |
+| **2.5** | Concluída + homologação online staging | `POST /api/master/signals` — auth `MASTER_EA_API_SECRET`, persistência `MasterSignal`, idempotência, conflito 409; **sem dispatch** |
 
 **Fase 2.5 — detalhes operacionais:**
 
 - Rota: `POST /api/master/signals`
+- Staging oficial: `https://autotrade-staging.mercadodariqueza.com.br/api/master/signals`
 - Auth: `Authorization: Bearer <MASTER_EA_API_SECRET>` ou header `X-Master-EA-Secret`
 - Resposta: `dispatch: "NOT_STARTED"`; status persistido `VALIDATED` após validação
-- **Não** cria `MasterSignalDispatch` nem `Instruction` nesta fase
-- Variável obrigatória no ambiente que for testar o endpoint: `MASTER_EA_API_SECRET` (não configurar na Vercel nesta etapa sem gate explícito)
-- **Staging online:** o endpoint só funcionará após `prisma migrate deploy` da migration `20260524123425_add_master_signal_models` no Neon staging (ainda pendente)
+- **Não** cria `MasterSignalDispatch` nem `Instruction` nesta fase — recebe e valida sinal mestre, persiste `MasterSignal`, valida idempotência e conflitos; **dispatch permanece fora de escopo (Fase 2.6)**
+- Variável obrigatória no ambiente: `MASTER_EA_API_SECRET` (configurada na Vercel staging Production)
+- Build Vercel: `prisma generate && next build` (cliente Prisma alinhado ao schema antes do `next build`)
+- Middleware: `/api/master/signals` em rota pública (auth própria; sem sessão NextAuth)
+- Migration Neon staging: `20260524123425_add_master_signal_models` aplicada (validado em homologação)
 - Rate limit dedicado: **TODO** (Fase 2.6+); não bloqueia intake atual
 
-### Homologação staging do intake (parcial — maio/2026)
+### Homologação online staging — Fase 2.5 aprovada (maio/2026)
+
+**Ambiente:** `https://autotrade-staging.mercadodariqueza.com.br`  
+**Endpoint:** `POST /api/master/signals`
 
 | Item | Status |
 |------|--------|
-| Deploy Vercel staging (`vercel --prod --force`) | OK — alias `https://autotrade-staging.mercadodariqueza.com.br` |
-| `MASTER_EA_API_SECRET` em Production | OK |
-| `MASTER_EA_API_SECRET` em Preview (`staging-vps-homologacao`) | OK |
-| `prisma migrate deploy` no Neon staging via CLI local | **Pendente** — `vercel env pull` não exporta valores de secrets; `.env` local aponta para `localhost` |
-| `POST /api/master/signals` online | **Bloqueado** — `middleware.ts` redireciona rota para `/login` (não está em `PUBLIC_PATHS`); requer ajuste mínimo de middleware na próxima entrega |
-| Dispatch / Instruction | Não testado online (endpoint não alcançável); permanecem **NOT_STARTED** / não criados |
+| Deploy Vercel staging (Production Ready) | OK — alias `https://autotrade-staging.mercadodariqueza.com.br` |
+| `MASTER_EA_API_SECRET` (Vercel Production) | OK |
+| Middleware `/api/master/signals` | OK — rota alcançável sem redirect para `/login` |
+| `prisma migrate deploy` Neon staging | OK |
+| POST novo (`test-master-002`) | OK — HTTP **201**, `status: VALIDATED`, `dispatch: NOT_STARTED` |
+| POST idempotente (mesmo payload) | OK — HTTP **200**, `idempotent: true`, `dispatch: NOT_STARTED` |
+| POST conflito real (mesma `idempotency_key`, payload diferente) | OK — HTTP **409**, `MASTER_SIGNAL_CONFLICT` |
+| Banco Neon (`test-master-002`) | OK — `status: VALIDATED`, `dispatchCount: 0`, `instructionCount: 0` |
+| `MasterSignalDispatch` | **Não criado** |
+| `Instruction` | **Não criada** |
+| EA cliente | **Sem impacto** nesta fase (nenhuma instrução despachada) |
 
-**Para concluir homologação online:** (1) aplicar migration `20260524123425_add_master_signal_models` no Neon com `DATABASE_URL` do staging; (2) liberar `/api/master/signals` no middleware (auth própria via `MASTER_EA_API_SECRET`); (3) repetir POST + idempotência + 409.
+**Conclusão:** Fase 2.5 online aprovada em staging. O endpoint recebe e valida sinal mestre, persiste `MasterSignal`, valida idempotência e conflitos, mas ainda **não faz dispatch** (Fase 2.6).
 
 ---
 
