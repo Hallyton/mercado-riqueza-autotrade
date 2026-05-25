@@ -48,7 +48,7 @@ EA Mãe / simulador
 |-----------|--------|
 | Status da Fase 3 | **EM EXECUÇÃO** |
 | Ciclos mínimos exigidos | 10 |
-| Ciclos aprovados | 4/10 |
+| Ciclos aprovados | 5/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Ordem real enviada | **NÃO** |
@@ -85,7 +85,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 | 02 | 2026-05-25 | SELL válido via EA Mãe MQL5 | `cycle-02-sell-mt5-001` | Ver painel/banco — tracking `EXECUTED` confirmado | `cmpj3wby70005sx18ot5e939p` | SELL | conservador | `VALIDATED` / `NOT_DISPATCHED` antes do disparo | Admin manual; dispatch `INSTRUCTION_CREATED`; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report recebido | `EXECUTED` | true | NÃO | APROVADO | Fluxo SELL completo validado sem ordem real |
 | 03 | 2026-05-25 | BUY válido via simulador HTTP | `cycle-03-buy-sim-001` | Ver painel/banco — tracking `EXECUTED` confirmado | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch `INSTRUCTION_CREATED`; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report recebido | `EXECUTED` | true | NÃO | APROVADO | Fluxo BUY via simulador validado sem ordem real |
 | 04 | 2026-05-25 | Retry/idempotência do mesmo MasterSignal | `cycle-03-buy-sim-001` | Ver ciclo 03 — nenhuma nova instruction criada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Retry idempotente do mesmo sinal | Sem novo dispatch indevido; contagem 1 → 1 | Sem execução duplicada; contagem 1 → 1 | `EXECUTED` | true | NÃO | APROVADO | Reenvio com mesma idempotency_key não duplicou dispatch/instruction/execution |
-| 05 | PENDENTE | Disparo admin repetido sem duplicar instruction | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 05 | 2026-05-25 | Disparo admin repetido sem duplicar instruction | `cycle-03-buy-sim-001` | Ver ciclo 03 — nenhuma nova instruction criada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Sinal já `DISPATCHED` / `EXECUTED` | Painel bloqueou novo disparo; contagem 1 → 1 | Sem execução duplicada; contagem 1 → 1 | `EXECUTED` | true | NÃO | APROVADO | Admin-trigger bloqueou re-disparo de sinal já despachado |
 | 06 | PENDENTE | Sinal expirado bloqueado | PENDENTE | N/A | PENDENTE | PENDENTE | conservador | PENDENTE | BLOQUEADO_ESPERADO | N/A | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 07 | PENDENTE | EA cliente offline antes do dispatch | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | OFFLINE_ESPERADO | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 08 | PENDENTE | EA cliente volta online e processa pendência | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
@@ -236,29 +236,29 @@ Status final permitido por ciclo:
 
 | Campo | Valor |
 |-------|-------|
-| Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Status | APROVADO |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
-| InstructionId | PENDENTE |
-| LicenseId | PENDENTE |
+| MasterSignalId | `cycle-03-buy-sim-001` |
+| InstructionId | Ver ciclo 03 — nenhuma nova instruction criada |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
-| EA Mãe / Simulador | EA Mãe MQL5 ou simulador HTTP |
-| Payload resumido | Sinal elegível já disparado uma vez |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | PENDENTE |
-| Resultado EA cliente | PENDENTE |
-| Resultado tracking | PENDENTE |
-| Idempotência | PENDENTE |
-| TTL/expiração | PENDENTE |
+| EA cliente DebugMode | `true` |
+| EA Mãe / Simulador | N/A — validação do painel/admin-trigger sobre sinal já disparado |
+| Payload resumido | Sinal `cycle-03-buy-sim-001` já `DISPATCHED` / `EXECUTED` |
+| Resultado intake | Sinal já existente e executado; status `DISPATCHED` |
+| Resultado preview | N/A — seção de disparo não liberou novo disparo |
+| Resultado dispatch | Novo disparo bloqueado pelo painel; disparo só permitido para sinais `VALIDATED`; Dispatches antes/depois: 1 / 1 |
+| Resultado EA cliente | Nenhuma nova instruction recebida; nenhuma execução duplicada; Execuções antes/depois: 1 / 1 |
+| Resultado tracking | Status consolidado permaneceu `EXECUTED`; Dispatches / instruções / executadas: 1 / 1 / 1; Instructions antes/depois: 1 / 1 |
+| Idempotência | APROVADA — sinal já `DISPATCHED` / `EXECUTED` não gerou novo dispatch nem instruction |
+| TTL/expiração | N/A |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | MasterSignal `cycle-03-buy-sim-001`; painel com Status `DISPATCHED`; contagens 1 / 1 / 1; seção de disparo indisponível para novo disparo |
+| Observações | O ciclo validou a trava do admin-trigger. Um sinal já `DISPATCHED`/`EXECUTED` não pôde ser disparado novamente pelo painel, preservando a idempotência operacional do dispatch manual. |
+| Decisão | APROVADO |
 
 ### Ciclo 06 — Sinal expirado bloqueado
 
@@ -426,7 +426,7 @@ Falhas devem ser preservadas no registro, com evidências e decisão de correç�
 | Campo | Valor |
 |-------|-------|
 | Status final da Fase 3 | **PENDENTE** |
-| Ciclos aprovados | 4/10 |
+| Ciclos aprovados | 5/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Decisão final | PENDENTE |
