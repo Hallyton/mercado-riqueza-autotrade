@@ -48,7 +48,7 @@ EA Mãe / simulador
 |-----------|--------|
 | Status da Fase 3 | **EM EXECUÇÃO** |
 | Ciclos mínimos exigidos | 10 |
-| Ciclos aprovados | 6/10 |
+| Ciclos aprovados | 7/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Ordem real enviada | **NÃO** |
@@ -87,7 +87,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 | 04 | 2026-05-25 | Retry/idempotência do mesmo MasterSignal | `cycle-03-buy-sim-001` | Ver ciclo 03 — nenhuma nova instruction criada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Retry idempotente do mesmo sinal | Sem novo dispatch indevido; contagem 1 → 1 | Sem execução duplicada; contagem 1 → 1 | `EXECUTED` | true | NÃO | APROVADO | Reenvio com mesma idempotency_key não duplicou dispatch/instruction/execution |
 | 05 | 2026-05-25 | Disparo admin repetido sem duplicar instruction | `cycle-03-buy-sim-001` | Ver ciclo 03 — nenhuma nova instruction criada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Sinal já `DISPATCHED` / `EXECUTED` | Painel bloqueou novo disparo; contagem 1 → 1 | Sem execução duplicada; contagem 1 → 1 | `EXECUTED` | true | NÃO | APROVADO | Admin-trigger bloqueou re-disparo de sinal já despachado |
 | 06 | 2026-05-25 | Sinal expirado bloqueado | `cycle-06-expired-sim-001` | N/A | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Bloqueado por expiração; 0 dispatches | EA não recebeu instruction | `EXPIRED` | true | NÃO | APROVADO | TTL validado; nenhuma instruction/execution criada |
-| 07 | PENDENTE | EA cliente offline antes do dispatch | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | OFFLINE_ESPERADO | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 07 | 2026-05-25 | EA cliente offline antes do dispatch | `cycle-07-offline-sim-001` | Ver painel/banco — instruction pendente confirmada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch criado; `Instruction MASTER_SIGNAL` criada | EA offline; instruction não processada neste ciclo | `DISPATCHED_PENDING` | true | NÃO | APROVADO | Instruction permaneceu pendente aguardando EA |
 | 08 | PENDENTE | EA cliente volta online e processa pendência | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 09 | PENDENTE | Sem licença elegível / profile mismatch controlado | PENDENTE | N/A | PENDENTE | PENDENTE | controlado | PENDENTE | SEM_ELEGÍVEL_ESPERADO | N/A | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 10 | PENDENTE | Rollback operacional testado | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
@@ -292,29 +292,29 @@ Status final permitido por ciclo:
 
 | Campo | Valor |
 |-------|-------|
-| Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Status | APROVADO |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
-| InstructionId | PENDENTE |
-| LicenseId | PENDENTE |
+| MasterSignalId | `cycle-07-offline-sim-001` |
+| InstructionId | Ver painel/banco — instruction pendente confirmada |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
-| EA Mãe / Simulador | EA Mãe MQL5 ou simulador HTTP |
-| Payload resumido | Sinal válido com EA cliente offline |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | PENDENTE |
-| Resultado EA cliente | OFFLINE_ESPERADO |
-| Resultado tracking | PENDENTE |
+| EA cliente DebugMode | `true` obrigatório da fase; EA cliente estava offline/removido durante o ciclo |
+| EA Mãe / Simulador | Simulador HTTP/CLI |
+| Payload resumido | `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `conservador` |
+| Resultado intake | MasterSignal criado pelo simulador HTTP; apareceu no painel como `VALIDATED` / `NOT_DISPATCHED` antes do disparo; `POST /api/master/signals` continuou sem dispatch automático |
+| Resultado preview | Admin revisou elegibilidade antes do disparo manual |
+| Resultado dispatch | Admin disparou manualmente; dispatch criado; `Instruction MASTER_SIGNAL` criada |
+| Resultado EA cliente | EA cliente estava offline, portanto não processou a instruction neste ciclo |
+| Resultado tracking | Status DB `DISPATCHED`; consolidado `DISPATCHED_PENDING` / Disparado — pendente EA; Dispatches: 1; Instructions: 1; Executadas: 0; Pendentes: 1; Falhas: 0; Instruction: `RECEIVED`; Execution: `PENDING`; Motivo: Aguardando EA processar |
 | Idempotência | N/A |
-| TTL/expiração | PENDENTE |
+| TTL/expiração | Dentro da janela operacional do ciclo |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | MasterSignal `cycle-07-offline-sim-001`; License `cmpj3wby70005sx18ot5e939p`; tracking `DISPATCHED_PENDING`; 1 instruction pendente; 0 execuções |
+| Observações | O ciclo validou que, com o EA cliente offline, a instruction não é perdida e o tracking permanece pendente aguardando processamento pelo EA. A execução ficará para o Ciclo 08, quando o EA cliente voltar online. |
+| Decisão | APROVADO |
 
 ### Ciclo 08 — EA cliente volta online e processa pendência
 
@@ -426,7 +426,7 @@ Falhas devem ser preservadas no registro, com evidências e decisão de correç�
 | Campo | Valor |
 |-------|-------|
 | Status final da Fase 3 | **PENDENTE** |
-| Ciclos aprovados | 6/10 |
+| Ciclos aprovados | 7/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Decisão final | PENDENTE |
