@@ -48,7 +48,7 @@ EA Mãe / simulador
 |-----------|--------|
 | Status da Fase 3 | **EM EXECUÇÃO** |
 | Ciclos mínimos exigidos | 10 |
-| Ciclos aprovados | 0/10 |
+| Ciclos aprovados | 1/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Ordem real enviada | **NÃO** |
@@ -81,7 +81,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 
 | Ciclo | Data | Tipo de sinal | MasterSignalId | InstructionId | LicenseId | Side | Perfil | Resultado intake | Resultado dispatch | Resultado EA | Tracking | DebugMode | Ordem real | Status final | Observações |
 |-------|------|---------------|----------------|---------------|-----------|------|--------|------------------|--------------------|--------------|----------|-----------|------------|--------------|-------------|
-| 01 | PENDENTE | BUY válido via EA Mãe MQL5 | PENDENTE | PENDENTE | PENDENTE | BUY | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 01 | 2026-05-25 | BUY válido via EA Mãe MQL5 | `cycle-01-buy-mt5-001` | `cmpl82wy8000yjp046r7w8c65` | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED` antes do disparo | Admin manual; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report HTTP 200 | `EXECUTED` | true | NÃO | APROVADO | Fluxo completo validado sem ordem real |
 | 02 | PENDENTE | SELL válido via EA Mãe MQL5 | PENDENTE | PENDENTE | PENDENTE | SELL | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 03 | PENDENTE | BUY válido via simulador HTTP | PENDENTE | PENDENTE | PENDENTE | BUY | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 04 | PENDENTE | Retry/idempotência do mesmo MasterSignal | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
@@ -124,29 +124,29 @@ Status final permitido por ciclo:
 
 | Campo | Valor |
 |-------|-------|
-| Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Status | APROVADO |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
-| InstructionId | PENDENTE |
-| LicenseId | PENDENTE |
+| MasterSignalId | `cycle-01-buy-mt5-001` |
+| InstructionId | `cmpl82wy8000yjp046r7w8c65` |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
+| EA cliente DebugMode | `true` |
 | EA Mãe / Simulador | EA Mãe MQL5 |
 | Payload resumido | `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `conservador` |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | PENDENTE |
-| Resultado EA cliente | PENDENTE |
-| Resultado tracking | PENDENTE |
-| Idempotência | N/A |
-| TTL/expiração | PENDENTE |
+| Resultado intake | MasterSignal criado pelo EA Mãe MQL5; apareceu no painel como `VALIDATED` / `NOT_DISPATCHED` antes do disparo |
+| Resultado preview | Admin revisou elegibilidade antes do disparo manual |
+| Resultado dispatch | Admin disparou manualmente; `Instruction MASTER_SIGNAL` criada |
+| Resultado EA cliente | GET `/instructions` HTTP 200; instruções parseadas: 1; instruction recebida; `DEBUG_MODE`; nenhuma ordem real; POST `/api/v1/ea/executions` HTTP 200 |
+| Resultado tracking | Painel tracking confirmou `EXECUTED`; Dispatches: 1; Instructions: 1; Execuções: 1 |
+| Idempotência | Não aplicável neste ciclo |
+| TTL/expiração | Dentro da janela operacional do ciclo |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | MasterSignal `cycle-01-buy-mt5-001`; Instruction `cmpl82wy8000yjp046r7w8c65`; License `cmpj3wby70005sx18ot5e939p`; tracking `EXECUTED` |
+| Observações | O ciclo validou o fluxo EA Mãe → intake → admin dispatch manual → Instruction MASTER_SIGNAL → EA cliente DebugMode → execution report → tracking EXECUTED |
+| Decisão | APROVADO |
 
 ### Ciclo 02 — SELL válido via EA Mãe MQL5
 
@@ -426,7 +426,7 @@ Falhas devem ser preservadas no registro, com evidências e decisão de correç�
 | Campo | Valor |
 |-------|-------|
 | Status final da Fase 3 | **PENDENTE** |
-| Ciclos aprovados | 0/10 |
+| Ciclos aprovados | 1/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Decisão final | PENDENTE |
