@@ -347,7 +347,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.7** | Concluída + homologação online staging | Admin trigger `/admin/master-signals` — intake + revisão + preview + disparo manual; **POST sem dispatch automático** |
 | **2.8** | Concluída + homologação online staging | Painel de tracking consolidado; status consolidado na lista; **POST sem dispatch automático** |
 | **2.9** | Concluída + homologação online staging | Simulador HTTP/CLI (`npm run master:signal`); intake apenas — **POST sem dispatch automático** |
-| **2.10** | Implementada localmente | EA Mãe MQL5 `MR_AutoTrade_Master_Signal` — emissor manual; **sem** estratégia; homologação MT5/staging pendente |
+| **2.10** | Concluída + homologação online staging | EA Mãe MQL5 `MR_AutoTrade_Master_Signal` — emissor manual; intake apenas; **POST sem dispatch automático** |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -528,7 +528,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.9 homologada em staging. O simulador HTTP/CLI envia corretamente sinais mestres ao backend; o sinal aparece no painel como VALIDATED / não disparado, confirmando que a ferramenta faz **apenas intake**, respeitando o desenho seguro do projeto (dispatch manual via admin).
 
-### Fase 2.10 — EA Mãe MQL5 v1 emissor manual (implementação local — maio/2026)
+### Fase 2.10 — EA Mãe MQL5 v1 emissor manual (implementação — maio/2026)
 
 | Item | Status |
 |------|--------|
@@ -540,11 +540,35 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | `POST /api/master/signals` | **Inalterado** — sem dispatch automático |
 | EA cliente executor | **Inalterado** |
 | Documentação | [`docs/MASTER-EA-MQL5-V1.md`](MASTER-EA-MQL5-V1.md) |
-| Homologação MT5 + staging | **Pendente** |
+| Commit implementação | `9e649a6` — `feat: add master signal MQL5 emitter` |
 
 **Fluxo:** EA Mãe envia intake → admin revisa/dispara → fluxo cliente já homologado (Fases 2.6–2.9).
 
-**Próximo passo (produto):** homologar EA Mãe no MT5 contra staging; depois gate produção simulada (Fase 2.11).
+### Homologação online staging — Fase 2.10 aprovada (maio/2026)
+
+**Ambiente:** `https://autotrade-staging.mercadodariqueza.com.br`  
+**Ferramenta:** EA Mãe `MR_AutoTrade_Master_Signal` no MetaTrader 5 (commit `9e649a6`)
+
+| Item | Status |
+|------|--------|
+| Compilação MetaEditor | OK |
+| WebRequest liberado para URL staging | OK |
+| Inputs (`InpApiBaseUrl`, `InpMasterSecret` local, `WDOM26`, `BUY`, `MARKET`, `ENTRY`, `conservador`, TTL 300) | OK — secret **não** exposto em logs/docs |
+| `InpSendOnInit=false` / botão **Enviar sinal mestre** | OK — envio manual |
+| `InpSendOnce=true` | OK — bloqueia reenvio na mesma sessão (novo `MasterSignalId` ou reanexar EA) |
+| POST `/api/master/signals` | OK — intake do sinal mestre |
+| Painel `/admin/master-signals` | OK — sinal visível |
+| Status DB | `VALIDATED` |
+| Consolidado no painel | **Não disparado** (`NOT_DISPATCHED`) |
+| Dispatches / Instructions / Executions | **0** / **0** / **0** |
+| EA Mãe — estratégia / ordem broker | **Não** — apenas intake HTTP |
+| `POST /api/master/signals` | **Sem dispatch automático** |
+| EA cliente | **Inalterado** no envio do EA Mãe |
+| Fluxo admin-trigger (revisão → disparo → instruction → EA cliente) | OK — continua funcionando após intake |
+
+**Conclusão:** Fase 2.10 homologada em staging. O EA Mãe MQL5 v1 foi validado como emissor manual de `MasterSignal`: envia o sinal para o backend, o sinal aparece no painel admin como **VALIDATED** / **Não disparado**, e o dispatch continua **manual** pelo admin. Nenhuma ordem real é enviada pelo EA Mãe.
+
+**Próximo passo (produto):** gate produção simulada (Fase 2.11).
 
 ---
 

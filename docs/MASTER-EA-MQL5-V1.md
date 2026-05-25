@@ -124,6 +124,25 @@ EA Mãe (POST intake) → MasterSignal VALIDATED / NOT_STARTED
 - Não anexar EA Mãe e EA cliente no mesmo gráfico esperando automação — são papéis distintos.
 - Homologação: manter EA cliente com `InpDebugMode=true`.
 
+## Homologação staging (aprovada — maio/2026)
+
+Validado em `https://autotrade-staging.mercadodariqueza.com.br` com o EA `MR_AutoTrade_Master_Signal` no MetaTrader 5 (commit `9e649a6`):
+
+| Campo / métrica | Resultado |
+|----------------|-----------|
+| Ferramenta | EA Mãe MQL5 v1 — botão **Enviar sinal mestre** |
+| `source` | `MASTER_EA` |
+| `symbol` / `side` / `purpose` / `profile` | `WDOM26` / `BUY` / `ENTRY` / `conservador` |
+| Status DB | `VALIDATED` |
+| Consolidado no painel | **Não disparado** |
+| Dispatches | 0 |
+| Instructions | 0 |
+| Executions | 0 |
+| `InpSendOnce=true` | OK — trava reenvio na mesma sessão |
+| Fluxo admin-trigger após intake | OK — revisão → disparo manual → `Instruction` → EA cliente |
+
+Isso confirma que o EA Mãe realiza **somente intake** via `POST /api/master/signals`; **não** contém estratégia real, **não** envia ordem ao broker e **não** dispara clientes automaticamente. O disparo para licenças elegíveis continua no painel admin (**Disparar para clientes**).
+
 ## Arquivos
 
 - `ea/mql5/MR_AutoTrade_Master_Signal.mq5`
