@@ -48,7 +48,7 @@ EA Mãe / simulador
 |-----------|--------|
 | Status da Fase 3 | **EM EXECUÇÃO** |
 | Ciclos mínimos exigidos | 10 |
-| Ciclos aprovados | 5/10 |
+| Ciclos aprovados | 6/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Ordem real enviada | **NÃO** |
@@ -86,7 +86,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 | 03 | 2026-05-25 | BUY válido via simulador HTTP | `cycle-03-buy-sim-001` | Ver painel/banco — tracking `EXECUTED` confirmado | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch `INSTRUCTION_CREATED`; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report recebido | `EXECUTED` | true | NÃO | APROVADO | Fluxo BUY via simulador validado sem ordem real |
 | 04 | 2026-05-25 | Retry/idempotência do mesmo MasterSignal | `cycle-03-buy-sim-001` | Ver ciclo 03 — nenhuma nova instruction criada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Retry idempotente do mesmo sinal | Sem novo dispatch indevido; contagem 1 → 1 | Sem execução duplicada; contagem 1 → 1 | `EXECUTED` | true | NÃO | APROVADO | Reenvio com mesma idempotency_key não duplicou dispatch/instruction/execution |
 | 05 | 2026-05-25 | Disparo admin repetido sem duplicar instruction | `cycle-03-buy-sim-001` | Ver ciclo 03 — nenhuma nova instruction criada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Sinal já `DISPATCHED` / `EXECUTED` | Painel bloqueou novo disparo; contagem 1 → 1 | Sem execução duplicada; contagem 1 → 1 | `EXECUTED` | true | NÃO | APROVADO | Admin-trigger bloqueou re-disparo de sinal já despachado |
-| 06 | PENDENTE | Sinal expirado bloqueado | PENDENTE | N/A | PENDENTE | PENDENTE | conservador | PENDENTE | BLOQUEADO_ESPERADO | N/A | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 06 | 2026-05-25 | Sinal expirado bloqueado | `cycle-06-expired-sim-001` | N/A | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Bloqueado por expiração; 0 dispatches | EA não recebeu instruction | `EXPIRED` | true | NÃO | APROVADO | TTL validado; nenhuma instruction/execution criada |
 | 07 | PENDENTE | EA cliente offline antes do dispatch | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | OFFLINE_ESPERADO | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 08 | PENDENTE | EA cliente volta online e processa pendência | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 09 | PENDENTE | Sem licença elegível / profile mismatch controlado | PENDENTE | N/A | PENDENTE | PENDENTE | controlado | PENDENTE | SEM_ELEGÍVEL_ESPERADO | N/A | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
@@ -264,29 +264,29 @@ Status final permitido por ciclo:
 
 | Campo | Valor |
 |-------|-------|
-| Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Status | APROVADO |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
+| MasterSignalId | `cycle-06-expired-sim-001` |
 | InstructionId | N/A |
-| LicenseId | PENDENTE |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
-| EA Mãe / Simulador | EA Mãe MQL5 ou simulador HTTP |
-| Payload resumido | TTL curto; disparo após expiração |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | BLOQUEADO_ESPERADO |
-| Resultado EA cliente | N/A |
-| Resultado tracking | PENDENTE |
+| EA cliente DebugMode | `true` |
+| EA Mãe / Simulador | Simulador HTTP/CLI |
+| Payload resumido | `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `conservador`; `expires_in_seconds=300` |
+| Resultado intake | MasterSignal criado pelo simulador HTTP; apareceu no painel como `VALIDATED` / `NOT_DISPATCHED` antes da expiração; `POST /api/master/signals` continuou sem dispatch automático |
+| Resultado preview | Sinal mantido sem disparo até vencer o prazo de `expires_in_seconds=300` |
+| Resultado dispatch | Bloqueado por expiração; Dispatches: 0; nenhuma instruction criada |
+| Resultado EA cliente | EA cliente não recebeu instruction; nenhuma execução gerada |
+| Resultado tracking | Painel mostrou status consolidado `EXPIRED` / Expirado; Dispatches: 0; Instructions: 0; Executadas: 0; Pendentes: 0; Falhas: 0 |
 | Idempotência | N/A |
-| TTL/expiração | PENDENTE |
+| TTL/expiração | APROVADO — sinal expirado não pôde ser despachado |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | MasterSignal `cycle-06-expired-sim-001`; tracking `EXPIRED`; contagens 0 / 0 / 0; nenhuma instruction/execution |
+| Observações | O ciclo validou a trava de TTL/expiração. Um MasterSignal expirado não pôde ser despachado e não gerou instruction, mantendo o fluxo seguro. |
+| Decisão | APROVADO |
 
 ### Ciclo 07 — EA cliente offline antes do dispatch
 
@@ -426,7 +426,7 @@ Falhas devem ser preservadas no registro, com evidências e decisão de correç�
 | Campo | Valor |
 |-------|-------|
 | Status final da Fase 3 | **PENDENTE** |
-| Ciclos aprovados | 5/10 |
+| Ciclos aprovados | 6/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Decisão final | PENDENTE |
