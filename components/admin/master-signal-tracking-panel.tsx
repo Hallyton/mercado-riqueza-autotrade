@@ -5,6 +5,7 @@ import type {
 
 const CONSOLIDATED_LABELS: Record<string, string> = {
   NOT_DISPATCHED: "Não disparado",
+  REJECTED_NO_ELIGIBLE_LICENSES: "Rejeitado — sem licenças elegíveis",
   DISPATCHED_PENDING: "Disparado — pendente EA",
   PARTIALLY_EXECUTED: "Parcialmente executado",
   EXECUTED: "Executado",
@@ -101,6 +102,13 @@ export function MasterSignalTrackingPanel({
       {notDispatchedYet && (
         <p className="rounded border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">
           Este sinal ainda não foi disparado.
+        </p>
+      )}
+
+      {consolidatedStatus === "REJECTED_NO_ELIGIBLE_LICENSES" && (
+        <p className="rounded border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          Nenhuma licença elegível. O sinal foi rejeitado para dispatch e
+          nenhuma instruction foi criada.
         </p>
       )}
 

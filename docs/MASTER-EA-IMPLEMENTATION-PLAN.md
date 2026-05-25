@@ -473,7 +473,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | `lib/master-signals/admin-tracking.ts` | OK — contagens e status consolidado (sem migration) |
 | Detalhe `/admin/master-signals/[id]` | OK — seção **Acompanhamento do sinal** (cards + tabela por cliente) |
 | Lista `/admin/master-signals` | OK — colunas Consolidado, Exec., Disp., Instr. + status consolidado |
-| Status consolidado (exibição) | `NOT_DISPATCHED`, `DISPATCHED_PENDING`, `PARTIALLY_EXECUTED`, `EXECUTED`, `FAILED`, `EXPIRED` |
+| Status consolidado (exibição) | `NOT_DISPATCHED`, `REJECTED_NO_ELIGIBLE_LICENSES`, `DISPATCHED_PENDING`, `PARTIALLY_EXECUTED`, `EXECUTED`, `FAILED`, `EXPIRED` |
 | `POST /api/master/signals` | **Inalterado** — sem dispatch automático |
 | EA cliente / contrato `/api/v1/ea/instructions` | **Inalterados** |
 | Botão **Disparar para clientes** | **Inalterado** — só `VALIDATED` |
@@ -660,6 +660,8 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 **Objetivo:** controlar a execução dos 10 ciclos mínimos da produção simulada controlada, incluindo BUY/SELL válidos, simulador HTTP, retry/idempotência, disparo admin repetido, sinal expirado, EA offline/online, sem licença elegível e rollback operacional.
 
 **Estado inicial da Fase 3:** `EM EXECUÇÃO`, com 0/10 ciclos aprovados, 0 reprovados, 0 com restrição, rollback pendente, nenhuma ordem real, nenhum dispatch automático e nenhum secret exposto.
+
+**Nota operacional — Ciclo 09:** o teste `cycle-09-profile-mismatch-001` confirmou a segurança principal do cenário sem licença elegível: a licença staging foi ignorada por `PROFILE_MISMATCH`, nenhum `Instruction` foi criado, o EA cliente não recebeu instruction e nenhuma ordem real foi enviada. O ciclo identificou ajuste necessário de status/UI: sinal sem elegíveis após tentativa admin deve ser marcado como `REJECTED` com `rejectedReason=NO_ELIGIBLE_LICENSES`, cards devem mostrar `Elegíveis=0` / `Ignorados=1` / `Pendentes=0`, e o botão de dispatch não deve permanecer disponível. O Ciclo 09 segue `PENDENTE` até re-homologação com novo ID.
 
 **Próximo passo (produto):** executar e preencher os ciclos em [`SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md), sem ocultar falhas e mantendo produção real bloqueada até nova fase/gate explícitos.
 

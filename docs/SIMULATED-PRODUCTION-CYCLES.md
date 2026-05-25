@@ -89,7 +89,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 | 06 | 2026-05-25 | Sinal expirado bloqueado | `cycle-06-expired-sim-001` | N/A | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Bloqueado por expiração; 0 dispatches | EA não recebeu instruction | `EXPIRED` | true | NÃO | APROVADO | TTL validado; nenhuma instruction/execution criada |
 | 07 | 2026-05-25 | EA cliente offline antes do dispatch | `cycle-07-offline-sim-001` | Ver painel/banco — instruction pendente confirmada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch criado; `Instruction MASTER_SIGNAL` criada | EA offline; instruction não processada neste ciclo | `DISPATCHED_PENDING` | true | NÃO | APROVADO | Instruction permaneceu pendente aguardando EA |
 | 08 | 2026-05-25 | EA cliente volta online e processa pendência | `cycle-08-offline-online-001` | `cmplm6x1y002iic04autgnz2s` | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Sinal criado com EA offline no dispatch | Admin manual; instruction ficou pendente até EA voltar | EA online; DebugMode; execution report HTTP 200 | `EXECUTED` | true | NÃO | APROVADO | Instruction pendente foi processada ao EA voltar online |
-| 09 | PENDENTE | Sem licença elegível / profile mismatch controlado | PENDENTE | N/A | PENDENTE | PENDENTE | controlado | PENDENTE | SEM_ELEGÍVEL_ESPERADO | N/A | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 09 | 2026-05-25 | Sem licença elegível / profile mismatch controlado | `cycle-09-profile-mismatch-001` | N/A | `cmpj3wby70005sx18ot5e939p` | BUY | agressivo | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Segurança OK: dispatch `SKIPPED` por `PROFILE_MISMATCH`; nenhuma instruction | EA não recebeu instruction | Ajuste necessário em status/cards/botão para `NO_ELIGIBLE_LICENSES` | true | NÃO | PENDENTE | Re-homologar com novo ID após correção de UI/status |
 | 10 | PENDENTE | Rollback operacional testado | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 
 Status final permitido por ciclo:
@@ -349,28 +349,28 @@ Status final permitido por ciclo:
 | Campo | Valor |
 |-------|-------|
 | Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
+| MasterSignalId | `cycle-09-profile-mismatch-001` |
 | InstructionId | N/A |
-| LicenseId | PENDENTE |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
+| EA cliente DebugMode | `true` |
 | EA Mãe / Simulador | Simulador HTTP ou EA Mãe com perfil controlado |
-| Payload resumido | Profile mismatch controlado |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | SEM_ELEGÍVEL_ESPERADO |
-| Resultado EA cliente | N/A |
-| Resultado tracking | PENDENTE |
-| Idempotência | N/A |
-| TTL/expiração | PENDENTE |
+| Payload resumido | `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `agressivo`; licença staging em perfil `conservador` |
+| Resultado intake | MasterSignal criado; apareceu como `VALIDATED` / `NOT_DISPATCHED`; `POST /api/master/signals` continuou sem dispatch automático |
+| Resultado preview | Perfil da licença incompatível com o perfil do sinal |
+| Resultado dispatch | Segurança principal OK: licença ignorada com `PROFILE_MISMATCH`; `MasterSignalDispatch` ficou `SKIPPED`; nenhuma `Instruction` foi criada |
+| Resultado EA cliente | EA cliente não recebeu instruction; nenhuma execution foi criada |
+| Resultado tracking | Problema identificado: card Elegíveis mostrava 1, status consolidado mostrava `DISPATCHED_PENDING` e área de dispatch ainda parecia acionável, apesar de não existir instruction pendente |
+| Idempotência | Pendente de re-homologação após ajuste |
+| TTL/expiração | Dentro da janela do teste inicial |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | Segurança preservada: dispatch `SKIPPED` / `PROFILE_MISMATCH`; 0 instructions; 0 executions; EA não recebeu nada; nenhuma ordem real |
+| Observações | Ajuste necessário antes da aprovação: quando todas as licenças forem ignoradas, o sinal deve virar `REJECTED` com `rejectedReason=NO_ELIGIBLE_LICENSES`, tracking deve mostrar Elegíveis 0 / Ignorados 1 / Pendentes 0 e o botão de disparo não deve ficar disponível |
+| Decisão | PENDENTE — re-homologar com novo `MasterSignalId` após correção |
 
 ### Ciclo 10 — Rollback operacional testado
 

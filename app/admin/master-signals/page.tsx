@@ -6,6 +6,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 
 const CONSOLIDATED_LABELS: Record<string, string> = {
   NOT_DISPATCHED: "Não disparado",
+  REJECTED_NO_ELIGIBLE_LICENSES: "Sem elegíveis",
   DISPATCHED_PENDING: "Pendente EA",
   PARTIALLY_EXECUTED: "Parcial",
   EXECUTED: "Executado",

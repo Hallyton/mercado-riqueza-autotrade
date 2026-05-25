@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import React, { useState } from "react";
 
 const CONFIRM_MESSAGE =
   "Esta ação criará instruções para os clientes elegíveis. Em produção, isso poderá gerar execução pelos EAs conectados. Confirme apenas se o sinal estiver correto.\n\nEm homologação, mantenha os EAs em DebugMode=true.\n\nDeseja continuar?";
@@ -18,10 +18,12 @@ export type DispatchResultSummary = {
 
 export function MasterSignalDispatchButton({
   masterSignalId,
+  signalStatus,
   disabled,
   disabledReason,
 }: {
   masterSignalId: string;
+  signalStatus?: string;
   disabled: boolean;
   disabledReason?: string;
 }) {
@@ -32,6 +34,13 @@ export function MasterSignalDispatchButton({
   const [result, setResult] = useState<DispatchResultSummary | null>(null);
 
   async function onDispatch() {
+    if (disabled || signalStatus !== "VALIDATED") {
+      setMessage(
+        disabledReason ??
+          "Disparo disponível apenas para sinais com status VALIDATED."
+      );
+      return;
+    }
     if (!confirmed) {
       setMessage("Marque a confirmação antes de disparar.");
       return;
@@ -139,7 +148,8 @@ export function MasterSignalDispatchButton({
           </p>
           {result.noEligibleLicenses && (
             <p className="mt-2 text-amber-400">
-              Nenhuma licença elegível — sinal permaneceu validado sem instruções.
+              Nenhuma licença elegível — sinal rejeitado para dispatch sem criar
+              instruções.
             </p>
           )}
         </div>

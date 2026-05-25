@@ -37,6 +37,9 @@ export default async function AdminMasterSignalDetailPage({
   if (!tracking) notFound();
 
   const signal = tracking.masterSignal;
+  const noEligibleLicensesRejected =
+    signal.status === MasterSignalStatus.REJECTED &&
+    signal.rejectedReason === "NO_ELIGIBLE_LICENSES";
   const canTriggerDispatch =
     canDispatch && signal.status === MasterSignalStatus.VALIDATED;
 
@@ -112,6 +115,18 @@ export default async function AdminMasterSignalDetailPage({
         <MasterSignalTrackingPanel tracking={tracking} />
       </Card>
 
+      {noEligibleLicensesRejected && (
+        <Card className="border-red-500/30 bg-red-500/10 p-6">
+          <CardHeader className="p-0">
+            <CardTitle className="text-red-100">Nenhuma licença elegível</CardTitle>
+            <CardDescription className="text-red-100/80">
+              Nenhuma licença elegível para este sinal. O dispatch foi bloqueado e
+              nenhuma instruction foi criada.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
       {preview && tracking.notDispatchedYet && (
         <Card className="p-6">
           <CardHeader className="p-0 pb-4">
@@ -148,22 +163,25 @@ export default async function AdminMasterSignalDetailPage({
         </Card>
       )}
 
-      <Card className="p-6">
-        <CardHeader className="p-0 pb-4">
-          <CardTitle>Disparo para clientes</CardTitle>
-        </CardHeader>
-        <MasterSignalDispatchButton
-          masterSignalId={signal.masterSignalId}
-          disabled={!canTriggerDispatch}
-          disabledReason={
-            !canDispatch
-              ? `Papel ${adminRole} não autorizado a disparar.`
-              : signal.status !== MasterSignalStatus.VALIDATED
-                ? `Status ${signal.status} — disparo só para VALIDATED.`
-                : undefined
-          }
-        />
-      </Card>
+      {!noEligibleLicensesRejected && (
+        <Card className="p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle>Disparo para clientes</CardTitle>
+          </CardHeader>
+          <MasterSignalDispatchButton
+            masterSignalId={signal.masterSignalId}
+            signalStatus={signal.status}
+            disabled={!canTriggerDispatch}
+            disabledReason={
+              !canDispatch
+                ? `Papel ${adminRole} não autorizado a disparar.`
+                : signal.status !== MasterSignalStatus.VALIDATED
+                  ? `Status ${signal.status} — disparo só para VALIDATED.`
+                  : undefined
+            }
+          />
+        </Card>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 
 export type ConsolidatedTrackingStatus =
   | "NOT_DISPATCHED"
+  | "REJECTED_NO_ELIGIBLE_LICENSES"
   | "DISPATCHED_PENDING"
   | "PARTIALLY_EXECUTED"
   | "EXECUTED"
@@ -69,7 +70,9 @@ export function buildTrackingSummaryFromDispatches(
   }>,
   options?: { candidatesCount?: number | null; eligiblePreviewCount?: number }
 ): TrackingSummaryCounts {
-  const skippedCount = dispatches.filter((d) => d.status === MasterSignalDispatchStatus.SKIPPED).length;
+  const skippedCount = dispatches.filter(
+    (d) => d.status === MasterSignalDispatchStatus.SKIPPED
+  ).length;
   const withInstruction = dispatches.filter((d) => d.instruction != null);
   const now = new Date();
 
@@ -95,9 +98,9 @@ export function buildTrackingSummaryFromDispatches(
   failedCount += dispatchFailed;
 
   const instructionCount = dispatches.filter((d) => d.instruction != null).length;
-  const eligibleFromDispatches =
-    dispatches.filter((d) => d.status === MasterSignalDispatchStatus.INSTRUCTION_CREATED)
-      .length + skippedCount;
+  const eligibleFromDispatches = dispatches.filter(
+    (d) => d.status === MasterSignalDispatchStatus.INSTRUCTION_CREATED
+  ).length;
 
   return {
     candidatesCount: options?.candidatesCount ?? null,
@@ -117,7 +120,13 @@ export function deriveConsolidatedTrackingStatus(input: {
   masterStatus: MasterSignalStatus;
   summary: Pick<
     TrackingSummaryCounts,
-    "dispatchCount" | "instructionCount" | "executedCount" | "failedCount" | "pendingCount" | "expiredCount"
+    | "dispatchCount"
+    | "instructionCount"
+    | "executedCount"
+    | "failedCount"
+    | "pendingCount"
+    | "expiredCount"
+    | "skippedCount"
   >;
   expiresAt: Date | null;
   now?: Date;
@@ -130,11 +139,21 @@ export function deriveConsolidatedTrackingStatus(input: {
     return "NOT_DISPATCHED";
   }
 
+  if (masterStatus === MasterSignalStatus.REJECTED && summary.instructionCount === 0) {
+    return "REJECTED_NO_ELIGIBLE_LICENSES";
+  }
+
   if (masterStatus === MasterSignalStatus.FAILED && summary.instructionCount === 0) {
     return "FAILED";
   }
 
   if (summary.instructionCount === 0) {
+    if (
+      summary.skippedCount > 0 &&
+      summary.skippedCount === summary.dispatchCount
+    ) {
+      return "REJECTED_NO_ELIGIBLE_LICENSES";
+    }
     if (summary.dispatchCount > 0) return "DISPATCHED_PENDING";
     return "NOT_DISPATCHED";
   }

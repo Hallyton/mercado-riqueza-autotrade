@@ -79,6 +79,7 @@ async function findMasterSignalByKey(
 
 function terminalDispatchStatuses(): MasterSignalStatus[] {
   return [
+    MasterSignalStatus.REJECTED,
     MasterSignalStatus.DISPATCHED,
     MasterSignalStatus.PARTIALLY_DISPATCHED,
     MasterSignalStatus.FAILED,
@@ -142,12 +143,14 @@ async function finalizeMasterSignalStatus(
     await prisma.masterSignal.update({
       where: { id: masterSignalId },
       data: {
-        status: MasterSignalStatus.VALIDATED,
+        status: MasterSignalStatus.REJECTED,
         rejectedReason: "NO_ELIGIBLE_LICENSES",
+        rejectedAt: new Date(),
         dispatchedAt: null,
+        failedAt: null,
       },
     });
-    return MasterSignalStatus.VALIDATED;
+    return MasterSignalStatus.REJECTED;
   }
 
   const status =
@@ -321,7 +324,11 @@ export async function dispatchValidatedMasterSignal(
 
   if (terminalDispatchStatuses().includes(signal.status)) {
     const summary = await summarizeExistingDispatch(signal.id);
-    if (summary.instructionsCreated === 0 && summary.total === 0) {
+    if (
+      signal.status !== MasterSignalStatus.REJECTED &&
+      summary.instructionsCreated === 0 &&
+      summary.total === 0
+    ) {
       signal = await resetEmptyDispatchedSignal(signal);
     } else {
       return {
@@ -332,6 +339,9 @@ export async function dispatchValidatedMasterSignal(
         skipped: summary.skipped,
         failed: summary.failed,
         idempotent: true,
+        noEligibleLicenses:
+          signal.status === MasterSignalStatus.REJECTED &&
+          summary.instructionsCreated === 0,
       };
     }
   }
@@ -352,6 +362,9 @@ export async function dispatchValidatedMasterSignal(
         skipped: summary.skipped,
         failed: summary.failed,
         idempotent: true,
+        noEligibleLicenses:
+          status === MasterSignalStatus.REJECTED &&
+          summary.instructionsCreated === 0,
       };
     }
     throw new MasterSignalDispatchError(

@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   ExecutionStatus,
   InstructionPurpose,
@@ -78,6 +80,10 @@ vi.mock("@/auth", () => ({
   auth: authMock,
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 import {
   deriveConsolidatedTrackingStatus,
   buildTrackingSummaryFromDispatches,
@@ -95,6 +101,7 @@ import { MASTER_SIGNAL_INSTRUCTION_SOURCE } from "@/lib/master-signals/instructi
 import { canDispatchMasterSignals } from "@/lib/admin/permissions";
 import { requireAdminApiSession } from "@/lib/auth/admin-api";
 import { isAdminRole } from "@/lib/auth/roles";
+import { MasterSignalDispatchButton } from "@/components/admin/master-signal-dispatch-button";
 
 const baseSignal = {
   id: "row-1",
@@ -292,10 +299,11 @@ describe("getMasterSignalTrackingForAdmin", () => {
     expect(tracking!.consolidatedStatus).toBe("DISPATCHED_PENDING");
   });
 
-  it("retorna skippedCount e reasons nos dispatches", async () => {
+  it("retorna skipped/reason e não marca pendente quando não há elegíveis", async () => {
     masterFindUnique.mockResolvedValue({
       ...baseSignal,
-      status: MasterSignalStatus.VALIDATED,
+      status: MasterSignalStatus.REJECTED,
+      rejectedReason: "NO_ELIGIBLE_LICENSES",
     });
     dispatchFindMany.mockResolvedValue([
       {
@@ -320,8 +328,15 @@ describe("getMasterSignalTrackingForAdmin", () => {
     ]);
 
     const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+    expect(tracking!.summary.eligibleCount).toBe(0);
     expect(tracking!.summary.skippedCount).toBe(1);
+    expect(tracking!.summary.instructionCount).toBe(0);
+    expect(tracking!.summary.pendingCount).toBe(0);
+    expect(tracking!.summary.executedCount).toBe(0);
     expect(tracking!.skipped[0].code).toBe("PROFILE_MISMATCH");
+    expect(tracking!.rows[0].dispatchStatus).toBe(MasterSignalDispatchStatus.SKIPPED);
+    expect(tracking!.rows[0].dispatchReason).toBe("PROFILE_MISMATCH");
+    expect(tracking!.consolidatedStatus).toBe("REJECTED_NO_ELIGIBLE_LICENSES");
   });
 
   it("não expõe secrets no payload do tracking", async () => {
@@ -379,10 +394,29 @@ describe("tracking summary helpers", () => {
           failedCount: 0,
           pendingCount: 0,
           expiredCount: 0,
+          skippedCount: 0,
         },
         expiresAt: new Date(Date.now() + 3600_000),
       })
     ).toBe("NOT_DISPATCHED");
+  });
+
+  it("deriveConsolidatedTrackingStatus não retorna DISPATCHED_PENDING para skipped-only", () => {
+    expect(
+      deriveConsolidatedTrackingStatus({
+        masterStatus: MasterSignalStatus.REJECTED,
+        summary: {
+          dispatchCount: 1,
+          instructionCount: 0,
+          executedCount: 0,
+          failedCount: 0,
+          pendingCount: 0,
+          expiredCount: 0,
+          skippedCount: 1,
+        },
+        expiresAt: new Date(Date.now() + 3600_000),
+      })
+    ).toBe("REJECTED_NO_ELIGIBLE_LICENSES");
   });
 });
 
@@ -529,6 +563,22 @@ describe("dispatchMasterSignalFromAdmin", () => {
         targetType: "master_signal",
       })
     );
+  });
+});
+
+describe("MasterSignalDispatchButton", () => {
+  it("não renderiza botão de disparo quando o sinal não é VALIDATED", () => {
+    const html = renderToStaticMarkup(
+      createElement(MasterSignalDispatchButton, {
+        masterSignalId: "ms-test-001",
+        signalStatus: MasterSignalStatus.REJECTED,
+        disabled: true,
+        disabledReason: "Status REJECTED — disparo só para VALIDATED.",
+      })
+    );
+
+    expect(html).toContain("Status REJECTED");
+    expect(html).not.toContain("Disparar para clientes");
   });
 });
 

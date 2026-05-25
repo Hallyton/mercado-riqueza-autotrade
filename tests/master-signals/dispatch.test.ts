@@ -466,7 +466,7 @@ describe("dispatchValidatedMasterSignal", () => {
     expect(result.status).toBe(MasterSignalStatus.DISPATCHED);
   });
 
-  it("7c) nenhuma elegível não marca DISPATCHED silencioso", async () => {
+  it("7c) profile mismatch cria SKIPPED e rejeita sem instruction", async () => {
     masterFindUnique.mockResolvedValue(
       validatedSignal({ profileSlug: "conservador" })
     );
@@ -478,12 +478,14 @@ describe("dispatchValidatedMasterSignal", () => {
     const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
     expect(result.instructionsCreated).toBe(0);
     expect(result.noEligibleLicenses).toBe(true);
-    expect(result.status).toBe(MasterSignalStatus.VALIDATED);
+    expect(result.status).toBe(MasterSignalStatus.REJECTED);
+    expect(instructionCreate).not.toHaveBeenCalled();
     expect(masterUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          status: MasterSignalStatus.VALIDATED,
+          status: MasterSignalStatus.REJECTED,
           rejectedReason: "NO_ELIGIBLE_LICENSES",
+          dispatchedAt: null,
         }),
       })
     );
@@ -495,6 +497,29 @@ describe("dispatchValidatedMasterSignal", () => {
         }),
       })
     );
+  });
+
+  it("7d) retry do sinal REJECTED não cria instruction", async () => {
+    masterFindUnique.mockResolvedValue(
+      validatedSignal({
+        status: MasterSignalStatus.REJECTED,
+        rejectedReason: "NO_ELIGIBLE_LICENSES",
+      })
+    );
+    dispatchFindMany.mockResolvedValue([
+      {
+        status: MasterSignalDispatchStatus.SKIPPED,
+        instructionId: null,
+      },
+    ]);
+
+    const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
+    expect(result.idempotent).toBe(true);
+    expect(result.status).toBe(MasterSignalStatus.REJECTED);
+    expect(result.instructionsCreated).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(masterUpdateMany).not.toHaveBeenCalled();
+    expect(instructionCreate).not.toHaveBeenCalled();
   });
 
   it("8) atualiza para FAILED quando criação falha com elegível", async () => {
