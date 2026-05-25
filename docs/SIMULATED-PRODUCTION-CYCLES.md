@@ -46,15 +46,15 @@ EA Mãe / simulador
 
 | Indicador | Status |
 |-----------|--------|
-| Status da Fase 3 | **EM EXECUÇÃO** |
+| Status da Fase 3 | **APPROVED_FOR_CONTROLLED_BETA** |
 | Ciclos mínimos exigidos | 10 |
-| Ciclos aprovados | 9/10 |
+| Ciclos aprovados | 10/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Ordem real enviada | **NÃO** |
 | Dispatch automático detectado | **NÃO** |
 | Secrets expostos | **NÃO** |
-| Rollback testado | **PENDENTE** |
+| Rollback testado | **SIM** |
 
 ---
 
@@ -90,7 +90,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 | 07 | 2026-05-25 | EA cliente offline antes do dispatch | `cycle-07-offline-sim-001` | Ver painel/banco — instruction pendente confirmada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch criado; `Instruction MASTER_SIGNAL` criada | EA offline; instruction não processada neste ciclo | `DISPATCHED_PENDING` | true | NÃO | APROVADO | Instruction permaneceu pendente aguardando EA |
 | 08 | 2026-05-25 | EA cliente volta online e processa pendência | `cycle-08-offline-online-001` | `cmplm6x1y002iic04autgnz2s` | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | Sinal criado com EA offline no dispatch | Admin manual; instruction ficou pendente até EA voltar | EA online; DebugMode; execution report HTTP 200 | `EXECUTED` | true | NÃO | APROVADO | Instruction pendente foi processada ao EA voltar online |
 | 09 | 2026-05-25 | Sem licença elegível / profile mismatch controlado | `cycle-09-profile-mismatch-002` | N/A | `cmpj3wby70005sx18ot5e939p` | BUY | agressivo | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch efetivo bloqueado; `SKIPPED` por `PROFILE_MISMATCH`; nenhuma instruction | EA não recebeu instruction; nenhuma execution criada | `REJECTED_NO_ELIGIBLE_LICENSES`; Elegíveis 0; Ignorados 1; Pendentes 0 | true | NÃO | APROVADO | Correção `603170e` homologada; profile mismatch bloqueou dispatch efetivo |
-| 10 | PENDENTE | Rollback operacional testado | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 10 | 2026-05-25 | Rollback operacional testado | `cycle-10-rollback-001` | Ver painel — instruction pendente confirmada | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | MasterSignal criado e rastreável no painel | Admin manual; status DB `DISPATCHED`; dispatch e instruction criados | EA cliente parado/removido antes do processamento; nenhuma execution criada | `DISPATCHED_PENDING`; 1 dispatch; 1 instruction; pendentes 1 | true | NÃO | APROVADO | Rollback operacional validado com histórico preservado |
 
 Status final permitido por ciclo:
 
@@ -376,29 +376,29 @@ Status final permitido por ciclo:
 
 | Campo | Valor |
 |-------|-------|
-| Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Status | APROVADO |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
-| InstructionId | PENDENTE |
-| LicenseId | PENDENTE |
+| MasterSignalId | `cycle-10-rollback-001` |
+| InstructionId | Ver painel — instruction pendente confirmada |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
-| EA Mãe / Simulador | EA Mãe MQL5 ou simulador HTTP |
-| Payload resumido | Sinal/control flow usado para acionar rollback operacional |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | PENDENTE |
-| Resultado EA cliente | PENDENTE |
-| Resultado tracking | PENDENTE |
+| EA cliente DebugMode | `true` |
+| EA Mãe / Simulador | Simulador HTTP/CLI ou EA Mãe, registrado no painel como `MASTER_EA` |
+| Payload resumido | `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `conservador` |
+| Resultado intake | MasterSignal criado e rastreável no painel |
+| Resultado preview | Admin revisou o sinal antes do disparo manual |
+| Resultado dispatch | Admin disparou manualmente; status DB `DISPATCHED`; dispatch criado; instruction criada, mas não executada |
+| Resultado EA cliente | EA cliente foi parado/removido antes de processar a instruction; EA Mãe foi parado/removido; o fluxo não continuou executando sozinho; nenhuma execution foi criada |
+| Resultado tracking | Status consolidado `DISPATCHED_PENDING` / Disparado — pendente EA; Dispatches: 1; Instructions: 1; Executadas: 0; Pendentes: 1; Instruction: `RECEIVED`; Execution: `PENDING` |
 | Idempotência | N/A |
-| TTL/expiração | PENDENTE |
+| TTL/expiração | Dentro da janela operacional do ciclo |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | MasterSignal `cycle-10-rollback-001`; License `cmpj3wby70005sx18ot5e939p`; status DB `DISPATCHED`; 1 dispatch; 1 instruction pendente; 0 executions; painel preservou histórico do MasterSignal, dispatch e instruction |
+| Observações | O ciclo validou rollback operacional com instruction já criada: ao parar/remover o EA cliente antes do processamento, nenhuma execução foi reportada e nenhuma ordem real foi enviada. O painel manteve a rastreabilidade do MasterSignal, dispatch e instruction pendente. |
+| Decisão | APROVADO |
 
 ---
 
@@ -425,11 +425,11 @@ Falhas devem ser preservadas no registro, com evidências e decisão de correç�
 
 | Campo | Valor |
 |-------|-------|
-| Status final da Fase 3 | **PENDENTE** |
-| Ciclos aprovados | 8/10 |
+| Status final da Fase 3 | **APPROVED_FOR_CONTROLLED_BETA** |
+| Ciclos aprovados | 10/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
-| Decisão final | PENDENTE |
+| Decisão final | Produção simulada controlada aprovada para discussão de beta controlado, sem liberar produção real |
 
 Opções futuras:
 
@@ -437,7 +437,11 @@ Opções futuras:
 - `APPROVED_WITH_RESTRICTIONS`
 - `REJECTED`
 
-Mesmo se a Fase 3 for aprovada futuramente, produção real ainda exigirá nova fase, novo gate e aprovação explícita.
+Ressalvas obrigatórias:
+
+- Produção real ainda **NÃO** está liberada.
+- Ordem real ainda **NÃO** está liberada.
+- Beta controlado ainda exige nova fase, novo gate e aprovação explícita.
 
 ---
 
