@@ -350,6 +350,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.10** | Concluída + homologação online staging | EA Mãe MQL5 `MR_AutoTrade_Master_Signal` — emissor manual; intake apenas; **POST sem dispatch automático** |
 | **2.11** | Documentação concluída — gate operacional pendente | [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) — checklist, roteiro, reprovação, rollback; **sem** código; **sem** liberação de produção real |
 | **2.12** | Concluída — `APPROVED_FOR_SIMULATED_PRODUCTION` | [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) — fluxo completo validado em staging; **produção real não liberada**; **POST sem dispatch automático** |
+| **3.1** | Documentada | [`SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) — plano operacional da produção simulada controlada; **sem** código; produção real continua não liberada |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -618,6 +619,27 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Restrições mantidas:** produção real não liberada; EA cliente deve permanecer em `DebugMode=true` em homologação; dispatch continua manual pelo admin; secrets (`MASTER_EA_API_SECRET`, `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_PASSWORD`) permanecem protegidos.
 
+### Fase 3.1 — Plano Operacional da Produção Simulada Controlada (maio/2026)
+
+**Status:** documentada  
+**Documento:** [`docs/SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md)
+
+| Item | Status |
+|------|--------|
+| Plano operacional | OK — rotina diária/por sessão para operar staging com EA cliente em `DebugMode=true` |
+| Alteração de código | **Não** |
+| EA cliente / EA Mãe / backend / Prisma | **Inalterados** |
+| Env / deploy | **Não alterados** |
+| Produção real | **Não liberada** |
+| Ordem real | **Não liberada** |
+| Dispatch automático | **Continua proibido** |
+
+**Escopo da Fase 3.1:** transformar o gate aprovado em operação simulada repetível, com rotina de pré-check, envio de sinal mestre, validação `NOT_DISPATCHED`, revisão admin, dispatch manual, recebimento pelo EA cliente em `DebugMode=true`, execution report e tracking.
+
+**Critérios operacionais propostos para Fase 3:** mínimo de 10 ciclos simulados aprovados, em pelo menos 3 dias diferentes, com cenários de expiração, retry/idempotência e rollback operacional. Nenhuma ordem real, nenhum dispatch automático, nenhuma duplicidade indevida e nenhum secret exposto.
+
+**Próximo passo (produto):** executar os ciclos da produção simulada controlada conforme o plano operacional e registrar evidências por ciclo antes de qualquer discussão sobre presets internos, estratégia real do EA Mãe ou beta fechado.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -676,6 +698,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/STAGING-VPS-HOMOLOGATION-RESULTS.md`](STAGING-VPS-HOMOLOGATION-RESULTS.md) | Baseline staging |
 | [`docs/SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) | Gate produção simulada (Fase 2.11) |
 | [`docs/SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) | Resultado aprovado do gate produção simulada (Fase 2.12) |
+| [`docs/SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) | Plano operacional da produção simulada controlada (Fase 3.1) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
