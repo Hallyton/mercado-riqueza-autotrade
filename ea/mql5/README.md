@@ -38,8 +38,22 @@ EA **executor licenciado** do Mercado da Riqueza AutoTrade — sem lógica estra
 
 Ver [`docs/EA-API.md`](../../docs/EA-API.md).
 
+## EA Mãe — `MR_AutoTrade_Master_Signal.mq5`
+
+Emissor **manual** de sinais mestres (`POST /api/master/signals`). **Sem** estratégia e **sem** ordens no broker.
+
+| Item | Valor |
+|------|--------|
+| Inputs | `InpApiBaseUrl`, `InpMasterSecret` (MASTER_EA_API_SECRET), símbolo/lado/perfil/TTL |
+| Envio | Botão **Enviar sinal mestre** no gráfico (`InpSendOnInit=false` por padrão) |
+| WebRequest | Liberar URL de staging/produção nas opções do terminal |
+| Dispatch clientes | **Manual** no painel `/admin/master-signals` |
+
+Documentação: [`docs/MASTER-EA-MQL5-V1.md`](../../docs/MASTER-EA-MQL5-V1.md).
+
 ## Segurança
 
 - Não há inputs de estratégia, stops editáveis, horários ou filtros.
 - Token salvo em arquivo comum MT5 (`MQL5/Files/`) por conta.
 - `InpDebugMode=true` bloqueia `OrderSend` e reporta execução simulada.
+- EA Mãe: secret apenas no input `InpMasterSecret` — nunca logar.

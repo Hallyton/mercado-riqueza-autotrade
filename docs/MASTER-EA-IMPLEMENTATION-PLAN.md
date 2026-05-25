@@ -347,6 +347,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.7** | Concluída + homologação online staging | Admin trigger `/admin/master-signals` — intake + revisão + preview + disparo manual; **POST sem dispatch automático** |
 | **2.8** | Concluída + homologação online staging | Painel de tracking consolidado; status consolidado na lista; **POST sem dispatch automático** |
 | **2.9** | Concluída + homologação online staging | Simulador HTTP/CLI (`npm run master:signal`); intake apenas — **POST sem dispatch automático** |
+| **2.10** | Implementada localmente | EA Mãe MQL5 `MR_AutoTrade_Master_Signal` — emissor manual; **sem** estratégia; homologação MT5/staging pendente |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -527,7 +528,23 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.9 homologada em staging. O simulador HTTP/CLI envia corretamente sinais mestres ao backend; o sinal aparece no painel como VALIDATED / não disparado, confirmando que a ferramenta faz **apenas intake**, respeitando o desenho seguro do projeto (dispatch manual via admin).
 
-**Próximo passo (produto):** EA Mãe MQL5 real (opcional) ou gate produção simulada (Fase 2.11).
+### Fase 2.10 — EA Mãe MQL5 v1 emissor manual (implementação local — maio/2026)
+
+| Item | Status |
+|------|--------|
+| `MR_AutoTrade_Master_Signal.mq5` | OK — POST `/api/master/signals` via WebRequest |
+| Botão **Enviar sinal mestre** | OK — envio manual (`InpSendOnInit=false` por padrão) |
+| Inputs | API URL, secret, símbolo, lado, perfil, TTL — **sem** parâmetros estratégicos |
+| Ordens MT5 / broker | **Não** — sem `OrderSend` |
+| Estratégia real | **Não** — equivalente ao simulador HTTP |
+| `POST /api/master/signals` | **Inalterado** — sem dispatch automático |
+| EA cliente executor | **Inalterado** |
+| Documentação | [`docs/MASTER-EA-MQL5-V1.md`](MASTER-EA-MQL5-V1.md) |
+| Homologação MT5 + staging | **Pendente** |
+
+**Fluxo:** EA Mãe envia intake → admin revisa/dispara → fluxo cliente já homologado (Fases 2.6–2.9).
+
+**Próximo passo (produto):** homologar EA Mãe no MT5 contra staging; depois gate produção simulada (Fase 2.11).
 
 ---
 
