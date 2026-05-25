@@ -48,7 +48,7 @@ EA Mãe / simulador
 |-----------|--------|
 | Status da Fase 3 | **EM EXECUÇÃO** |
 | Ciclos mínimos exigidos | 10 |
-| Ciclos aprovados | 2/10 |
+| Ciclos aprovados | 3/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Ordem real enviada | **NÃO** |
@@ -83,7 +83,7 @@ Um ciclo só pode ser marcado como `APROVADO` se todos os itens aplicáveis fore
 |-------|------|---------------|----------------|---------------|-----------|------|--------|------------------|--------------------|--------------|----------|-----------|------------|--------------|-------------|
 | 01 | 2026-05-25 | BUY válido via EA Mãe MQL5 | `cycle-01-buy-mt5-001` | `cmpl82wy8000yjp046r7w8c65` | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED` antes do disparo | Admin manual; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report HTTP 200 | `EXECUTED` | true | NÃO | APROVADO | Fluxo completo validado sem ordem real |
 | 02 | 2026-05-25 | SELL válido via EA Mãe MQL5 | `cycle-02-sell-mt5-001` | Ver painel/banco — tracking `EXECUTED` confirmado | `cmpj3wby70005sx18ot5e939p` | SELL | conservador | `VALIDATED` / `NOT_DISPATCHED` antes do disparo | Admin manual; dispatch `INSTRUCTION_CREATED`; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report recebido | `EXECUTED` | true | NÃO | APROVADO | Fluxo SELL completo validado sem ordem real |
-| 03 | PENDENTE | BUY válido via simulador HTTP | PENDENTE | PENDENTE | PENDENTE | BUY | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
+| 03 | 2026-05-25 | BUY válido via simulador HTTP | `cycle-03-buy-sim-001` | Ver painel/banco — tracking `EXECUTED` confirmado | `cmpj3wby70005sx18ot5e939p` | BUY | conservador | `VALIDATED` / `NOT_DISPATCHED`; POST sem dispatch automático | Admin manual; dispatch `INSTRUCTION_CREATED`; `Instruction MASTER_SIGNAL` criada | DebugMode; execution report recebido | `EXECUTED` | true | NÃO | APROVADO | Fluxo BUY via simulador validado sem ordem real |
 | 04 | PENDENTE | Retry/idempotência do mesmo MasterSignal | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 05 | PENDENTE | Disparo admin repetido sem duplicar instruction | PENDENTE | PENDENTE | PENDENTE | PENDENTE | conservador | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
 | 06 | PENDENTE | Sinal expirado bloqueado | PENDENTE | N/A | PENDENTE | PENDENTE | conservador | PENDENTE | BLOQUEADO_ESPERADO | N/A | PENDENTE | PENDENTE | NÃO | PENDENTE | PENDENTE |
@@ -180,29 +180,29 @@ Status final permitido por ciclo:
 
 | Campo | Valor |
 |-------|-------|
-| Status | PENDENTE |
-| Data/hora | PENDENTE |
-| Responsável | PENDENTE |
+| Status | APROVADO |
+| Data/hora | 2026-05-25 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| MasterSignalId | PENDENTE |
-| InstructionId | PENDENTE |
-| LicenseId | PENDENTE |
+| MasterSignalId | `cycle-03-buy-sim-001` |
+| InstructionId | Ver painel/banco — tracking `EXECUTED` confirmado |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | MT5 | `52609973 @ XPMT5-DEMO` |
-| EA cliente DebugMode | PENDENTE |
+| EA cliente DebugMode | `true` |
 | EA Mãe / Simulador | Simulador HTTP |
 | Payload resumido | `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `conservador` |
-| Resultado intake | PENDENTE |
-| Resultado preview | PENDENTE |
-| Resultado dispatch | PENDENTE |
-| Resultado EA cliente | PENDENTE |
-| Resultado tracking | PENDENTE |
+| Resultado intake | MasterSignal criado pelo simulador HTTP/CLI (`npm run master:signal`); apareceu no painel como `VALIDATED` / `NOT_DISPATCHED` antes do disparo; `POST /api/master/signals` continuou sem dispatch automático |
+| Resultado preview | Admin revisou elegibilidade antes do disparo manual |
+| Resultado dispatch | Admin disparou manualmente; dispatch criado com status `INSTRUCTION_CREATED`; instruction criada com `source: MASTER_SIGNAL` |
+| Resultado EA cliente | EA cliente processou a instruction em `DebugMode=true`; nenhuma ordem real enviada; execution report recebido pela API |
+| Resultado tracking | Painel tracking confirmou `EXECUTED`; Elegíveis: 1; Ignorados: 0; Instructions: 1; Executadas: 1; Pendentes: 0; Falhas: 0; Dispatch: `INSTRUCTION_CREATED`; Instruction: `EXECUTED`; Execution: `EXECUTED`; Source: `MASTER_SIGNAL`; Qtd: 1; MT5: `52609973 @ XPMT5-DEMO`; Motivo: Execução reportada pelo EA |
 | Idempotência | N/A |
-| TTL/expiração | PENDENTE |
+| TTL/expiração | Dentro da janela operacional do ciclo |
 | Ordem real enviada | NÃO |
 | Secrets expostos | NÃO |
-| Evidências | PENDENTE |
-| Observações | PENDENTE |
-| Decisão | PENDENTE |
+| Evidências | MasterSignal `cycle-03-buy-sim-001`; License `cmpj3wby70005sx18ot5e939p`; tracking `EXECUTED`; InstructionId não visível nas evidências fornecidas |
+| Observações | O ciclo validou o fluxo BUY via simulador HTTP: Simulador HTTP → intake → admin dispatch manual → Instruction MASTER_SIGNAL → EA cliente DebugMode → execution report → tracking EXECUTED |
+| Decisão | APROVADO |
 
 ### Ciclo 04 — Retry/idempotência do mesmo MasterSignal
 
@@ -426,7 +426,7 @@ Falhas devem ser preservadas no registro, com evidências e decisão de correç�
 | Campo | Valor |
 |-------|-------|
 | Status final da Fase 3 | **PENDENTE** |
-| Ciclos aprovados | 2/10 |
+| Ciclos aprovados | 3/10 |
 | Ciclos reprovados | 0 |
 | Ciclos com restrição | 0 |
 | Decisão final | PENDENTE |
