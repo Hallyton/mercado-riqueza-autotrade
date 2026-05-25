@@ -349,6 +349,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.9** | Concluída + homologação online staging | Simulador HTTP/CLI (`npm run master:signal`); intake apenas — **POST sem dispatch automático** |
 | **2.10** | Concluída + homologação online staging | EA Mãe MQL5 `MR_AutoTrade_Master_Signal` — emissor manual; intake apenas; **POST sem dispatch automático** |
 | **2.11** | Documentação concluída — gate operacional pendente | [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) — checklist, roteiro, reprovação, rollback; **sem** código; **sem** liberação de produção real |
+| **2.12** | Concluída — `APPROVED_FOR_SIMULATED_PRODUCTION` | [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) — fluxo completo validado em staging; **produção real não liberada**; **POST sem dispatch automático** |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -590,7 +591,32 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próximo passo (produto):** executar o gate operacional em staging conforme [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md); após aprovação, registrar evidências (commit doc opcional `docs: record simulated production gate approval`).
 
-**Produção real:** permanece **bloqueada** até gate e fases futuras explícitas — este documento cobre apenas **produção simulada em staging**.
+**Produção real:** permanece **bloqueada** até fases futuras explícitas — este documento cobre apenas **produção simulada em staging**.
+
+### Fase 2.12 — Execução do Gate de Produção Simulada (maio/2026)
+
+**Status final:** `APPROVED_FOR_SIMULATED_PRODUCTION`  
+**Resultado oficial:** [`docs/SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md)
+
+| Item | Status |
+|------|--------|
+| Ambiente staging | OK — `https://autotrade-staging.mercadodariqueza.com.br` |
+| EA Mãe MQL5 | OK — enviou `MasterSignal` `master-mt5-002` |
+| Intake `POST /api/master/signals` | OK — `VALIDATED`; **sem dispatch automático** |
+| Admin dispatch | OK — `MASTER_SIGNAL_DISPATCH` auditado por `ADMIN` |
+| Instruction | OK — `cmpkhy8xs003uib04p3xyj5cn`, `source: MASTER_SIGNAL`, `EXECUTED` |
+| EA cliente | OK — `52609973 @ XPMT5-DEMO`, `DebugMode=true`, nenhuma ordem real |
+| Tracking | OK — consolidado `EXECUTED` |
+| Retry / idempotência | OK — sem duplicar instruction |
+| Produção real | **Não liberada** |
+
+**Fluxo validado:** EA Mãe → intake → admin dispatch manual → instruction `MASTER_SIGNAL` → EA cliente em `DebugMode=true` → execution report → tracking `EXECUTED`.
+
+**Investigação crítica durante o gate:** o sinal `master-mt5-002` apareceu como `DISPATCHED` / `EXECUTED`, gerando suspeita inicial de dispatch automático. A consulta ao Neon staging confirmou diferença temporal de aproximadamente 3 minutos e 41 segundos entre `received_at` (`2026-05-25T00:53:42.460Z`) e criação do dispatch (`2026-05-25T00:57:23.869Z`), além de `AuditLog` com `action: MASTER_SIGNAL_DISPATCH`, `actor_type: ADMIN` e `adminActionId: cmpkhy9us0040ib04i5sbzuzf`.
+
+**Conclusão:** a suspeita de dispatch automático foi descartada. O dispatch foi realizado por ação administrativa autenticada, e `POST /api/master/signals` permanece intake-only (`VALIDATED` / `NOT_STARTED` até ação admin).
+
+**Restrições mantidas:** produção real não liberada; EA cliente deve permanecer em `DebugMode=true` em homologação; dispatch continua manual pelo admin; secrets (`MASTER_EA_API_SECRET`, `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_PASSWORD`) permanecem protegidos.
 
 ---
 
@@ -609,7 +635,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Staging vs prod | Secrets, banco Neon e domínio separados; não reutilizar `DATABASE_URL` |
 | DARF | Zero alteração em projeto/rotas DARF |
 | Domínios | Staging: `autotrade-staging.mercadodariqueza.com.br`; não usar `www`; produção futura: `autotrade.mercadodariqueza.com.br` |
-| Conta real | **Fora** das fases 2.1–2.11 (gate simulado não libera produção) |
+| Conta real | **Fora** das fases 2.1–2.12 (gate simulado não libera produção) |
 
 ---
 
@@ -649,6 +675,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/EA-API.md`](EA-API.md) | Contrato EA cliente homologado |
 | [`docs/STAGING-VPS-HOMOLOGATION-RESULTS.md`](STAGING-VPS-HOMOLOGATION-RESULTS.md) | Baseline staging |
 | [`docs/SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) | Gate produção simulada (Fase 2.11) |
+| [`docs/SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) | Resultado aprovado do gate produção simulada (Fase 2.12) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---

@@ -15,6 +15,17 @@ Documento operacional da **Fase 2.11**: critérios, checklist, roteiro de teste,
 | [`MASTER-EA-MQL5-V1.md`](MASTER-EA-MQL5-V1.md) | EA Mãe emissor manual |
 | [`STAGING-VPS-HOMOLOGATION.md`](STAGING-VPS-HOMOLOGATION.md) | Procedimento staging/VPS |
 | [`STAGING-VPS-HOMOLOGATION-RESULTS.md`](STAGING-VPS-HOMOLOGATION-RESULTS.md) | Baseline EA cliente homologado |
+| [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) | Resultado oficial da execução do gate (Fase 2.12) |
+
+---
+
+## Status da execução
+
+**Gate executado e aprovado em staging:** `APPROVED_FOR_SIMULATED_PRODUCTION`.
+
+Resultado oficial em [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md).
+
+A aprovação confirma o fluxo simulado EA Mãe → intake → dispatch admin manual → `Instruction` `MASTER_SIGNAL` → EA cliente em `DebugMode=true` → execution report → tracking `EXECUTED`. Ela **não** libera produção real, **não** autoriza ordem real e **não** altera a regra de segurança: `POST /api/master/signals` continua sem dispatch automático.
 
 ---
 
@@ -251,6 +262,7 @@ Observações:
 | Versão | Data | Notas |
 |--------|------|-------|
 | 1.0 | maio/2026 | Fase 2.11 — documentação inicial do gate; homologação operacional do gate **pendente** até execução formal e registro de evidências |
+| 1.1 | maio/2026 | Fase 2.12 — gate executado e aprovado para produção simulada; resultado em [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md); produção real permanece não liberada |
 
 ---
 
