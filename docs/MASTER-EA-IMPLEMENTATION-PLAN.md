@@ -351,6 +351,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.11** | Documentação concluída — gate operacional pendente | [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) — checklist, roteiro, reprovação, rollback; **sem** código; **sem** liberação de produção real |
 | **2.12** | Concluída — `APPROVED_FOR_SIMULATED_PRODUCTION` | [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) — fluxo completo validado em staging; **produção real não liberada**; **POST sem dispatch automático** |
 | **3.1** | Documentada | [`SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) — plano operacional da produção simulada controlada; **sem** código; produção real continua não liberada |
+| **3.2** | Documentada | [`SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md) — registro dos 10 ciclos mínimos da produção simulada controlada; **sem** código; produção real continua não liberada |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -640,6 +641,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próximo passo (produto):** executar os ciclos da produção simulada controlada conforme o plano operacional e registrar evidências por ciclo antes de qualquer discussão sobre presets internos, estratégia real do EA Mãe ou beta fechado.
 
+### Fase 3.2 — Registro dos Ciclos Simulados (maio/2026)
+
+**Status:** documentada  
+**Documento:** [`docs/SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md)
+
+| Item | Status |
+|------|--------|
+| Registro dos ciclos | OK — tabela principal com 10 ciclos mínimos, todos inicialmente `PENDENTE` |
+| Critérios por ciclo | OK — aprovação, reprovação imediata e evidências mínimas |
+| Alteração de código | **Não** |
+| EA cliente / EA Mãe / backend / Prisma | **Inalterados** |
+| Env / deploy | **Não alterados** |
+| Produção real | **Não liberada** |
+| Ordem real | **Não liberada** |
+| Dispatch automático | **Continua proibido** |
+
+**Objetivo:** controlar a execução dos 10 ciclos mínimos da produção simulada controlada, incluindo BUY/SELL válidos, simulador HTTP, retry/idempotência, disparo admin repetido, sinal expirado, EA offline/online, sem licença elegível e rollback operacional.
+
+**Estado inicial da Fase 3:** `EM EXECUÇÃO`, com 0/10 ciclos aprovados, 0 reprovados, 0 com restrição, rollback pendente, nenhuma ordem real, nenhum dispatch automático e nenhum secret exposto.
+
+**Próximo passo (produto):** executar e preencher os ciclos em [`SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md), sem ocultar falhas e mantendo produção real bloqueada até nova fase/gate explícitos.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -699,6 +722,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) | Gate produção simulada (Fase 2.11) |
 | [`docs/SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) | Resultado aprovado do gate produção simulada (Fase 2.12) |
 | [`docs/SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) | Plano operacional da produção simulada controlada (Fase 3.1) |
+| [`docs/SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md) | Registro dos ciclos simulados da produção simulada controlada (Fase 3.2) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
