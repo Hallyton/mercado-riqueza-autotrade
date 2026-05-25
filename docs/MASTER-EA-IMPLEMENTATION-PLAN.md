@@ -348,6 +348,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.8** | Concluída + homologação online staging | Painel de tracking consolidado; status consolidado na lista; **POST sem dispatch automático** |
 | **2.9** | Concluída + homologação online staging | Simulador HTTP/CLI (`npm run master:signal`); intake apenas — **POST sem dispatch automático** |
 | **2.10** | Concluída + homologação online staging | EA Mãe MQL5 `MR_AutoTrade_Master_Signal` — emissor manual; intake apenas; **POST sem dispatch automático** |
+| **2.11** | Documentação concluída — gate operacional pendente | [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) — checklist, roteiro, reprovação, rollback; **sem** código; **sem** liberação de produção real |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -568,7 +569,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Conclusão:** Fase 2.10 homologada em staging. O EA Mãe MQL5 v1 foi validado como emissor manual de `MasterSignal`: envia o sinal para o backend, o sinal aparece no painel admin como **VALIDATED** / **Não disparado**, e o dispatch continua **manual** pelo admin. Nenhuma ordem real é enviada pelo EA Mãe.
 
-**Próximo passo (produto):** gate produção simulada (Fase 2.11).
+### Fase 2.11 — Gate de produção simulada (documentação — maio/2026)
+
+| Item | Status |
+|------|--------|
+| Documento [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) | OK — checklist formal (32 critérios), roteiro ponta a ponta, reprovação, rollback, template de evidências, decisão do gate |
+| Alteração de código | **Não** — somente documentação operacional |
+| EA cliente / EA Mãe / backend / Prisma | **Inalterados** nesta fase |
+| Deploy / envs | **Não** alterados por esta fase |
+| Produção real | **Não liberada** |
+| Dispatch automático no POST | **Continua desativado** |
+| Homologação operacional do gate | **Pendente** — executar roteiro em staging e registrar evidências com status `APPROVED_*` ou `REJECTED` |
+
+**Conteúdo do gate:**
+
+- Escopo: staging (Vercel + Neon + domínio oficial), EA Mãe, simulador HTTP, admin OPS/SUPERADMIN, dispatch manual, EA cliente DebugMode, tracking consolidado, auditoria.
+- Fora de escopo: produção real, ordem real, dispatch automático, estratégia EA Mãe, DARF, billing, onboarding público.
+- Critérios de aprovação: todos os itens obrigatórios OK, nenhuma reprovação, evidências arquivadas, sem ordem real.
+- Rollback operacional e de banco documentados (sem apagar auditoria).
+
+**Próximo passo (produto):** executar o gate operacional em staging conforme [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md); após aprovação, registrar evidências (commit doc opcional `docs: record simulated production gate approval`).
+
+**Produção real:** permanece **bloqueada** até gate e fases futuras explícitas — este documento cobre apenas **produção simulada em staging**.
 
 ---
 
@@ -587,7 +609,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Staging vs prod | Secrets, banco Neon e domínio separados; não reutilizar `DATABASE_URL` |
 | DARF | Zero alteração em projeto/rotas DARF |
 | Domínios | Staging: `autotrade-staging.mercadodariqueza.com.br`; não usar `www`; produção futura: `autotrade.mercadodariqueza.com.br` |
-| Conta real | **Fora** das fases 2.1–2.10 |
+| Conta real | **Fora** das fases 2.1–2.11 (gate simulado não libera produção) |
 
 ---
 
@@ -626,6 +648,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/MASTER-EA-SIGNAL-ARCHITECTURE.md`](MASTER-EA-SIGNAL-ARCHITECTURE.md) | Arquitetura alvo |
 | [`docs/EA-API.md`](EA-API.md) | Contrato EA cliente homologado |
 | [`docs/STAGING-VPS-HOMOLOGATION-RESULTS.md`](STAGING-VPS-HOMOLOGATION-RESULTS.md) | Baseline staging |
+| [`docs/SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) | Gate produção simulada (Fase 2.11) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
