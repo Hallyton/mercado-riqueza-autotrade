@@ -109,7 +109,7 @@ Cobertura mínima:
 |--------|------|----------------|------|--------|---------------|-----------|----------|------------|--------|-------------|
 | 02 | 2026-05-26 | `beta-demo-002-buy-001` | BUY | EA Mãe ou simulador | Ver painel/banco — tracking `EXECUTED` confirmado | true | `EXECUTED` | NÃO | APROVADA | Admin dispatch manual; `Instruction MASTER_SIGNAL`; EA processou em `DEBUG_MODE`; 1/1/1 |
 | 03 | 2026-05-26 | `beta-demo-003-sell-001` | SELL | EA Mãe ou simulador | Ver painel/banco — tracking `EXECUTED` confirmado | true | `EXECUTED` | NÃO | APROVADA | Admin dispatch manual; `Instruction MASTER_SIGNAL`; EA processou em `DEBUG_MODE`; SELL validado |
-| 04 | PENDENTE | PENDENTE | N/A | EA Mãe ou simulador | PENDENTE | true | PENDENTE | NÃO | PENDENTE | Retry/idempotência ou expiração |
+| 04 | 2026-05-26 | `beta-demo-003-sell-001` | N/A | Retry/idempotência | N/A — nenhuma nova instruction criada | true | `EXECUTED` | NÃO | APROVADA | Reenvio idempotente com `beta-demo-003-sell-001-key`; contagens 1/1/1 preservadas |
 
 ### Sessão 02 — BUY via EA Mãe ou simulador
 
@@ -156,6 +156,32 @@ Cobertura mínima:
 | Resultado painel | Status consolidado `EXECUTED`; Side: `SELL`; Instructions: 1; Executadas: 1; Pendentes: 0; Falhas: 0; Source: `MASTER_SIGNAL` |
 | Ordem real enviada | NÃO |
 | Observações | Sessão SELL recorrente aprovada com tracking `EXECUTED`, dispatch manual e sem ordem real |
+
+### Sessão 04 — retry/idempotência
+
+| Campo | Valor |
+|-------|-------|
+| Status final | APROVADA |
+| MasterSignalId reutilizado | `beta-demo-003-sell-001` |
+| IdempotencyKey | `beta-demo-003-sell-001-key` |
+| Participante | Cliente Staging |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Modo | `DebugMode=true` |
+| Objetivo | Validar idempotência do intake/retry reutilizando o mesmo MasterSignalId da Sessão 03 |
+| Resultado do retry | API tratou como retry/idempotente; não criou nova linha no painel; MasterSignal existente permaneceu rastreável em `/admin/master-signals/beta-demo-003-sell-001` |
+| Status consolidado | `EXECUTED` |
+| Dispatches antes/depois | 1 / 1 |
+| Instructions antes/depois | 1 / 1 |
+| Execuções antes/depois | 1 / 1 |
+| Pendentes | 0 |
+| Falhas | 0 |
+| Nova instruction | NÃO |
+| Novo dispatch indevido | NÃO |
+| Nova execution duplicada | NÃO |
+| Ordem real enviada | NÃO |
+| Dispatch automático | NÃO |
+| Observações | Sessão de retry/idempotência aprovada sem duplicidade e sem ordem real |
 
 ---
 
@@ -207,7 +233,7 @@ Somente discutir Gate para Demo com `DebugMode=false` se:
 
 ## 10. Status do plano
 
-Status atual: `IN_PROGRESS`
+Status final: `APPROVED_FOR_DEBUGMODE_FALSE_GATE`
 
 Opções futuras:
 

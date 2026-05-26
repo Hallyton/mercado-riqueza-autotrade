@@ -355,7 +355,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.1** | Documentada | [`CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) — gate de beta controlado; produção real, ordem real e dispatch automático continuam bloqueados |
 | **4.2** | Documentada | [`CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) — participante beta demo nº 1; Cliente Staging; `52609973 @ XPMT5-DEMO`; produção real e ordem real continuam bloqueadas |
 | **4.3** | Executada e aprovada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo nº 1 aprovada com `beta-demo-001-buy-002`; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
-| **4.4** | Em execução | [`CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) — Sessões 02 BUY e 03 SELL aprovadas; produção real e ordem real continuam bloqueadas |
+| **4.4** | Concluída — `APPROVED_FOR_DEBUGMODE_FALSE_GATE` | [`CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) — Sessões 02 BUY, 03 SELL e 04 retry/idempotência aprovadas; produção real e ordem real continuam bloqueadas |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -746,13 +746,13 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ### Fase 4.4 — Plano de Sessões Beta Demo Recorrentes
 
-**Status:** em execução  
+**Status:** concluída  
 **Documento:** [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md)  
 **Objetivo:** executar sessões repetidas com `DebugMode=true` antes de qualquer gate para `DebugMode=false`.
 
 | Item | Status |
 |------|--------|
-| Plano de sessões beta demo recorrentes | Em execução |
+| Plano de sessões beta demo recorrentes | Concluído |
 | Participante | Cliente Staging |
 | Conta | `52609973 @ XPMT5-DEMO` |
 | Perfil | `conservador` |
@@ -760,8 +760,8 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Modo | `DebugMode=true` |
 | Sessão 02 — BUY | Aprovada com `beta-demo-002-buy-001`; tracking `EXECUTED` |
 | Sessão 03 — SELL | Aprovada com `beta-demo-003-sell-001`; tracking `EXECUTED` |
-| Sessões pendentes | 04 retry/idempotência ou expiração |
-| Status atual do plano | `IN_PROGRESS` |
+| Sessão 04 — retry/idempotência | Aprovada reutilizando `beta-demo-003-sell-001`; sem duplicidade |
+| Status final do plano | `APPROVED_FOR_DEBUGMODE_FALSE_GATE` |
 | Produção real | **Bloqueada** |
 | Ordem real | **Bloqueada** |
 | Dispatch automático | **Bloqueado** |
@@ -769,11 +769,11 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Escopo da Fase 4.4:** definir rotina segura para sessões beta demo recorrentes com 1 participante, 1 conta demo, 1 ativo, perfil conservador, dispatch manual admin, `DebugMode=true` e registro de evidências por sessão. O plano exige pelo menos 3 sessões recorrentes, em pelo menos 2 dias diferentes, cobrindo BUY, SELL e retry/idempotência ou expiração.
 
-**Registro de execução:** as duas primeiras sessões recorrentes pós-beta demo foram aprovadas. O MasterSignal `beta-demo-002-buy-001` validou BUY e o MasterSignal `beta-demo-003-sell-001` validou SELL. Ambos criaram `Instruction MASTER_SIGNAL`, foram processados pelo EA cliente em `DebugMode=true`, não enviaram ordem real e deixaram o tracking `EXECUTED`. Dispatch automático continuou desativado; o dispatch foi manual pelo admin.
+**Registro de execução:** as sessões recorrentes planejadas foram aprovadas. O MasterSignal `beta-demo-002-buy-001` validou BUY e o MasterSignal `beta-demo-003-sell-001` validou SELL. A Sessão 04 reutilizou `beta-demo-003-sell-001` com `beta-demo-003-sell-001-key` para validar idempotência: a API tratou como retry, não criou nova instruction, não criou novo dispatch indevido, não criou execution duplicada e preservou contagens 1/1/1. Todas as sessões mantiveram `DebugMode=true`, sem ordem real, tracking consistente e dispatch automático desativado.
 
 **Critério para próximo gate:** somente discutir Gate para Demo com `DebugMode=false` se todas as sessões recorrentes forem aprovadas com 0 ordens reais, 0 dispatch automático, 0 duplicidades indevidas, 0 secrets expostos, tracking consistente e rollback conhecido.
 
-**Próxima etapa:** executar Sessão Beta Demo Recorrente nº 4 — retry/idempotência ou expiração, ainda com `DebugMode=true`, e registrar evidências. Qualquer uso de conta real exige gate futuro específico.
+**Próxima etapa recomendada:** Fase 4.5 — Gate para Demo com `DebugMode=false`. Produção real, ordem real em conta real e dispatch automático permanecem bloqueados; qualquer uso de conta real exige gate futuro específico.
 
 ---
 
