@@ -354,6 +354,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **3.2** | Encerrada — `APPROVED_FOR_CONTROLLED_BETA` | [`SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) — 10/10 ciclos aprovados; produção real e ordem real continuam não liberadas |
 | **4.1** | Documentada | [`CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) — gate de beta controlado; produção real, ordem real e dispatch automático continuam bloqueados |
 | **4.2** | Documentada | [`CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) — participante beta demo nº 1; Cliente Staging; `52609973 @ XPMT5-DEMO`; produção real e ordem real continuam bloqueadas |
+| **4.3** | Planejada/documentada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo controlada nº 1; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -714,6 +715,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** executar a sessão beta demo controlada nº 1 com este participante, ainda com `DebugMode=true`, e registrar evidências. Qualquer uso de conta real exige gate futuro específico.
 
+### Fase 4.3 — Sessão Beta Demo Controlada nº 1
+
+**Status:** planejada/documentada  
+**Documento:** [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md)  
+**Participante:** Cliente Staging  
+**Modo:** `DebugMode=true`
+
+| Item | Status |
+|------|--------|
+| Sessão beta demo controlada nº 1 | Planejada |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Perfil | `conservador` |
+| Ativo permitido | `WDOM26` |
+| Status inicial da sessão | `PENDING_EXECUTION` |
+| Produção real | **Bloqueada** |
+| Ordem real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 4.3:** documentar o roteiro e o registro de evidências da primeira sessão beta demo controlada, com pré-check obrigatório, execução via EA Mãe ou simulador, dispatch manual admin, EA cliente em `DebugMode=true`, tracking e critérios de aprovação/reprovação.
+
+**Próxima etapa:** executar a sessão no staging/demo/`DebugMode=true` e registrar o resultado. Qualquer uso de conta real exige gate futuro específico.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -777,6 +802,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) | Relatório final da produção simulada controlada (Fase 3) |
 | [`docs/CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) | Gate de beta controlado (Fase 4.1) |
 | [`docs/CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) | Registro do participante beta demo nº 1 (Fase 4.2) |
+| [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) | Roteiro e registro da sessão beta demo controlada nº 1 (Fase 4.3) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
