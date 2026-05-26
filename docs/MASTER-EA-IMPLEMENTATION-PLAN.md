@@ -367,6 +367,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.4** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) — relatório de consolidação do gate de conta real; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.5** | Documentada — `PENDING_REVIEWS` | [`REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) — plano de revisão jurídica, operacional e técnica; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.6** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) — índice do pacote de governança para conta real; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.7** | Documentada — `EXECUTIVE_STATUS_DOCUMENTED` | [`PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md) — relatório executivo do estado atual do projeto; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1052,6 +1053,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** encaminhar o pacote para revisão jurídica/operacional/técnica somente se houver decisão estratégica de avançar. Este índice não libera conta real, produção real ou dispatch automático.
 
+### Fase 5.7 — Relatório Executivo do Estado Atual do Projeto
+
+**Status:** `EXECUTIVE_STATUS_DOCUMENTED`  
+**Documento:** [`docs/PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md)  
+**Objetivo:** consolidar estado técnico, operacional e de risco do projeto.
+
+| Item | Status |
+|------|--------|
+| Relatório executivo | Documentado |
+| Status técnico | VALIDADO EM STAGING / DEMO |
+| Status de conta real | `REAL_ACCOUNT_NOT_APPROVED` |
+| Produção simulada | 10/10 ciclos aprovados |
+| Demo `DebugMode=false` | Aprovada em conta DEMO |
+| Governança de conta real | Documentada |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+
+**Resultado da Fase 5.7:** o estado atual do projeto foi consolidado em relatório executivo, incluindo validações técnicas, linha do tempo, evidências, resultado de segurança, bloqueios para conta real, próximo risco e recomendação executiva.
+
+**Próxima etapa recomendada:** revisão jurídica/operacional ou pausa controlada para avaliação estratégica. Não avançar para conta real sem revisão jurídica, limites definidos, checklist individual aprovado e decisão final manual.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1127,6 +1151,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) | Relatório de consolidação do gate de conta real (Fase 5.4) |
 | [`docs/REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) | Plano de revisão jurídica e operacional para conta real (Fase 5.5) |
 | [`docs/REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) | Índice do pacote de governança para conta real (Fase 5.6) |
+| [`docs/PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md) | Relatório executivo do estado atual do projeto (Fase 5.7) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
