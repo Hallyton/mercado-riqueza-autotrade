@@ -363,6 +363,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.9** | Documentada — `APPROVED_FOR_NEXT_RISK_GATE_DISCUSSION` | [`DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) — relatório final da etapa demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 | **5.1** | Documentada — `PLANNED` | [`REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) — gate de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.2** | Documentada — `DRAFT_OPERATIONAL` | [`REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) — minuta operacional de aceite e limites; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.3** | Documentada — `DRAFT_CHECKLIST` | [`REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) — checklist individual para revisão de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -956,6 +957,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** revisão jurídica/operacional, definição de limites formais e criação de checklist de aprovação individual antes de qualquer conta real.
 
+### Fase 5.3 — Checklist Individual de Aprovação para Conta Real Ultra-Controlada
+
+**Status:** `DRAFT_CHECKLIST`  
+**Documento:** [`docs/REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md)  
+**Objetivo:** criar checklist individual para avaliar informações, limites, aceite, pré-check técnico e bloqueadores antes de qualquer revisão final de risco.
+
+| Item | Status |
+|------|--------|
+| Checklist individual | Documentado |
+| Status inicial | `DRAFT_CHECKLIST` |
+| Limites financeiros | **A definir — bloqueiam conta real** |
+| Revisão jurídica | **Pendente quando exigida** |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 5.3:** documentar identificação do participante, identificação da conta, escopo operacional pretendido, limites financeiros obrigatórios, aceite e ciência de risco, pré-check técnico, bloqueadores imediatos, decisão individual e próxima ação recomendada.
+
+**Observação crítica:** mesmo `APPROVED_FOR_RISK_COMMITTEE_REVIEW` não libera operação real. Apenas permite revisão final de risco.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1027,6 +1050,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) | Relatório final da etapa Demo com DebugMode=false (Fase 4.9) |
 | [`docs/REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) | Gate de Conta Real Ultra-Controlada (Fase 5.1) |
 | [`docs/REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) | Termo operacional de aceite e limites para conta real ultra-controlada (Fase 5.2) |
+| [`docs/REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) | Checklist individual de aprovação para conta real ultra-controlada (Fase 5.3) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
