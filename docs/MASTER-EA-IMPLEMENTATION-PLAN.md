@@ -377,6 +377,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **6.3** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#10-fase-63--harness-seguro-de-diagnóstico) — harness seguro de diagnóstico do Real Trading Guard; valida cenários DEMO/REAL sem conta real, sem banco e sem env real; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.4** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#11-fase-64--painel-admin-read-only) — painel admin read-only do Real Trading Guard; visibilidade operacional sem controle de liberação; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.5** | Homologada com restrições — `APPROVED_WITH_RESTRICTIONS` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#12-homologação-staging--fase-65) — deploy staging do painel admin validado e rota protegida; validação visual autenticada pendente por ausência de sessão admin segura; conta real, produção real e dispatch automático continuam bloqueados |
+| **6.6** | Homologada — `APPROVED` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#13-homologação-staging--fase-66--validação-visual-autenticada) — validação visual autenticada do painel Real Trading Guard; tela read-only confirmada, sem env bruto, sem toggle e com conta real bloqueada |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1289,6 +1290,36 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 **Escopo da Fase 6.5:** validar deploy, rota protegida e documentação do painel read-only. Não foram usadas credenciais admin, secrets ou qualquer mecanismo para contornar autenticação.
 
 **Próxima etapa:** validar visualmente o conteúdo autenticado quando houver sessão admin segura disponível. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
+
+### Fase 6.6 — Validação Visual Autenticada do Painel Real Trading Guard
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#13-homologação-staging--fase-66--validação-visual-autenticada)  
+**Objetivo:** confirmar visualmente no admin autenticado que a tela é read-only, não expõe env bruto, não possui toggle e mantém conta real bloqueada.
+
+| Item | Resultado |
+|------|-----------|
+| URL validada | `https://autotrade-staging.mercadodariqueza.com.br/admin/risk/real-trading-guard` |
+| Sessão admin autenticada | Validada manualmente |
+| Menu admin | Exibe `Risco / Real Guard` |
+| Status principal | `REAL_TRADING_BLOCKED` |
+| Política | `BLOCK_REAL_BY_DEFAULT` |
+| `ENABLE_REAL_TRADING` | Configurado: Não |
+| Allowlist | Configurada: Não |
+| Licenças permitidas | 0 |
+| Env bruto exposto | NÃO |
+| Secret exposto | NÃO |
+| Toggle de real trading | NÃO |
+| Botão de ativação | NÃO |
+| Tela | Somente leitura |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 6.6:** painel validado visualmente com usuário admin autenticado em staging. A tela confirmou a política de bloqueio, não exibiu env bruto/secrets, não mostrou toggle ou botão de liberação e manteve mensagens de cautela.
+
+**Próxima etapa:** manter o painel apenas como ferramenta de auditoria operacional. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
 
 ---
 

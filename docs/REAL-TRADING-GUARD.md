@@ -376,4 +376,71 @@ Conteúdos esperados pelo painel:
 
 ---
 
+## 13. Homologação staging — Fase 6.6 — Validação visual autenticada
+
+**Data:** 2026-05-26  
+**Status:** `APPROVED`
+
+A validação visual autenticada do painel Real Trading Guard foi realizada manualmente em staging com usuário admin logado.
+
+### 13.1 URL validada
+
+`https://autotrade-staging.mercadodariqueza.com.br/admin/risk/real-trading-guard`
+
+### 13.2 Evidências visuais confirmadas
+
+- Painel Real Trading Guard abriu autenticado.
+- Menu admin exibe `Risco / Real Guard`.
+- Status principal mostra `REAL_TRADING_BLOCKED`.
+- Badge/política mostra `BLOCK_REAL_BY_DEFAULT`.
+- `ENABLE_REAL_TRADING` configurado: Não.
+- Allowlist configurada: Não.
+- Licenças permitidas: 0.
+- Política padrão: Bloquear `REAL`.
+
+Status principal informa:
+
+- Conta real bloqueada por padrão.
+- Produção real não liberada.
+- Dispatch automático desativado.
+- `DEMO` permitido conforme regras operacionais existentes.
+- `REAL` exige flag futura e allowlist por licença.
+
+Diagnóstico conceitual mostra:
+
+- `DEMO`: Permitido.
+- `REAL` sem flag: Bloqueado.
+- `REAL` com flag sem allowlist: Bloqueado.
+- `REAL` com flag + allowlist: Tecnicamente permitido, mas não é liberação operacional.
+
+### 13.3 Segurança visual confirmada
+
+- Allowlist mascarada não expõe IDs completos.
+- Nenhum valor bruto de env foi exibido.
+- Nenhum secret foi exibido.
+- Nenhum botão de ativação foi exibido.
+- Nenhum toggle foi exibido.
+- Tela é somente leitura.
+
+Avisos exibidos:
+
+- Esta tela é somente leitura.
+- Conta real não está liberada por esta tela.
+- Produção real continua bloqueada.
+- Dispatch automático continua desativado.
+- Qualquer avanço exige gate jurídico, operacional e técnico específico.
+
+### 13.4 Restrições mantidas
+
+- Conta real continua não liberada.
+- Produção real continua não liberada.
+- Dinheiro real continua não liberado.
+- Dispatch automático continua desativado.
+- Nenhum env foi alterado.
+- Nenhum schema/migration foi criado.
+- Nenhum EA cliente ou EA Mãe foi alterado.
+- Nenhum toggle ou botão de liberação foi criado.
+
+---
+
 *Mercado da Riqueza AutoTrade — Real Trading Guard. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
