@@ -1379,6 +1379,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** definir a próxima frente técnica ou auditoria. Qualquer avanço futuro com conta real exige gate jurídico, operacional e técnico específico.
 
+### Fase 7.1 — Plano de Auditoria Técnica Pré-Conta Real
+
+**Status:** `PLANNED`  
+**Documento:** [`docs/PRE-REAL-TECHNICAL-AUDIT-PLAN.md`](PRE-REAL-TECHNICAL-AUDIT-PLAN.md)  
+**Objetivo:** estruturar revisão técnica antes de qualquer avaliação futura de conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Escopo | Auditoria técnica de autenticação, APIs EA, MasterSignal, dispatch, Real Trading Guard, idempotência, tracking, banco/Prisma, EAs, rollback e observabilidade |
+| Status inicial | `PLANNED` |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Alteração de envs | NÃO |
+| Alteração de schema/migration | NÃO |
+| Alteração de EA | NÃO |
+| Deploy | NÃO |
+
+**Resultado da Fase 7.1:** plano de auditoria técnica pré-conta real criado para orientar a revisão por blocos, sem liberar operação real ou modificar sistemas.
+
+**Próxima etapa:** executar auditoria técnica por blocos, começando por autenticação/rotas, APIs EA, MasterSignal/dispatch e Real Trading Guard.
+
 ---
 
 ## 13. Riscos e cuidados
