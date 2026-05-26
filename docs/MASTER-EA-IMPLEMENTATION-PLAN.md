@@ -359,7 +359,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.5** | Documentada | [`DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) — gate para demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 | **4.6** | Registrada — `PENDING_REVIEW` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — resultado preliminar do gate |
 | **4.7** | Aprovada — `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — aprovação manual do gate para uma única sessão futura em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
-| **4.8** | Planejada — `PLANNED` | [`DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) — Sessão Demo Controlada nº 1 com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
+| **4.8** | Executada e aprovada — `APPROVED` | [`DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) — Sessão Demo Controlada nº 1 com `DebugMode=false` aprovada em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -853,31 +853,39 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ### Fase 4.8 — Sessão Demo Controlada nº 1 com DebugMode=false
 
-**Status:** `PLANNED`  
+**Status:** `APPROVED`  
 **Documento:** [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md)  
-**Objetivo:** planejar e registrar a primeira sessão controlada em conta demo com o EA cliente em `DebugMode=false`.
+**Objetivo:** registrar a primeira sessão controlada em conta demo com o EA cliente em `DebugMode=false`.
 
 | Item | Status |
 |------|--------|
 | Sessão | Demo Controlada nº 1 com `DebugMode=false` |
-| Status da sessão | `PLANNED` |
+| Status da sessão | `APPROVED` |
 | Participante | Cliente Staging |
 | Conta | `52609973 @ XPMT5-DEMO` |
 | Tipo de conta | DEMO |
 | Ativo permitido | `WDOM26` |
 | Perfil | `conservador` |
-| MasterSignalId planejado | `demo-dmf-001-buy-001` |
-| Máximo de sinais | 1 |
+| Falha segura inicial | `demo-dmf-001-buy-001` — `OrderSend` falhou `retcode=10027 AutoTrading disabled by client`, sem ordem enviada |
+| MasterSignalId aprovado | `demo-dmf-001-buy-002` |
+| Máximo de sinais aprovados | 1 |
 | Dispatch | Manual admin |
 | Retry manual após execução | **Bloqueado** |
+| Tracking | `EXECUTED` |
+| Instruction | `EXECUTED` |
+| Execution | `EXECUTED` |
+| Pendentes | 0 |
+| Falhas | 0 |
 | Produção real | **Bloqueada** |
 | Conta real | **Bloqueada** |
 | Dispatch automático | **Bloqueado** |
 | Billing/DARF/dashboard cliente | **Inalterados** |
 
-**Escopo da Fase 4.8:** a sessão planejada só pode avançar se o pré-check confirmar conta DEMO, ausência de posições/ordens pendentes, EA apontado para staging, WebRequest liberado, heartbeat `ONLINE`, AutoTrading sob controle, rollback pronto e admin acompanhando em tempo real.
+**Resultado da Fase 4.8:** a demo com `DebugMode=false` foi validada em uma sessão única em conta DEMO. O primeiro teste falhou de forma segura com AutoTrading desativado no MT5 (`retcode=10027`), sem envio de ordem demo ou real. Após correção operacional, o sinal aprovado `demo-dmf-001-buy-002` foi executado com dispatch manual, execution report recebido pela API e tracking consolidado como `EXECUTED`.
 
-**Critério de encerramento:** após a sessão, o EA deve ser removido ou retornar para `DebugMode=true`, com evidências de intake, dispatch, ordem/ticket demo, execution report, tracking, posição final e rollback, se usado. Produção real, conta real e dispatch automático permanecem bloqueados.
+**Pós-sessão:** o EA cliente deve voltar para `DebugMode=true` ou ser removido do gráfico. Produção real, conta real e dispatch automático permanecem bloqueados.
+
+**Próxima etapa recomendada:** relatório de encerramento da Fase 4 ou gate futuro específico para conta real. Nenhuma dessas etapas libera produção real automaticamente.
 
 ---
 
