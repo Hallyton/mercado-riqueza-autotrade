@@ -355,6 +355,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.1** | Documentada | [`CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) — gate de beta controlado; produção real, ordem real e dispatch automático continuam bloqueados |
 | **4.2** | Documentada | [`CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) — participante beta demo nº 1; Cliente Staging; `52609973 @ XPMT5-DEMO`; produção real e ordem real continuam bloqueadas |
 | **4.3** | Executada e aprovada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo nº 1 aprovada com `beta-demo-001-buy-002`; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
+| **4.4** | Documentada | [`CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) — plano de sessões beta demo recorrentes com `DebugMode=true`; produção real e ordem real continuam bloqueadas |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -743,6 +744,33 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa recomendada:** Fase 4.4 — Plano de Sessões Beta Demo recorrentes ou Gate para Demo sem `DebugMode`, ainda sem conta real.
 
+### Fase 4.4 — Plano de Sessões Beta Demo Recorrentes
+
+**Status:** documentada  
+**Documento:** [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md)  
+**Objetivo:** executar sessões repetidas com `DebugMode=true` antes de qualquer gate para `DebugMode=false`.
+
+| Item | Status |
+|------|--------|
+| Plano de sessões beta demo recorrentes | Criado |
+| Participante | Cliente Staging |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Perfil | `conservador` |
+| Ativo permitido | `WDOM26` |
+| Modo | `DebugMode=true` |
+| Sessões planejadas | 02 BUY; 03 SELL; 04 retry/idempotência ou expiração |
+| Status inicial do plano | `PLANNED` |
+| Produção real | **Bloqueada** |
+| Ordem real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 4.4:** definir rotina segura para sessões beta demo recorrentes com 1 participante, 1 conta demo, 1 ativo, perfil conservador, dispatch manual admin, `DebugMode=true` e registro de evidências por sessão. O plano exige pelo menos 3 sessões recorrentes, em pelo menos 2 dias diferentes, cobrindo BUY, SELL e retry/idempotência ou expiração.
+
+**Critério para próximo gate:** somente discutir Gate para Demo com `DebugMode=false` se todas as sessões recorrentes forem aprovadas com 0 ordens reais, 0 dispatch automático, 0 duplicidades indevidas, 0 secrets expostos, tracking consistente e rollback conhecido.
+
+**Próxima etapa:** executar Sessão Beta Demo nº 2, ainda com `DebugMode=true`, e registrar evidências. Qualquer uso de conta real exige gate futuro específico.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -807,6 +835,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) | Gate de beta controlado (Fase 4.1) |
 | [`docs/CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) | Registro do participante beta demo nº 1 (Fase 4.2) |
 | [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) | Roteiro e registro da sessão beta demo controlada nº 1 (Fase 4.3) |
+| [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) | Plano de sessões beta demo recorrentes (Fase 4.4) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
