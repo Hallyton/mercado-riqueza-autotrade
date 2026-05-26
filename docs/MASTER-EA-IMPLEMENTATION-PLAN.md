@@ -365,6 +365,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.2** | Documentada — `DRAFT_OPERATIONAL` | [`REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) — minuta operacional de aceite e limites; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.3** | Documentada — `DRAFT_CHECKLIST` | [`REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) — checklist individual para revisão de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.4** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) — relatório de consolidação do gate de conta real; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.5** | Documentada — `PENDING_REVIEWS` | [`REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) — plano de revisão jurídica, operacional e técnica; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1004,6 +1005,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** revisão jurídica/operacional e definição de limites, se houver decisão futura de avançar para nova avaliação de risco.
 
+### Fase 5.5 — Plano de Revisão Jurídica e Operacional
+
+**Status:** `PENDING_REVIEWS`  
+**Documento:** [`docs/REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md)  
+**Objetivo:** organizar revisões jurídica, operacional e técnica antes de qualquer decisão real.
+
+| Item | Status |
+|------|--------|
+| Plano de revisão | Documentado |
+| Revisão jurídica | `PENDING_LEGAL_REVIEW` |
+| Revisão operacional | `PENDING_OPERATIONAL_REVIEW` |
+| Revisão técnica | `PENDING_TECHNICAL_REVIEW` |
+| Limites numéricos | **A definir — bloqueiam conta real** |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 5.5:** organizar as revisões necessárias antes de qualquer decisão real, incluindo validação jurídica, operacional, técnica, limites, aceite, rollback, responsável ao vivo e decisão manual registrada.
+
+**Próxima etapa:** revisão jurídica/operacional/técnica e definição de limites, se houver decisão futura de avançar. `READY_FOR_RISK_COMMITTEE_REVIEW` ainda não libera conta real.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1077,6 +1101,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) | Termo operacional de aceite e limites para conta real ultra-controlada (Fase 5.2) |
 | [`docs/REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) | Checklist individual de aprovação para conta real ultra-controlada (Fase 5.3) |
 | [`docs/REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) | Relatório de consolidação do gate de conta real (Fase 5.4) |
+| [`docs/REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) | Plano de revisão jurídica e operacional para conta real (Fase 5.5) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
