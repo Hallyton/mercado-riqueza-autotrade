@@ -1,10 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { LicenseStatus, SubscriptionStatus } from "@prisma/client";
+import { LicenseStatus, SubscriptionStatus, TradeMode } from "@prisma/client";
 
 vi.mock("@/lib/prisma", () => ({
   default: {
     device: { update: vi.fn() },
-    eaHeartbeat: { create: vi.fn() },
+    eaHeartbeat: {
+      create: vi.fn(),
+      findFirst: vi.fn().mockResolvedValue({ tradeMode: TradeMode.DEMO }),
+    },
     equitySnapshot: { create: vi.fn() },
     positionSnapshot: {
       deleteMany: vi.fn(),

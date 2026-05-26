@@ -2,6 +2,7 @@ import { MasterSignalDispatchStatus, type MasterSignal, type Prisma } from "@pri
 import {
   buildTrackingSummaryFromDispatches,
   deriveConsolidatedTrackingStatus,
+  formatDispatchSkipReason,
   resolveRowExecutionStatus,
   resolveRowHint,
   type ConsolidatedTrackingStatus,
@@ -584,7 +585,7 @@ export async function getMasterSignalTrackingForAdmin(
     .map((d) => ({
       licenseId: d.licenseId,
       code: d.reason ?? "SKIPPED",
-      reason: d.reason ?? "Ignorada no dispatch",
+      reason: formatDispatchSkipReason(d.reason),
     }));
 
   const skipped =

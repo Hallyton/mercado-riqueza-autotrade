@@ -8,6 +8,7 @@ import { withEaAuth } from "@/lib/ea/handler";
 import { eaJson } from "@/lib/ea/json";
 import {
   auditDeliverableInstructionsForEa,
+  evaluateEaRealTradingGuard,
   pullInstructionsForEa,
 } from "@/lib/ea/instructions";
 
@@ -35,7 +36,8 @@ export const GET = withEaAuth(
     }
   }
 
-  const instructions = await pullInstructionsForEa(ctx);
+  const realTradingGuard = await evaluateEaRealTradingGuard(ctx.license.id);
+  const instructions = await pullInstructionsForEa(ctx, { realTradingGuard });
 
   if (process.env.NODE_ENV === "development") {
     const audit = await auditDeliverableInstructionsForEa(ctx.license.id);
@@ -81,6 +83,12 @@ export const GET = withEaAuth(
   return eaJson({
     instructions,
     subscription_active: subscriptionActive,
+    ...(!realTradingGuard.allowed
+      ? {
+          real_trading_blocked: true,
+          block_reason: realTradingGuard.code,
+        }
+      : {}),
     ...(subscriptionNotice ? { notice: subscriptionNotice } : {}),
   });
   },

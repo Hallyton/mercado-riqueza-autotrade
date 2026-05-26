@@ -5,6 +5,10 @@ import {
   OrderLogStatus,
   type MasterSignal,
 } from "@prisma/client";
+import {
+  REAL_TRADING_DISABLED_CODE,
+  REAL_TRADING_DISABLED_REASON,
+} from "@/lib/risk/real-trading-guard";
 
 export type ConsolidatedTrackingStatus =
   | "NOT_DISPATCHED"
@@ -206,7 +210,7 @@ export function resolveRowHint(
   reason: string | null
 ): string | null {
   if (dispatchStatus === MasterSignalDispatchStatus.SKIPPED) {
-    return reason ?? "Licença ignorada no dispatch";
+    return formatDispatchSkipReason(reason);
   }
   if (!instruction) {
     if (dispatchStatus === MasterSignalDispatchStatus.FAILED) {
@@ -219,6 +223,11 @@ export function resolveRowHint(
   if (isInstructionExpired(instruction)) return "Instrução expirada";
   if (isInstructionFailed(instruction)) return reason ?? "Instrução rejeitada ou falhou";
   return null;
+}
+
+export function formatDispatchSkipReason(reason: string | null): string {
+  if (reason === REAL_TRADING_DISABLED_CODE) return REAL_TRADING_DISABLED_REASON;
+  return reason ?? "Licença ignorada no dispatch";
 }
 
 export type MasterSignalRowInput = Pick<

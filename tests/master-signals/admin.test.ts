@@ -87,6 +87,7 @@ vi.mock("next/navigation", () => ({
 import {
   deriveConsolidatedTrackingStatus,
   buildTrackingSummaryFromDispatches,
+  formatDispatchSkipReason,
 } from "@/lib/master-signals/admin-tracking";
 import {
   getMasterSignalDetailsForAdmin,
@@ -102,6 +103,10 @@ import { canDispatchMasterSignals } from "@/lib/admin/permissions";
 import { requireAdminApiSession } from "@/lib/auth/admin-api";
 import { isAdminRole } from "@/lib/auth/roles";
 import { MasterSignalDispatchButton } from "@/components/admin/master-signal-dispatch-button";
+import {
+  REAL_TRADING_DISABLED_CODE,
+  REAL_TRADING_DISABLED_REASON,
+} from "@/lib/risk/real-trading-guard";
 
 const baseSignal = {
   id: "row-1",
@@ -417,6 +422,12 @@ describe("tracking summary helpers", () => {
         expiresAt: new Date(Date.now() + 3600_000),
       })
     ).toBe("REJECTED_NO_ELIGIBLE_LICENSES");
+  });
+
+  it("formatDispatchSkipReason exibe Real Trading Guard de forma legível", () => {
+    expect(formatDispatchSkipReason(REAL_TRADING_DISABLED_CODE)).toBe(
+      REAL_TRADING_DISABLED_REASON
+    );
   });
 });
 

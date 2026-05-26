@@ -3,12 +3,17 @@ import {
   ExecutionStatus,
   InstructionPurpose,
   OrderLogStatus,
+  TradeMode,
   type Prisma,
 } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit/log";
 import { assertInstructionAllowed, LicensePolicyError } from "@/lib/licensing/instruction-policy";
 import { getLicenseOperationalFlags } from "@/lib/licensing/service";
 import prisma from "@/lib/prisma";
+import {
+  evaluateRealTradingGuard,
+  type RealTradingGuardDecision,
+} from "@/lib/risk/real-trading-guard";
 import type { EaAuthContext } from "./auth";
 
 export type EaInstructionPayload = {
@@ -122,6 +127,22 @@ async function listDeliverableInstructionCandidates(
   });
 }
 
+async function loadLatestTradeMode(licenseId: string): Promise<TradeMode | null> {
+  const heartbeat = await prisma.eaHeartbeat.findFirst({
+    where: { licenseId },
+    orderBy: { receivedAt: "desc" },
+    select: { tradeMode: true },
+  });
+  return heartbeat?.tradeMode ?? null;
+}
+
+export async function evaluateEaRealTradingGuard(
+  licenseId: string
+): Promise<RealTradingGuardDecision> {
+  const tradeMode = await loadLatestTradeMode(licenseId);
+  return evaluateRealTradingGuard({ tradeMode, licenseId });
+}
+
 async function evaluateInstructionDeliverability(
   licenseId: string,
   instruction: InstructionRow
@@ -153,6 +174,15 @@ export async function auditDeliverableInstructionsForEa(
   licenseId: string,
   now = new Date()
 ): Promise<EaDeliverableInstructionsAudit> {
+  const realTradingGuard = await evaluateEaRealTradingGuard(licenseId);
+  if (!realTradingGuard.allowed) {
+    return {
+      candidateCount: 0,
+      deliverableCount: 0,
+      skipped: [],
+    };
+  }
+
   const candidates = await listDeliverableInstructionCandidates(licenseId, now);
   const skipped: EaDeliverableInstructionsAudit["skipped"] = [];
   let deliverableCount = 0;
@@ -187,8 +217,31 @@ export async function countDeliverableInstructionsForEa(
   return audit.deliverableCount;
 }
 
-export async function pullInstructionsForEa(ctx: EaAuthContext) {
+export async function pullInstructionsForEa(
+  ctx: EaAuthContext,
+  options?: { realTradingGuard?: RealTradingGuardDecision }
+) {
   const now = new Date();
+  const realTradingGuard =
+    options?.realTradingGuard ?? (await evaluateEaRealTradingGuard(ctx.license.id));
+
+  if (!realTradingGuard.allowed) {
+    await createAuditLog({
+      actorType: AuditActorType.EA,
+      actorId: ctx.license.userId,
+      action: "ea.instructions_blocked_real_trading",
+      entityType: "license",
+      entityId: ctx.license.id,
+      requestId: ctx.requestId,
+      metadata: {
+        code: realTradingGuard.code,
+        reason: realTradingGuard.reason,
+        licenseId: ctx.license.id,
+      },
+    });
+    return [];
+  }
+
   const pending = await listDeliverableInstructionCandidates(ctx.license.id, now);
 
   const deliverable: EaInstructionPayload[] = [];

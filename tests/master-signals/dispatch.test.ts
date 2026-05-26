@@ -87,6 +87,10 @@ import {
   resolveMasterSignalDispatchQuantity,
 } from "@/lib/master-signals/dispatch";
 import { mapInstructionToEaPayload } from "@/lib/ea/instructions";
+import {
+  REAL_TRADING_DISABLED_CODE,
+  REAL_TRADING_DISABLED_REASON,
+} from "@/lib/risk/real-trading-guard";
 
 function baseLicenseInput(
   overrides: Partial<LicenseEligibilityInput> = {}
@@ -106,7 +110,7 @@ function baseLicenseInput(
     planMaxMt5Accounts: 2,
     activeDeviceCount: 1,
     userActiveMt5LicenseCount: 1,
-    tradeMode: TradeMode.REAL,
+    tradeMode: TradeMode.DEMO,
     subscriptionPeriodEnd: new Date(Date.now() + 86_400_000),
     ...overrides,
   };
@@ -157,7 +161,7 @@ describe("master signal eligibility", () => {
   it("seleciona licença elegível sem filtrar profile no SQL", async () => {
     licenseFindMany.mockResolvedValue([eligibleLicenseRow()]);
     licenseCount.mockResolvedValue(1);
-    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
 
     const result = await selectEligibleLicensesForMasterSignal({
       purpose: InstructionPurpose.ENTRY,
@@ -204,7 +208,7 @@ describe("master signal eligibility", () => {
       eligibleLicenseRow({ exposureProfile: { slug: "moderado" } }),
     ]);
     licenseCount.mockResolvedValue(1);
-    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
 
     const result = await selectEligibleLicensesForMasterSignal({
       purpose: InstructionPurpose.ENTRY,
@@ -227,7 +231,7 @@ describe("master signal eligibility", () => {
       }),
     ]);
     licenseCount.mockResolvedValue(1);
-    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
 
     const result = await selectEligibleLicensesForMasterSignal({
       purpose: InstructionPurpose.ENTRY,
@@ -285,6 +289,18 @@ describe("master signal eligibility", () => {
     if (!decision.eligible) expect(decision.code).toBe("DEMO_NOT_ALLOWED");
   });
 
+  it("bloqueia licença em modo REAL pelo Real Trading Guard", () => {
+    const decision = evaluateLicenseEligibility(
+      { purpose: InstructionPurpose.ENTRY, profileSlug: null, expiresAt: null },
+      baseLicenseInput({ tradeMode: TradeMode.REAL })
+    );
+    expect(decision.eligible).toBe(false);
+    if (!decision.eligible) {
+      expect(decision.code).toBe(REAL_TRADING_DISABLED_CODE);
+      expect(decision.reason).toBe(REAL_TRADING_DISABLED_REASON);
+    }
+  });
+
   it("não cria elegibilidade sem MT5 vinculado", () => {
     const decision = evaluateLicenseEligibility(
       { purpose: InstructionPurpose.ENTRY, profileSlug: null, expiresAt: null },
@@ -310,7 +326,7 @@ describe("dispatchValidatedMasterSignal", () => {
     delete process.env.MASTER_SIGNAL_DISPATCH_QUANTITY;
     licenseFindMany.mockResolvedValue([eligibleLicenseRow()]);
     licenseCount.mockResolvedValue(1);
-    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
     masterUpdateMany.mockResolvedValue({ count: 1 });
     masterUpdate.mockResolvedValue({});
     dispatchFindMany.mockResolvedValue([]);
@@ -348,6 +364,8 @@ describe("dispatchValidatedMasterSignal", () => {
 
   afterEach(() => {
     delete process.env.MASTER_SIGNAL_DISPATCH_QUANTITY;
+    delete process.env.ENABLE_REAL_TRADING;
+    delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
   });
 
   it("1) não faz dispatch se MasterSignal não existe", async () => {
@@ -378,6 +396,26 @@ describe("dispatchValidatedMasterSignal", () => {
           currentStatus: OrderLogStatus.RECEIVED,
           quantity: MASTER_SIGNAL_DISPATCH_DEFAULT_QUANTITY,
           source: InstructionSource.MASTER_SIGNAL,
+        }),
+      })
+    );
+  });
+
+  it("3c) bloqueia dispatch para licença com heartbeat REAL sem flag de liberação", async () => {
+    masterFindUnique.mockResolvedValue(validatedSignal());
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+
+    const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
+
+    expect(result.instructionsCreated).toBe(0);
+    expect(result.noEligibleLicenses).toBe(true);
+    expect(result.status).toBe(MasterSignalStatus.REJECTED);
+    expect(instructionCreate).not.toHaveBeenCalled();
+    expect(dispatchUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          status: MasterSignalDispatchStatus.SKIPPED,
+          reason: REAL_TRADING_DISABLED_CODE,
         }),
       })
     );
@@ -473,7 +511,7 @@ describe("dispatchValidatedMasterSignal", () => {
     licenseFindMany.mockResolvedValue([
       eligibleLicenseRow({ exposureProfile: { slug: "moderado" } }),
     ]);
-    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });
+    heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.DEMO });
 
     const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
     expect(result.instructionsCreated).toBe(0);

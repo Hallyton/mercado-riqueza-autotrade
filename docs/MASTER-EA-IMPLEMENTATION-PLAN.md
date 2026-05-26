@@ -372,6 +372,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.9** | Documentada — `MEETING_BRIEFING_READY` | [`AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md) — roteiro de reunião com corretora, jurídico ou parceiro; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.10** | Documentada | [`AUTOTRADE-PARTNER-MEETING-INVITE.md`](AUTOTRADE-PARTNER-MEETING-INVITE.md) — convite executivo para reunião com corretora, jurídico ou parceiro; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.11** | Documentada — `OUTREACH_MESSAGES_READY` | [`AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md) — mensagens de abordagem para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
+| **6.1** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md) — Real Trading Guard / Kill Switch de Conta Real; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1163,6 +1164,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** enviar mensagem a parceiro/corretora ou preparar apresentação/slides. Estas mensagens não liberam conta real, produção real, dinheiro real ou dispatch automático.
 
+### Fase 6.1 — Real Trading Guard / Kill Switch de Conta Real
+
+**Status:** implementado localmente  
+**Documento:** [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md)  
+**Objetivo:** bloquear tecnicamente qualquer entrega de instruction para EA em `tradeMode=REAL` enquanto conta real não estiver aprovada.
+
+| Item | Status |
+|------|--------|
+| Guard central | Implementado em `lib/risk/real-trading-guard.ts` |
+| Dispatch MasterSignal | Bloqueia licença com último heartbeat `REAL` |
+| Pull do EA | Retorna HTTP 200 com `instructions: []` quando bloqueado |
+| Feature flag futura | Default deny e exige allowlist por licença |
+| Admin/tracking | Exibe motivo legível para `REAL_TRADING_DISABLED` |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Escopo da Fase 6.1:** implementar código defensivo e testes para impedir entrega de instruction a conta em modo real, sem alterar EA cliente, EA Mãe, Prisma/schema, migrations, envs reais ou deploy.
+
+**Próxima etapa:** manter validação local e discutir eventual etapa futura somente após revisão jurídica, operacional, técnica e aprovação específica. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1243,6 +1266,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md) | Roteiro de reunião com corretora, jurídico ou parceiro (Fase 5.9) |
 | [`docs/AUTOTRADE-PARTNER-MEETING-INVITE.md`](AUTOTRADE-PARTNER-MEETING-INVITE.md) | Convite executivo para reunião com corretora, jurídico ou parceiro (Fase 5.10) |
 | [`docs/AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md) | Mensagens de abordagem para corretora, jurídico ou parceiro (Fase 5.11) |
+| [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md) | Real Trading Guard / Kill Switch de Conta Real (Fase 6.1) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---

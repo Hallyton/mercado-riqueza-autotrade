@@ -8,6 +8,7 @@ import {
 import type { Prisma } from "@prisma/client";
 import { canAcceptNewEntries, canManageOpenPositions } from "@/lib/licensing/flags";
 import prisma from "@/lib/prisma";
+import { evaluateRealTradingGuard } from "@/lib/risk/real-trading-guard";
 
 export type LicenseEligibilityInput = {
   licenseId: string;
@@ -118,6 +119,18 @@ export function evaluateLicenseEligibility(
       eligible: false,
       code: "MAX_MT5_EXCEEDED",
       reason: "Limite de contas MT5 do plano excedido.",
+    };
+  }
+
+  const realTradingGuard = evaluateRealTradingGuard({
+    tradeMode: license.tradeMode,
+    licenseId: license.licenseId,
+  });
+  if (!realTradingGuard.allowed) {
+    return {
+      eligible: false,
+      code: realTradingGuard.code,
+      reason: realTradingGuard.reason,
     };
   }
 

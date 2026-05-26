@@ -1,9 +1,10 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import {
   InstructionPurpose,
   OrderLogStatus,
   LicenseStatus,
   SubscriptionStatus,
+  TradeMode,
 } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { canAcceptNewEntries } from "@/lib/licensing/flags";
@@ -17,6 +18,9 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
     },
     instructionStatusLog: { create: vi.fn() },
+    eaHeartbeat: {
+      findFirst: vi.fn().mockResolvedValue({ tradeMode: "DEMO" }),
+    },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
     execution: { create: vi.fn(), findFirst: vi.fn().mockResolvedValue(null) },
   },
@@ -51,6 +55,7 @@ import {
   reportIgnored,
 } from "@/lib/ea/instructions";
 import { assertInstructionAllowed } from "@/lib/licensing/instruction-policy";
+import { createAuditLog } from "@/lib/audit/log";
 
 const ctx = {
   device: { id: "dev1", deviceId: "mt5-1", licenseId: "lic1" },
@@ -69,10 +74,17 @@ const ctx = {
   eaVersion: "1.0.0",
 } as const;
 
+afterEach(() => {
+  delete process.env.ENABLE_REAL_TRADING;
+  delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
+  vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({ tradeMode: TradeMode.DEMO } as never);
+});
+
 describe("Sinal recebido", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(assertInstructionAllowed).mockResolvedValue(undefined);
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({ tradeMode: TradeMode.DEMO } as never);
   });
 
   it("retorna instrução autorizada no pull", async () => {
@@ -97,6 +109,49 @@ describe("Sinal recebido", () => {
     expect(result[0].instruction_id).toBe("inst-1");
     expect(result[0].symbol).toBe("PETR4");
     expect(result[0]).not.toHaveProperty("strategy");
+  });
+
+  it("bloqueia entrega quando último heartbeat está em REAL e guard está fechado", async () => {
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({ tradeMode: TradeMode.REAL } as never);
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-real",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "WDOM26",
+        side: "BUY",
+        orderType: "MARKET",
+        quantity: new Decimal(1),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "key-real",
+        currentStatus: OrderLogStatus.RECEIVED,
+      },
+    ] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+
+    expect(result).toEqual([]);
+    expect(prisma.instruction.findMany).not.toHaveBeenCalled();
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "ea.instructions_blocked_real_trading",
+        entityId: "lic1",
+      })
+    );
+  });
+
+  it("feature flag futura não libera REAL sem allowlist no pull do EA", async () => {
+    process.env.ENABLE_REAL_TRADING = "true";
+    process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = "other-license";
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({ tradeMode: TradeMode.REAL } as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+
+    expect(result).toEqual([]);
+    expect(prisma.instruction.findMany).not.toHaveBeenCalled();
+    delete process.env.ENABLE_REAL_TRADING;
+    delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
   });
 });
 
