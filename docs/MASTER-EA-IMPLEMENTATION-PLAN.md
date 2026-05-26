@@ -359,6 +359,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.5** | Documentada | [`DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) — gate para demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 | **4.6** | Registrada — `PENDING_REVIEW` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — resultado preliminar do gate |
 | **4.7** | Aprovada — `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — aprovação manual do gate para uma única sessão futura em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
+| **4.8** | Planejada — `PLANNED` | [`DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) — Sessão Demo Controlada nº 1 com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -850,6 +851,34 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** Fase 4.8 — Sessão Demo Controlada nº 1 com `DebugMode=false`. A sessão futura deve continuar limitada a conta DEMO, 1 sinal, dispatch manual, monitoramento em tempo real e rollback imediato disponível. Produção real, conta real e dispatch automático permanecem bloqueados.
 
+### Fase 4.8 — Sessão Demo Controlada nº 1 com DebugMode=false
+
+**Status:** `PLANNED`  
+**Documento:** [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md)  
+**Objetivo:** planejar e registrar a primeira sessão controlada em conta demo com o EA cliente em `DebugMode=false`.
+
+| Item | Status |
+|------|--------|
+| Sessão | Demo Controlada nº 1 com `DebugMode=false` |
+| Status da sessão | `PLANNED` |
+| Participante | Cliente Staging |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Tipo de conta | DEMO |
+| Ativo permitido | `WDOM26` |
+| Perfil | `conservador` |
+| MasterSignalId planejado | `demo-dmf-001-buy-001` |
+| Máximo de sinais | 1 |
+| Dispatch | Manual admin |
+| Retry manual após execução | **Bloqueado** |
+| Produção real | **Bloqueada** |
+| Conta real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 4.8:** a sessão planejada só pode avançar se o pré-check confirmar conta DEMO, ausência de posições/ordens pendentes, EA apontado para staging, WebRequest liberado, heartbeat `ONLINE`, AutoTrading sob controle, rollback pronto e admin acompanhando em tempo real.
+
+**Critério de encerramento:** após a sessão, o EA deve ser removido ou retornar para `DebugMode=true`, com evidências de intake, dispatch, ordem/ticket demo, execution report, tracking, posição final e rollback, se usado. Produção real, conta real e dispatch automático permanecem bloqueados.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -917,6 +946,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) | Plano de sessões beta demo recorrentes (Fase 4.4) |
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) | Gate para conta demo com DebugMode=false (Fase 4.5) |
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) | Resultado e aprovação do gate para conta demo com DebugMode=false (Fases 4.6 e 4.7) |
+| [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) | Planejamento da Sessão Demo Controlada nº 1 com DebugMode=false (Fase 4.8) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
