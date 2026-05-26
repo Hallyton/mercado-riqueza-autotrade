@@ -374,6 +374,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.11** | Documentada — `OUTREACH_MESSAGES_READY` | [`AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md) — mensagens de abordagem para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.1** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md) — Real Trading Guard / Kill Switch de Conta Real; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.2** | Homologada com restrições — `APPROVED_WITH_RESTRICTIONS` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#9-homologação-staging--fase-62) — deploy staging do guard validado; smoke DEMO e simulação REAL pendentes por segurança; conta real, produção real e dispatch automático continuam bloqueados |
+| **6.3** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#10-fase-63--harness-seguro-de-diagnóstico) — harness seguro de diagnóstico do Real Trading Guard; valida cenários DEMO/REAL sem conta real, sem banco e sem env real; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1213,6 +1214,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 **Escopo da Fase 6.2:** confirmar deploy e postura segura do ambiente. Não foi executado teste que exigiria secret em claro, sessão admin indisponível ou alteração de heartbeat da licença operacional principal sem aprovação explícita.
 
 **Próxima etapa:** preparar uma fixture isolada de staging ou obter autorização operacional explícita para uma simulação `tradeMode=REAL` com rollback imediato. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
+
+### Fase 6.3 — Harness Seguro de Diagnóstico do Real Trading Guard
+
+**Status:** implementado localmente  
+**Documento:** [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#10-fase-63--harness-seguro-de-diagnóstico)  
+**Objetivo:** permitir validação segura de cenários DEMO/REAL sem usar conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Script | `scripts/risk/diagnose-real-trading-guard.ts` |
+| Comando | `npm run risk:diagnose-real-guard` |
+| Banco | Não utilizado |
+| Secrets | Não utilizados |
+| Env real | Não alterado |
+| Vercel | Não alterado |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Escopo da Fase 6.3:** criar diagnóstico local com envs injetados em memória para validar default deny, allowlist futura e comportamento atual para `tradeMode` ausente/desconhecido.
+
+**Próxima etapa:** usar o harness como pré-validação antes de qualquer nova rodada de homologação controlada. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
 
 ---
 

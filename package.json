@@ -24,7 +24,8 @@
     "homolog:resume-new": "tsx scripts/homologation/disable-halt-new-entries.ts",
     "homolog:halt-all": "tsx scripts/homologation/enable-halt-all-trading.ts",
     "homolog:resume-all": "tsx scripts/homologation/disable-halt-all-trading.ts",
-    "master:signal": "tsx scripts/master-signals/send-master-signal.ts"
+    "master:signal": "tsx scripts/master-signals/send-master-signal.ts",
+    "risk:diagnose-real-guard": "tsx scripts/risk/diagnose-real-trading-guard.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

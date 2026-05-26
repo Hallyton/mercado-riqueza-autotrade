@@ -215,4 +215,52 @@ Conclusão: nenhuma env futura de liberação de real trading foi configurada em
 
 ---
 
+## 10. Fase 6.3 — Harness Seguro de Diagnóstico
+
+**Status:** implementado localmente.
+
+A Fase 6.3 adiciona um harness local para diagnosticar a lógica do Real Trading Guard sem depender de staging, sem `MASTER_EA_API_SECRET`, sem sessão admin, sem banco e sem mutação de dados.
+
+Comando:
+
+```bash
+npm run risk:diagnose-real-guard
+```
+
+O diagnóstico:
+
+- roda localmente;
+- importa `lib/risk/real-trading-guard.ts`;
+- usa envs injetados em memória por cenário;
+- não lê valores reais de Vercel;
+- não imprime secrets;
+- não usa conta real;
+- não muta banco;
+- não altera envs;
+- não cria `Instruction`;
+- não dispara MasterSignal;
+- não ativa dispatch automático;
+- não libera conta real.
+
+### 10.1 Cenários cobertos
+
+| Cenário | Resultado esperado |
+|---------|--------------------|
+| DEMO sem env | `allowed=true` |
+| REAL sem env | `allowed=false`, `REAL_TRADING_DISABLED` |
+| REAL com `ENABLE_REAL_TRADING=false` | bloqueado |
+| REAL com `ENABLE_REAL_TRADING=true` sem allowlist | bloqueado |
+| REAL com allowlist sem a licença | bloqueado |
+| REAL com allowlist contendo a licença | `allowed=true` apenas como diagnóstico unitário |
+| `tradeMode` ausente | comportamento atual documentado |
+| `tradeMode` desconhecido | comportamento atual documentado |
+
+### 10.2 Observação de segurança
+
+O cenário com `ENABLE_REAL_TRADING=true` e licença em allowlist demonstra apenas que a função do guard consegue retornar `allowed=true` quando as duas condições técnicas futuras são satisfeitas.
+
+Isso **não** representa liberação operacional, não configura env real, não autoriza conta real, não autoriza produção real e não substitui revisão jurídica, operacional e técnica.
+
+---
+
 *Mercado da Riqueza AutoTrade — Real Trading Guard. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*

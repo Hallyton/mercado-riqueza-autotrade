@@ -6,6 +6,10 @@ import {
   isRealTradingEnabled,
   REAL_TRADING_DISABLED_CODE,
 } from "@/lib/risk/real-trading-guard";
+import {
+  REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS,
+  runRealTradingGuardDiagnostics,
+} from "@/scripts/risk/diagnose-real-trading-guard";
 
 describe("Real Trading Guard", () => {
   it("bloqueia REAL por padrão quando ENABLE_REAL_TRADING está ausente", () => {
@@ -49,5 +53,22 @@ describe("Real Trading Guard", () => {
 
     expect(isLicenseAllowedForRealTrading("lic-b", env)).toBe(true);
     expect(decision.allowed).toBe(true);
+  });
+
+  it("harness diagnóstico cobre todos os cenários obrigatórios sem falhas", () => {
+    const results = runRealTradingGuardDiagnostics();
+
+    expect(results).toHaveLength(REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS.length);
+    expect(results.every((result) => result.status === "PASS")).toBe(true);
+    expect(results.map((result) => result.name)).toEqual([
+      "A) DEMO sem env",
+      "B) REAL sem env",
+      "C) REAL com ENABLE_REAL_TRADING=false",
+      "D) REAL com ENABLE_REAL_TRADING=true sem allowlist",
+      "E) REAL com allowlist sem a licença",
+      "F) REAL com allowlist contendo a licença",
+      "G) tradeMode ausente",
+      "G2) tradeMode desconhecido",
+    ]);
   });
 });
