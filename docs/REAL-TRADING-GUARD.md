@@ -443,4 +443,57 @@ Avisos exibidos:
 
 ---
 
+## 14. Fase 6.7 — Smoke Test DEMO pós Real Trading Guard
+
+**Data:** 2026-05-26  
+**Status:** `APPROVED`
+
+O smoke test DEMO pós Real Trading Guard foi executado em staging para confirmar que a trava global bloqueia `REAL` por padrão sem quebrar o fluxo operacional `DEMO`.
+
+### 14.1 Ambiente e sinal validado
+
+| Item | Resultado |
+|------|-----------|
+| Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
+| MasterSignalId | `real-guard-demo-smoke-002` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Tipo | `DEMO` |
+| `tradeMode` | `DEMO` |
+| Ativo | `WDOM26` |
+| Side | `BUY` |
+| OrderType | `MARKET` |
+| Purpose | `ENTRY` |
+| Profile | `conservador` |
+| DebugMode EA cliente | `true` |
+
+### 14.2 Resultado operacional
+
+| Item | Resultado |
+|------|-----------|
+| Status DB | `DISPATCHED` |
+| Status consolidado | `EXECUTED` |
+| Dispatches / instruções / executadas | `1 / 1 / 1` |
+| Instruction `MASTER_SIGNAL` | Criada |
+| Tracking final | `EXECUTED` |
+| Real Trading Guard bloqueou DEMO | NÃO |
+| Ordem real enviada | NÃO |
+| Conta real usada | NÃO |
+| Produção real liberada | NÃO |
+| Dispatch automático | Desativado |
+
+### 14.3 Confirmações de segurança
+
+- O fluxo `DEMO` permaneceu elegível após a implementação do Real Trading Guard.
+- O MasterSignal `real-guard-demo-smoke-002` foi despachado manualmente e chegou a tracking final `EXECUTED`.
+- O Real Trading Guard não bloqueou `DEMO`.
+- `ENABLE_REAL_TRADING` permanece não configurado.
+- Allowlist permanece não configurada.
+- A política padrão continua bloquear `REAL`.
+- Conta real continua não liberada.
+- Produção real continua não liberada.
+- Dinheiro real continua não liberado.
+- Dispatch automático continua desativado.
+
+---
+
 *Mercado da Riqueza AutoTrade — Real Trading Guard. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
