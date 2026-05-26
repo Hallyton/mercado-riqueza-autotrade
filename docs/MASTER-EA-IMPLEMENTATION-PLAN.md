@@ -361,6 +361,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.7** | Aprovada — `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — aprovação manual do gate para uma única sessão futura em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
 | **4.8** | Executada e aprovada — `APPROVED` | [`DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) — Sessão Demo Controlada nº 1 com `DebugMode=false` aprovada em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
 | **4.9** | Documentada — `APPROVED_FOR_NEXT_RISK_GATE_DISCUSSION` | [`DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) — relatório final da etapa demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
+| **5.1** | Documentada — `PLANNED` | [`REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) — gate de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -911,6 +912,27 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa possível:** gate futuro para conta real ultra-controlada, ainda sem aprovação automática. A discussão desse gate não libera produção real, conta real, dinheiro real ou dispatch automático.
 
+### Fase 5.1 — Gate de Conta Real Ultra-Controlada
+
+**Status:** `PLANNED`  
+**Documento:** [`docs/REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md)  
+**Objetivo:** definir critérios mínimos antes de qualquer uso de dinheiro real.
+
+| Item | Status |
+|------|--------|
+| Gate de conta real ultra-controlada | Documentado |
+| Status inicial | `PLANNED` |
+| Base de evidência | Demo `DebugMode=false` aprovada |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 5.1:** documentar critérios técnicos, operacionais, jurídicos e de risco antes de sequer considerar uma sessão real ultra-controlada. O gate exige aceite formal, limites definidos, monitoramento em tempo real, rollback, decisão manual documentada e continua proibindo escala, múltiplos clientes e dispatch automático.
+
+**Próxima etapa:** revisar juridicamente/operacionalmente o gate, definir limites formais e preparar termo de aceite. A existência deste gate não libera conta real, produção real, dinheiro real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -980,6 +1002,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) | Resultado e aprovação do gate para conta demo com DebugMode=false (Fases 4.6 e 4.7) |
 | [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) | Registro da Sessão Demo Controlada nº 1 com DebugMode=false (Fase 4.8) |
 | [`docs/DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) | Relatório final da etapa Demo com DebugMode=false (Fase 4.9) |
+| [`docs/REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) | Gate de Conta Real Ultra-Controlada (Fase 5.1) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
