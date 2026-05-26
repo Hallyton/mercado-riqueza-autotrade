@@ -131,4 +131,88 @@ Coberturas adicionadas/ajustadas:
 
 ---
 
+## 9. Homologação staging — Fase 6.2
+
+**Data:** 2026-05-26  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+Esta homologação registrou o deploy e verificações seguras de staging, mas não forçou testes que exigiriam secret operacional, sessão admin ou mutação de heartbeat sem autorização explícita.
+
+### 9.1 Deploy realizado
+
+| Item | Resultado |
+|------|-----------|
+| Comando | `vercel --prod --force` |
+| Deploy ID | `dpl_2gW6HCZ2MN5YTH2iZ3SwN64jvTiw` |
+| Ready state | `READY` |
+| Alias oficial | `https://autotrade-staging.mercadodariqueza.com.br` |
+| Home staging | HTTP 200 |
+| `/api/v1/ea/instructions` sem token | HTTP 401 `MISSING_TOKEN` |
+| `/api/master/signals` sem auth | HTTP 401 `MASTER_AUTH_REQUIRED` |
+
+O endpoint de MasterSignal respondeu `MASTER_AUTH_REQUIRED`, confirmando que a rota está ativa e protegida por auth própria. O secret existe no ambiente Vercel como variável criptografada, mas seu valor não foi exposto.
+
+### 9.2 Smoke test DEMO
+
+| Campo | Resultado |
+|-------|-----------|
+| MasterSignalId planejado | `real-guard-demo-smoke-001` |
+| Símbolo | `WDOM26` |
+| Side | `BUY` |
+| OrderType | `MARKET` |
+| Purpose | `ENTRY` |
+| Profile | `conservador` |
+| Resultado | `PENDING_SECURITY_REVIEW` |
+
+O smoke test DEMO completo não foi executado nesta etapa porque o ambiente local não possui `MASTER_EA_API_SECRET` disponível e não havia sessão admin autenticada para realizar o dispatch manual pelo painel.
+
+O Vercel CLI permitiu confirmar a existência da variável por nome, mas retornou valores criptografados/redigidos. O valor não foi impresso, copiado para documentação ou exposto no terminal.
+
+Decisão conservadora: não contornar auth, não colar secret no chat, não recuperar secret em claro e não forçar dispatch fora do fluxo autorizado.
+
+### 9.3 Teste controlado do bloqueio REAL
+
+| Campo | Resultado |
+|-------|-----------|
+| Conta real usada | NÃO |
+| Produção real liberada | NÃO |
+| Dispatch automático ativado | NÃO |
+| Simulação REAL executada | NÃO |
+| Motivo | Ausência de fixture isolada confirmada e ausência de autorização para mutar heartbeat da licença operacional principal |
+
+Não foi executada simulação `tradeMode=REAL` em staging nesta etapa. A alternativa de alterar o heartbeat da licença operacional principal exigiria confirmação explícita e rollback imediato. Como essa autorização não foi dada, o teste foi registrado como pendente.
+
+Critérios que continuam pendentes para uma próxima rodada segura:
+
+- fixture temporária isolada em staging; ou
+- script operacional aprovado com rollback; ou
+- autorização explícita para mutar e restaurar heartbeat de uma licença definida; ou
+- sessão controlada com operador acompanhando painel/admin/EA.
+
+### 9.4 Verificação de envs
+
+Verificação feita apenas por nomes, sem imprimir valores.
+
+| Variável | Resultado |
+|----------|-----------|
+| `ENABLE_REAL_TRADING` | Não listada em `vercel env ls production` |
+| `REAL_TRADING_ALLOWED_LICENSE_IDS` | Não listada em `vercel env ls production` |
+| `MASTER_EA_API_SECRET` | Listada como `Encrypted`; valor não exposto |
+| `DATABASE_URL` | Listada como `Encrypted`; valor não exposto |
+
+Conclusão: nenhuma env futura de liberação de real trading foi configurada em staging durante esta fase.
+
+### 9.5 Restrições mantidas
+
+- Conta real não foi usada.
+- Conta real continua não liberada.
+- Produção real continua não liberada.
+- Dinheiro real continua não liberado.
+- Dispatch automático continua desativado.
+- Nenhum env de real trading foi configurado.
+- Nenhum schema/migration foi criado.
+- Nenhum EA cliente ou EA Mãe foi alterado.
+
+---
+
 *Mercado da Riqueza AutoTrade — Real Trading Guard. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*

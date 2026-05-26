@@ -373,6 +373,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.10** | Documentada | [`AUTOTRADE-PARTNER-MEETING-INVITE.md`](AUTOTRADE-PARTNER-MEETING-INVITE.md) — convite executivo para reunião com corretora, jurídico ou parceiro; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.11** | Documentada — `OUTREACH_MESSAGES_READY` | [`AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md) — mensagens de abordagem para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.1** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md) — Real Trading Guard / Kill Switch de Conta Real; conta real, produção real e dispatch automático continuam bloqueados |
+| **6.2** | Homologada com restrições — `APPROVED_WITH_RESTRICTIONS` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#9-homologação-staging--fase-62) — deploy staging do guard validado; smoke DEMO e simulação REAL pendentes por segurança; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1185,6 +1186,33 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 **Escopo da Fase 6.1:** implementar código defensivo e testes para impedir entrega de instruction a conta em modo real, sem alterar EA cliente, EA Mãe, Prisma/schema, migrations, envs reais ou deploy.
 
 **Próxima etapa:** manter validação local e discutir eventual etapa futura somente após revisão jurídica, operacional, técnica e aprovação específica. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
+
+### Fase 6.2 — Homologação staging do Real Trading Guard
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#9-homologação-staging--fase-62)  
+**Objetivo:** homologar o Real Trading Guard em staging sem usar conta real e sem liberar produção real.
+
+| Item | Resultado |
+|------|-----------|
+| Deploy staging | Realizado com `vercel --prod --force` |
+| Ready state | `READY` |
+| Alias oficial | `https://autotrade-staging.mercadodariqueza.com.br` |
+| Endpoint público | Home HTTP 200 |
+| MasterSignal sem auth | HTTP 401 `MASTER_AUTH_REQUIRED` |
+| EA instructions sem token | HTTP 401 `MISSING_TOKEN` |
+| Smoke DEMO | Pendente por ausência segura de `MASTER_EA_API_SECRET` local/sessão admin |
+| REAL simulado | Pendente por ausência de fixture isolada/autorização para mutar heartbeat |
+| `ENABLE_REAL_TRADING` | Não configurado por nome no Vercel |
+| `REAL_TRADING_ALLOWED_LICENSE_IDS` | Não configurado por nome no Vercel |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Escopo da Fase 6.2:** confirmar deploy e postura segura do ambiente. Não foi executado teste que exigiria secret em claro, sessão admin indisponível ou alteração de heartbeat da licença operacional principal sem aprovação explícita.
+
+**Próxima etapa:** preparar uma fixture isolada de staging ou obter autorização operacional explícita para uma simulação `tradeMode=REAL` com rollback imediato. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
 
 ---
 
