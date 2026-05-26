@@ -351,7 +351,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.11** | Documentação concluída — gate operacional pendente | [`SIMULATED-PRODUCTION-GATE.md`](SIMULATED-PRODUCTION-GATE.md) — checklist, roteiro, reprovação, rollback; **sem** código; **sem** liberação de produção real |
 | **2.12** | Concluída — `APPROVED_FOR_SIMULATED_PRODUCTION` | [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) — fluxo completo validado em staging; **produção real não liberada**; **POST sem dispatch automático** |
 | **3.1** | Documentada | [`SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) — plano operacional da produção simulada controlada; **sem** código; produção real continua não liberada |
-| **3.2** | Documentada | [`SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md) — registro dos 10 ciclos mínimos da produção simulada controlada; **sem** código; produção real continua não liberada |
+| **3.2** | Encerrada — `APPROVED_FOR_CONTROLLED_BETA` | [`SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) — 10/10 ciclos aprovados; produção real e ordem real continuam não liberadas |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -643,15 +643,18 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ### Fase 3.2 — Registro dos Ciclos Simulados (maio/2026)
 
-**Status:** documentada  
-**Documento:** [`docs/SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md)
+**Status:** encerrada  
+**Resultado final:** `APPROVED_FOR_CONTROLLED_BETA`  
+**Documentos:** [`docs/SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md) e [`docs/SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md)
 
 | Item | Status |
 |------|--------|
-| Registro dos ciclos | OK — tabela principal com 10 ciclos mínimos, todos inicialmente `PENDENTE` |
+| Registro dos ciclos | OK — 10/10 ciclos simulados aprovados |
 | Critérios por ciclo | OK — aprovação, reprovação imediata e evidências mínimas |
-| Alteração de código | **Não** |
-| EA cliente / EA Mãe / backend / Prisma | **Inalterados** |
+| Correção funcional durante a fase | OK — `603170e fix: block master dispatch when no licenses are eligible` |
+| Rollback operacional | OK — Ciclo 10 aprovado |
+| Alteração de código | Sim, apenas correção de backend/admin tracking no Ciclo 09; sem schema/migration/env/deploy |
+| EA cliente / EA Mãe / Prisma/schema | **Inalterados** |
 | Env / deploy | **Não alterados** |
 | Produção real | **Não liberada** |
 | Ordem real | **Não liberada** |
@@ -659,11 +662,27 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Objetivo:** controlar a execução dos 10 ciclos mínimos da produção simulada controlada, incluindo BUY/SELL válidos, simulador HTTP, retry/idempotência, disparo admin repetido, sinal expirado, EA offline/online, sem licença elegível e rollback operacional.
 
-**Estado inicial da Fase 3:** `EM EXECUÇÃO`, com 0/10 ciclos aprovados, 0 reprovados, 0 com restrição, rollback pendente, nenhuma ordem real, nenhum dispatch automático e nenhum secret exposto.
+**Encerramento da Fase 3:** 10/10 ciclos aprovados, 0 reprovados, 0 com restrição, nenhuma ordem real, nenhum dispatch automático, nenhum secret exposto e rollback operacional testado. Status final: `APPROVED_FOR_CONTROLLED_BETA`.
 
-**Nota operacional — Ciclo 09:** o teste `cycle-09-profile-mismatch-001` confirmou a segurança principal do cenário sem licença elegível: a licença staging foi ignorada por `PROFILE_MISMATCH`, nenhum `Instruction` foi criado, o EA cliente não recebeu instruction e nenhuma ordem real foi enviada. O ciclo identificou ajuste necessário de status/UI: sinal sem elegíveis após tentativa admin deve ser marcado como `REJECTED` com `rejectedReason=NO_ELIGIBLE_LICENSES`, cards devem mostrar `Elegíveis=0` / `Ignorados=1` / `Pendentes=0`, e o botão de dispatch não deve permanecer disponível. O Ciclo 09 segue `PENDENTE` até re-homologação com novo ID.
+**Nota operacional — Ciclo 09:** o teste inicial confirmou a segurança principal do cenário sem licença elegível: a licença staging foi ignorada por `PROFILE_MISMATCH`, nenhum `Instruction` foi criado, o EA cliente não recebeu instruction e nenhuma ordem real foi enviada. O commit `603170e` ajustou status/UI para marcar `REJECTED` com `rejectedReason=NO_ELIGIBLE_LICENSES`, mostrar `Elegíveis=0` / `Ignorados=1` / `Pendentes=0` e bloquear o botão de dispatch. A re-homologação com `cycle-09-profile-mismatch-002` foi aprovada.
 
-**Próximo passo (produto):** executar e preencher os ciclos em [`SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md), sem ocultar falhas e mantendo produção real bloqueada até nova fase/gate explícitos.
+**Nota operacional — Ciclo 10:** rollback operacional validado com `cycle-10-rollback-001`: instruction criada e mantida pendente após parada/remoção do EA cliente, sem execution e sem ordem real, com histórico preservado no painel.
+
+**Restrições mantidas:** produção real não liberada; ordem real não liberada; beta controlado exige nova fase, novo gate e aprovação explícita.
+
+### Fase 4 — Preparação do Beta Controlado / Gate de Beta Controlado
+
+**Status:** recomendada como próxima fase  
+**Objetivo:** preparar critérios para um beta restrito, ainda controlado, antes de qualquer produção real.
+
+| Item | Status |
+|------|--------|
+| Produção real | **Bloqueada** |
+| Ordem real | **Bloqueada** |
+| Gate de beta controlado | Pendente |
+| Critérios de risco/rollback/autorização manual | Pendentes |
+
+**Próximo passo (produto):** elaborar o Gate de Beta Controlado com critérios de entrada/saída, limites operacionais e de risco, evidências obrigatórias, responsabilidades, rollback e aprovação explícita. Qualquer avanço para conta real permanece fora de escopo até novo gate aprovado.
 
 ---
 
@@ -725,6 +744,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) | Resultado aprovado do gate produção simulada (Fase 2.12) |
 | [`docs/SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) | Plano operacional da produção simulada controlada (Fase 3.1) |
 | [`docs/SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md) | Registro dos ciclos simulados da produção simulada controlada (Fase 3.2) |
+| [`docs/SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) | Relatório final da produção simulada controlada (Fase 3) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
