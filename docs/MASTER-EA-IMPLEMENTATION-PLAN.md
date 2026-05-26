@@ -352,6 +352,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **2.12** | Concluída — `APPROVED_FOR_SIMULATED_PRODUCTION` | [`SIMULATED-PRODUCTION-GATE-RESULTS.md`](SIMULATED-PRODUCTION-GATE-RESULTS.md) — fluxo completo validado em staging; **produção real não liberada**; **POST sem dispatch automático** |
 | **3.1** | Documentada | [`SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) — plano operacional da produção simulada controlada; **sem** código; produção real continua não liberada |
 | **3.2** | Encerrada — `APPROVED_FOR_CONTROLLED_BETA` | [`SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) — 10/10 ciclos aprovados; produção real e ordem real continuam não liberadas |
+| **4.1** | Documentada | [`CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) — gate de beta controlado; produção real, ordem real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -670,19 +671,24 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Restrições mantidas:** produção real não liberada; ordem real não liberada; beta controlado exige nova fase, novo gate e aprovação explícita.
 
-### Fase 4 — Preparação do Beta Controlado / Gate de Beta Controlado
+### Fase 4.1 — Gate de Beta Controlado
 
-**Status:** recomendada como próxima fase  
+**Status:** documentada  
+**Documento:** [`docs/CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md)  
 **Objetivo:** preparar critérios para um beta restrito, ainda controlado, antes de qualquer produção real.
 
 | Item | Status |
 |------|--------|
+| Gate de beta controlado | Criado |
 | Produção real | **Bloqueada** |
 | Ordem real | **Bloqueada** |
-| Gate de beta controlado | Pendente |
-| Critérios de risco/rollback/autorização manual | Pendentes |
+| Dispatch automático | **Bloqueado** |
+| Critérios de risco/rollback/autorização manual | Documentados |
+| Billing/DARF/dashboard cliente | **Inalterados** |
 
-**Próximo passo (produto):** elaborar o Gate de Beta Controlado com critérios de entrada/saída, limites operacionais e de risco, evidências obrigatórias, responsabilidades, rollback e aprovação explícita. Qualquer avanço para conta real permanece fora de escopo até novo gate aprovado.
+**Escopo da Fase 4.1:** documentar critérios mínimos para iniciar beta controlado com poucos participantes, aceite explícito, suporte próximo, monitoramento diário, evidências por participante e rollback operacional. O gate separa beta demo de beta real: demo pode ser avaliado após aprovação do gate; conta real exige gate futuro específico.
+
+**Próxima etapa:** executar o gate de beta controlado ou criar o registro do primeiro participante beta demo. Qualquer avanço para conta real permanece fora de escopo até novo gate aprovado.
 
 ---
 
@@ -745,6 +751,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/SIMULATED-PRODUCTION-OPERATING-PLAN.md`](SIMULATED-PRODUCTION-OPERATING-PLAN.md) | Plano operacional da produção simulada controlada (Fase 3.1) |
 | [`docs/SIMULATED-PRODUCTION-CYCLES.md`](SIMULATED-PRODUCTION-CYCLES.md) | Registro dos ciclos simulados da produção simulada controlada (Fase 3.2) |
 | [`docs/SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) | Relatório final da produção simulada controlada (Fase 3) |
+| [`docs/CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) | Gate de beta controlado (Fase 4.1) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
