@@ -263,4 +263,50 @@ Isso **não** representa liberação operacional, não configura env real, não 
 
 ---
 
+## 11. Fase 6.4 — Painel Admin Read-Only
+
+**Status:** implementado localmente.
+
+A Fase 6.4 adiciona uma visualização administrativa somente leitura para o Real Trading Guard:
+
+- rota: `/admin/risk/real-trading-guard`;
+- helper: `lib/risk/real-trading-guard-status.ts`;
+- navegação admin: `Risco / Real Guard`.
+
+O painel serve para auditoria operacional e visibilidade do estado seguro do guard.
+
+### 11.1 O que a tela mostra
+
+- status operacional do guard;
+- política padrão `BLOCK_REAL_BY_DEFAULT`;
+- se `ENABLE_REAL_TRADING` está configurado, sem mostrar valor bruto;
+- se existe allowlist configurada, sem mostrar IDs completos;
+- quantidade de IDs em allowlist;
+- IDs parcialmente mascarados, quando existirem;
+- matriz conceitual DEMO/REAL;
+- avisos de segurança.
+
+### 11.2 O que a tela não faz
+
+- não altera envs;
+- não cria botão de ativar real;
+- não cria toggle;
+- não grava banco;
+- não cria `Instruction`;
+- não faz dispatch;
+- não usa conta real;
+- não libera produção real;
+- não substitui gate jurídico, operacional e técnico.
+
+### 11.3 Redação de envs e allowlist
+
+Valores brutos de env não são retornados pelo helper de status.
+
+Quando `REAL_TRADING_ALLOWED_LICENSE_IDS` existir, a tela mostra apenas:
+
+- contagem de IDs;
+- IDs mascarados no formato aproximado `cmpj3w...939p`.
+
+---
+
 *Mercado da Riqueza AutoTrade — Real Trading Guard. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*

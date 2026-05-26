@@ -7,6 +7,7 @@ const NAV = [
   { href: "/admin/clientes", label: "Clientes e licenças" },
   { href: "/admin/master-signals", label: "Sinais mestre" },
   { href: "/admin/instrucoes", label: "Instruções (teste)" },
+  { href: "/admin/risk/real-trading-guard", label: "Risco / Real Guard" },
 ];
 
 export function AdminShell({

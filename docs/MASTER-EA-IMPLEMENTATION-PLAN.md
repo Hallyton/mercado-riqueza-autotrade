@@ -375,6 +375,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **6.1** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md) — Real Trading Guard / Kill Switch de Conta Real; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.2** | Homologada com restrições — `APPROVED_WITH_RESTRICTIONS` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#9-homologação-staging--fase-62) — deploy staging do guard validado; smoke DEMO e simulação REAL pendentes por segurança; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.3** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#10-fase-63--harness-seguro-de-diagnóstico) — harness seguro de diagnóstico do Real Trading Guard; valida cenários DEMO/REAL sem conta real, sem banco e sem env real; conta real, produção real e dispatch automático continuam bloqueados |
+| **6.4** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#11-fase-64--painel-admin-read-only) — painel admin read-only do Real Trading Guard; visibilidade operacional sem controle de liberação; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1237,6 +1238,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 **Escopo da Fase 6.3:** criar diagnóstico local com envs injetados em memória para validar default deny, allowlist futura e comportamento atual para `tradeMode` ausente/desconhecido.
 
 **Próxima etapa:** usar o harness como pré-validação antes de qualquer nova rodada de homologação controlada. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
+
+### Fase 6.4 — Painel Admin Read-Only do Real Trading Guard
+
+**Status:** implementado localmente  
+**Documento:** [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#11-fase-64--painel-admin-read-only)  
+**Objetivo:** dar visibilidade operacional sem criar controle de liberação.
+
+| Item | Resultado |
+|------|-----------|
+| Página admin | `/admin/risk/real-trading-guard` |
+| Helper de status | `lib/risk/real-trading-guard-status.ts` |
+| Navegação admin | `Risco / Real Guard` |
+| Modo | Somente leitura |
+| Toggle de real trading | Não criado |
+| Valores brutos de env | Não expostos |
+| Allowlist | Exibe apenas contagem e IDs mascarados |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Escopo da Fase 6.4:** criar uma tela admin para auditoria operacional do Real Trading Guard, sem alterar envs, banco, schema, EA cliente, EA Mãe ou fluxo de dispatch.
+
+**Próxima etapa:** usar a tela apenas para inspeção operacional. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
 
 ---
 
