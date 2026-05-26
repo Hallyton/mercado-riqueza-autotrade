@@ -360,6 +360,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.6** | Registrada — `PENDING_REVIEW` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — resultado preliminar do gate |
 | **4.7** | Aprovada — `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — aprovação manual do gate para uma única sessão futura em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
 | **4.8** | Executada e aprovada — `APPROVED` | [`DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) — Sessão Demo Controlada nº 1 com `DebugMode=false` aprovada em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
+| **4.9** | Documentada — `APPROVED_FOR_NEXT_RISK_GATE_DISCUSSION` | [`DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) — relatório final da etapa demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -887,6 +888,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa recomendada:** relatório de encerramento da Fase 4 ou gate futuro específico para conta real. Nenhuma dessas etapas libera produção real automaticamente.
 
+### Fase 4.9 — Relatório Final da Demo com DebugMode=false
+
+**Status:** `APPROVED_FOR_NEXT_RISK_GATE_DISCUSSION`  
+**Documento:** [`docs/DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md)  
+**Objetivo:** registrar o encerramento da etapa de conta demo com `DebugMode=false`.
+
+| Item | Status |
+|------|--------|
+| Relatório final | Documentado |
+| Conta validada | `52609973 @ XPMT5-DEMO` |
+| Tipo de conta | DEMO |
+| MasterSignalId aprovado | `demo-dmf-001-buy-002` |
+| Falha segura inicial | `demo-dmf-001-buy-001` — AutoTrading disabled, sem ordem enviada |
+| Tracking | `EXECUTED` |
+| Produção real | **Bloqueada** |
+| Conta real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Resultado da Fase 4.9:** a etapa Demo com `DebugMode=false` foi encerrada como documentada após validação de uma sessão única em conta DEMO, com dispatch manual, execution report confirmado e tracking `EXECUTED`.
+
+**Próxima etapa possível:** gate futuro para conta real ultra-controlada, ainda sem aprovação automática. A discussão desse gate não libera produção real, conta real, dinheiro real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -954,7 +978,8 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) | Plano de sessões beta demo recorrentes (Fase 4.4) |
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) | Gate para conta demo com DebugMode=false (Fase 4.5) |
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) | Resultado e aprovação do gate para conta demo com DebugMode=false (Fases 4.6 e 4.7) |
-| [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) | Planejamento da Sessão Demo Controlada nº 1 com DebugMode=false (Fase 4.8) |
+| [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) | Registro da Sessão Demo Controlada nº 1 com DebugMode=false (Fase 4.8) |
+| [`docs/DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) | Relatório final da etapa Demo com DebugMode=false (Fase 4.9) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
