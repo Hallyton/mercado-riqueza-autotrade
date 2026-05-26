@@ -1,8 +1,8 @@
 # Resultado do Gate — Conta Demo com DebugMode=false
 
-Documento da **Fase 4.6** para registrar a revisão operacional do Gate para Conta Demo com `DebugMode=false`.
+Documento das **Fases 4.6 e 4.7** para registrar a revisão operacional e a aprovação manual do Gate para Conta Demo com `DebugMode=false`.
 
-Este resultado **não** libera produção real, **não** libera conta real, **não** libera ordem com dinheiro real, **não** ativa dispatch automático e **não** executa ordem demo. `DebugMode=false` em conta demo só poderá ser usado após aprovação explícita do gate e em sessão controlada.
+Este resultado **não** libera produção real, **não** libera conta real, **não** libera ordem com dinheiro real, **não** ativa dispatch automático e **não** executa ordem demo. A aprovação do gate autoriza somente o planejamento de uma única sessão futura em conta DEMO com `DebugMode=false`.
 
 ---
 
@@ -25,21 +25,21 @@ Este resultado **não** libera produção real, **não** libera conta real, **n�
 
 | Critério | Status |
 |----------|--------|
-| EA cliente instalado | PENDING_REVIEW |
-| EA cliente apontando para staging | PENDING_REVIEW |
-| WebRequest liberado | PENDING_REVIEW |
-| Conta MT5 demo confirmada | PENDING_REVIEW |
-| Licença `ACTIVE` | PENDING_REVIEW |
-| Assinatura `ACTIVE` | PENDING_REVIEW |
-| Device ativo | PENDING_REVIEW |
-| `allow_demo` habilitado | PENDING_REVIEW |
-| Heartbeat `ONLINE` | PENDING_REVIEW |
-| Painel admin acessível | PENDING_REVIEW |
-| Tracking funcionando | PENDING_REVIEW |
-| Nenhuma posição aberta antes do teste | PENDING_REVIEW |
-| Nenhuma ordem pendente antes do teste | PENDING_REVIEW |
-| Logs MT5 visíveis | PENDING_REVIEW |
-| Rollback conhecido | PENDING_REVIEW |
+| EA cliente instalado | OK — validado manualmente |
+| EA cliente apontando para staging | OK — validado manualmente |
+| WebRequest liberado | OK — validado manualmente |
+| Conta MT5 demo confirmada | OK — `52609973 @ XPMT5-DEMO` |
+| Licença `ACTIVE` | OK — validado para o gate |
+| Assinatura `ACTIVE` | OK — validado para o gate |
+| Device ativo | OK — validado para o gate |
+| `allow_demo` habilitado | OK — validado para o gate |
+| Heartbeat `ONLINE` | OK — validado manualmente |
+| Painel admin acessível | OK — admin acompanhando em tempo real |
+| Tracking funcionando | OK — validado para o gate |
+| Nenhuma posição aberta antes do teste | OK — validado manualmente |
+| Nenhuma ordem pendente antes do teste | OK — validado manualmente |
+| Logs MT5 visíveis | OK — validado manualmente |
+| Rollback conhecido | OK — validado manualmente |
 
 ---
 
@@ -47,16 +47,16 @@ Este resultado **não** libera produção real, **não** libera conta real, **n�
 
 | Critério | Status |
 |----------|--------|
-| Responsável acompanhando em tempo real | PENDING_REVIEW |
-| Horário da sessão definido | PENDING_REVIEW |
+| Responsável acompanhando em tempo real | OK — admin acompanhando em tempo real |
+| Horário da sessão definido | A definir na Fase 4.8 |
 | Ativo definido: `WDOM26` | OK — definido no escopo |
 | Perfil definido: `conservador` | OK — definido no escopo |
-| Máximo 1 sinal | OK — limite definido |
-| Dispatch manual admin | OK — obrigatório no gate |
+| Máximo 1 sinal | OK — validado manualmente |
+| Dispatch manual admin | OK — validado manualmente |
 | Sem dispatch automático | OK — obrigatório no gate |
-| Sem retry manual após execução | OK — limite definido |
+| Sem retry manual após execução | OK — validado manualmente |
 | Plano de rollback definido | OK — definido em [`DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) |
-| Critério de encerramento definido | PENDING_REVIEW |
+| Critério de encerramento definido | OK — uma sessão, um sinal, sem retry |
 
 ---
 
@@ -74,7 +74,9 @@ Este resultado **não** libera produção real, **não** libera conta real, **n�
 
 ## 5. Resultado do gate
 
-**Status atual:** `PENDING_REVIEW`
+**Status inicial:** `PENDING_REVIEW`
+
+**Status final:** `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST`
 
 Status possíveis:
 
@@ -84,15 +86,42 @@ Status possíveis:
 
 ### Decisão
 
-O gate permanece em `PENDING_REVIEW` até que todos os itens técnicos e operacionais sejam validados manualmente com evidência operacional.
+O gate foi aprovado para permitir o planejamento de uma única sessão futura em conta DEMO com `DebugMode=false`.
 
-Não houve aprovação para alterar o EA cliente para `DebugMode=false` nesta fase. Não houve execução de ordem demo.
+Não houve alteração do EA cliente nesta fase. Não houve execução de ordem demo.
 
 ---
 
-## 6. Próxima ação se aprovado
+## 6. Aprovação manual do checklist
 
-Se todos os critérios pendentes forem confirmados como OK e o status for atualizado para `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST`, planejar e executar uma única sessão demo controlada com:
+O operador validou manualmente os pré-requisitos do MT5 e do ambiente:
+
+- conta `52609973 @ XPMT5-DEMO` confirmada como DEMO;
+- nenhuma posição aberta antes da sessão;
+- nenhuma ordem pendente antes da sessão;
+- EA cliente instalado e apontado para staging;
+- WebRequest liberado;
+- heartbeat `ONLINE`;
+- logs MT5 visíveis;
+- rollback conhecido;
+- admin acompanhando em tempo real;
+- limite de 1 sinal;
+- dispatch manual;
+- sem retry após execução.
+
+Esta aprovação autoriza somente o planejamento de uma única sessão demo com `DebugMode=false`.
+
+Não autoriza conta real.  
+Não autoriza produção real.  
+Não autoriza dispatch automático.  
+Não autoriza múltiplos sinais.  
+Não autoriza retry manual após execução.
+
+---
+
+## 7. Próxima ação
+
+Planejar e executar a **Fase 4.8 — Sessão Demo Controlada nº 1 com DebugMode=false**, usando:
 
 - `DebugMode=false`;
 - 1 sinal;
@@ -106,4 +135,4 @@ Se todos os critérios pendentes forem confirmados como OK e o status for atuali
 
 ---
 
-*Mercado da Riqueza AutoTrade — resultado preliminar do gate para conta demo com DebugMode=false. Produção real, conta real e dispatch automático permanecem bloqueados.*
+*Mercado da Riqueza AutoTrade — gate aprovado para uma única sessão futura em conta demo com DebugMode=false. Produção real, conta real e dispatch automático permanecem bloqueados.*

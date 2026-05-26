@@ -357,7 +357,8 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.3** | Executada e aprovada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo nº 1 aprovada com `beta-demo-001-buy-002`; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
 | **4.4** | Concluída — `APPROVED_FOR_DEBUGMODE_FALSE_GATE` | [`CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) — Sessões 02 BUY, 03 SELL e 04 retry/idempotência aprovadas; produção real e ordem real continuam bloqueadas |
 | **4.5** | Documentada | [`DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) — gate para demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
-| **4.6** | Pendente de revisão — `PENDING_REVIEW` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — resultado preliminar do gate; `DebugMode=false` ainda não autorizado |
+| **4.6** | Registrada — `PENDING_REVIEW` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — resultado preliminar do gate |
+| **4.7** | Aprovada — `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — aprovação manual do gate para uma única sessão futura em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -822,6 +823,33 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** validar os itens pendentes do checklist. Se todos forem confirmados como OK, atualizar o resultado para `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` e só então planejar uma sessão demo controlada com `DebugMode=false`. Produção real, conta real e dispatch automático permanecem bloqueados.
 
+### Fase 4.7 — Aprovação do Gate Demo com DebugMode=false
+
+**Status:** `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST`  
+**Documento:** [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md)  
+**Objetivo:** registrar a aprovação manual do gate para permitir somente o planejamento de uma sessão futura em conta demo com `DebugMode=false`.
+
+| Item | Status |
+|------|--------|
+| Gate Demo com `DebugMode=false` | `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` |
+| Escopo autorizado | Uma sessão futura em conta DEMO |
+| Participante | Cliente Staging |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Perfil | `conservador` |
+| Ativo permitido | `WDOM26` |
+| Máximo de sinais | 1 |
+| Dispatch | Manual admin |
+| Retry manual após execução | **Bloqueado** |
+| Produção real | **Bloqueada** |
+| Conta real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| Sessão demo | **Ainda não executada** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Resultado da Fase 4.7:** o operador validou manualmente os pré-requisitos do MT5 e do ambiente: conta demo confirmada, ausência de posições/ordens pendentes, EA cliente instalado e apontado para staging, WebRequest liberado, heartbeat `ONLINE`, logs MT5 visíveis, AutoTrading sob controle, rollback conhecido, admin acompanhando em tempo real, limite de 1 sinal, dispatch manual obrigatório e sem retry após execução.
+
+**Próxima etapa:** Fase 4.8 — Sessão Demo Controlada nº 1 com `DebugMode=false`. A sessão futura deve continuar limitada a conta DEMO, 1 sinal, dispatch manual, monitoramento em tempo real e rollback imediato disponível. Produção real, conta real e dispatch automático permanecem bloqueados.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -888,7 +916,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) | Roteiro e registro da sessão beta demo controlada nº 1 (Fase 4.3) |
 | [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) | Plano de sessões beta demo recorrentes (Fase 4.4) |
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) | Gate para conta demo com DebugMode=false (Fase 4.5) |
-| [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) | Resultado do gate para conta demo com DebugMode=false (Fase 4.6) |
+| [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) | Resultado e aprovação do gate para conta demo com DebugMode=false (Fases 4.6 e 4.7) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
