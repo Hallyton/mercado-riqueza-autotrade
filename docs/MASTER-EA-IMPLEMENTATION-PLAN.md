@@ -362,6 +362,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.8** | Executada e aprovada — `APPROVED` | [`DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) — Sessão Demo Controlada nº 1 com `DebugMode=false` aprovada em conta demo; produção real, conta real e dispatch automático continuam bloqueados |
 | **4.9** | Documentada — `APPROVED_FOR_NEXT_RISK_GATE_DISCUSSION` | [`DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) — relatório final da etapa demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 | **5.1** | Documentada — `PLANNED` | [`REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) — gate de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.2** | Documentada — `DRAFT_OPERATIONAL` | [`REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) — minuta operacional de aceite e limites; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -933,6 +934,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** revisar juridicamente/operacionalmente o gate, definir limites formais e preparar termo de aceite. A existência deste gate não libera conta real, produção real, dinheiro real ou dispatch automático.
 
+### Fase 5.2 — Termo Operacional de Aceite e Limites
+
+**Status:** `DRAFT_OPERATIONAL`  
+**Documento:** [`docs/REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md)  
+**Objetivo:** criar base de aceite, ciência de risco, responsabilidades e limites antes de qualquer conta real.
+
+| Item | Status |
+|------|--------|
+| Termo operacional de aceite e limites | Documentado |
+| Status inicial | `DRAFT_OPERATIONAL` |
+| Revisão jurídica | **Pendente** |
+| Limites numéricos | **A definir antes de qualquer conta real** |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 5.2:** documentar uma minuta operacional para aceite, ciência de risco, estratégia caixa preta, limites, responsabilidades, critérios de pausa e autorização específica. O documento não é contrato jurídico final, não substitui revisão jurídica e não libera operação real.
+
+**Próxima etapa:** revisão jurídica/operacional, definição de limites formais e criação de checklist de aprovação individual antes de qualquer conta real.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1003,6 +1026,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/DEMO-DEBUGMODE-FALSE-SESSION-001.md`](DEMO-DEBUGMODE-FALSE-SESSION-001.md) | Registro da Sessão Demo Controlada nº 1 com DebugMode=false (Fase 4.8) |
 | [`docs/DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md`](DEMO-DEBUGMODE-FALSE-FINAL-REPORT.md) | Relatório final da etapa Demo com DebugMode=false (Fase 4.9) |
 | [`docs/REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) | Gate de Conta Real Ultra-Controlada (Fase 5.1) |
+| [`docs/REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) | Termo operacional de aceite e limites para conta real ultra-controlada (Fase 5.2) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
