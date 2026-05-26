@@ -364,6 +364,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.1** | Documentada — `PLANNED` | [`REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) — gate de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.2** | Documentada — `DRAFT_OPERATIONAL` | [`REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) — minuta operacional de aceite e limites; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.3** | Documentada — `DRAFT_CHECKLIST` | [`REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) — checklist individual para revisão de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.4** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) — relatório de consolidação do gate de conta real; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -979,6 +980,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Observação crítica:** mesmo `APPROVED_FOR_RISK_COMMITTEE_REVIEW` não libera operação real. Apenas permite revisão final de risco.
 
+### Fase 5.4 — Relatório de Consolidação do Gate de Conta Real
+
+**Status:** `REAL_ACCOUNT_NOT_APPROVED`  
+**Documento:** [`docs/REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md)  
+**Objetivo:** consolidar documentos, status e bloqueios atuais da trilha de risco para conta real.
+
+| Item | Status |
+|------|--------|
+| Relatório de consolidação | Documentado |
+| Gate | `PLANNED` |
+| Termo | `DRAFT_OPERATIONAL` |
+| Checklist | `DRAFT_CHECKLIST` |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+| Limites financeiros | **Indefinidos** |
+| Revisão jurídica | **Pendente** |
+| Participante real | **Não aprovado** |
+
+**Resultado da Fase 5.4:** a documentação de risco para conta real foi consolidada, mas o status permanece `REAL_ACCOUNT_NOT_APPROVED`. Nenhuma ordem real, conta real ou produção real está permitida.
+
+**Próxima etapa:** revisão jurídica/operacional e definição de limites, se houver decisão futura de avançar para nova avaliação de risco.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1051,6 +1076,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md`](REAL-ACCOUNT-ULTRA-CONTROLLED-GATE.md) | Gate de Conta Real Ultra-Controlada (Fase 5.1) |
 | [`docs/REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md`](REAL-ACCOUNT-ACCEPTANCE-AND-LIMITS.md) | Termo operacional de aceite e limites para conta real ultra-controlada (Fase 5.2) |
 | [`docs/REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) | Checklist individual de aprovação para conta real ultra-controlada (Fase 5.3) |
+| [`docs/REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) | Relatório de consolidação do gate de conta real (Fase 5.4) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
