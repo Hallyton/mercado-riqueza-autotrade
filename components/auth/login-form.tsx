@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { resolvePostLoginDestination } from "@/lib/auth/callback-url";
 
 export function LoginForm() {
   const router = useRouter();
@@ -40,16 +41,10 @@ export function LoginForm() {
     const session = (await sessionRes.json()) as {
       user?: { appRole?: "ADMIN" | "CLIENT" };
     };
-    const defaultDest =
-      session?.user?.appRole === "ADMIN" ? "/admin" : "/dashboard";
-    const dest =
-      session?.user?.appRole === "ADMIN" && callbackUrl.startsWith("/dashboard")
-        ? "/admin"
-        : session?.user?.appRole === "CLIENT" && callbackUrl.startsWith("/admin")
-          ? "/dashboard"
-          : callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
-            ? callbackUrl
-            : defaultDest;
+    const dest = resolvePostLoginDestination({
+      callbackUrl,
+      appRole: session?.user?.appRole,
+    });
 
     router.push(dest);
     router.refresh();

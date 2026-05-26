@@ -1402,6 +1402,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** executar auditoria técnica por blocos, começando por autenticação/rotas, APIs EA, MasterSignal/dispatch e Real Trading Guard.
 
+### Fase 7.2 — Auditoria de Autenticação, Rotas Admin e APIs Sensíveis
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-AUDIT-AUTH-ROUTES-RESULTS.md`](PRE-REAL-AUDIT-AUTH-ROUTES-RESULTS.md)  
+**Objetivo:** validar login/sessão admin, proteção de páginas `/admin`, proteção de APIs `app/api/admin/**`, dispatch sem sessão, comportamento autenticado e segurança de `callbackUrl`.
+
+| Item | Resultado |
+|------|-----------|
+| Páginas admin avaliadas | `/admin`, `/admin/clientes`, `/admin/instrucoes`, `/admin/master-signals`, `/admin/master-signals/[masterSignalId]`, `/admin/risk/real-trading-guard` |
+| APIs admin avaliadas | `POST /api/admin/instructions`, `POST /api/admin/master-signals/[masterSignalId]/dispatch`, `POST /api/admin/emergency/cancel-orders`, `POST /api/admin/licenses/[licenseId]/pause-entries`, `POST /api/admin/users/[userId]/block` |
+| Testes adicionados | `tests/admin/auth-routes.test.ts` |
+| Teste focado | 9/9 passing |
+| Achados críticos | Nenhum |
+| Correção aplicada | Extração de helper testável para `callbackUrl`, sem alterar comportamento funcional |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.2:** auditoria aprovada para o bloco de autenticação, rotas admin e APIs sensíveis. Não foi identificada rota admin crítica sem auth, e o dispatch manual sem sessão foi validado como bloqueado.
+
+**Próxima etapa:** seguir a auditoria técnica por blocos, com foco em APIs EA e contratos de device/licença/token.
+
 ---
 
 ## 13. Riscos e cuidados
