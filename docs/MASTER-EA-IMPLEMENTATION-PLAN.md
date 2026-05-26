@@ -356,6 +356,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.2** | Documentada | [`CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) — participante beta demo nº 1; Cliente Staging; `52609973 @ XPMT5-DEMO`; produção real e ordem real continuam bloqueadas |
 | **4.3** | Executada e aprovada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo nº 1 aprovada com `beta-demo-001-buy-002`; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
 | **4.4** | Concluída — `APPROVED_FOR_DEBUGMODE_FALSE_GATE` | [`CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) — Sessões 02 BUY, 03 SELL e 04 retry/idempotência aprovadas; produção real e ordem real continuam bloqueadas |
+| **4.5** | Documentada | [`DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) — gate para demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -775,6 +776,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa recomendada:** Fase 4.5 — Gate para Demo com `DebugMode=false`. Produção real, ordem real em conta real e dispatch automático permanecem bloqueados; qualquer uso de conta real exige gate futuro específico.
 
+### Fase 4.5 — Gate para Demo com DebugMode=false
+
+**Status:** documentada  
+**Documento:** [`docs/DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md)  
+**Objetivo:** criar critérios antes de permitir ordem em conta demo com o EA cliente em `DebugMode=false`.
+
+| Item | Status |
+|------|--------|
+| Gate para demo com `DebugMode=false` | Criado |
+| Participante | Cliente Staging |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Perfil | `conservador` |
+| Ativo permitido | `WDOM26` |
+| Produção real | **Bloqueada** |
+| Conta real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Escopo da Fase 4.5:** documentar critérios técnicos e operacionais antes de permitir que o EA cliente envie ordem para o MetaTrader demo. `DebugMode=false` em demo ainda não envolve dinheiro real, mas exige sessão acompanhada, limite de uma instruction, ausência de posições/ordens antes do teste, rollback claro e evidência completa.
+
+**Próxima etapa:** executar o gate e, se aprovado, planejar uma sessão demo com `DebugMode=false`. Produção real, conta real e dispatch automático permanecem fora de escopo.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -840,6 +863,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) | Registro do participante beta demo nº 1 (Fase 4.2) |
 | [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) | Roteiro e registro da sessão beta demo controlada nº 1 (Fase 4.3) |
 | [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) | Plano de sessões beta demo recorrentes (Fase 4.4) |
+| [`docs/DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) | Gate para conta demo com DebugMode=false (Fase 4.5) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
