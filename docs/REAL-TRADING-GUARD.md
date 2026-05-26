@@ -309,4 +309,71 @@ Quando `REAL_TRADING_ALLOWED_LICENSE_IDS` existir, a tela mostra apenas:
 
 ---
 
+## 12. Homologação staging — Fase 6.5
+
+**Data:** 2026-05-26  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+Esta homologação registrou o deploy e a proteção da rota admin do painel read-only do Real Trading Guard.
+
+### 12.1 Deploy realizado
+
+| Item | Resultado |
+|------|-----------|
+| Comando | `vercel --prod --force` |
+| Deploy ID | `dpl_EhrsMyozCUnb7qfr2BQMoqgXLxWa` |
+| Ready state | `READY` |
+| Alias oficial | `https://autotrade-staging.mercadodariqueza.com.br` |
+| Rota no build | `/admin/risk/real-trading-guard` gerada com sucesso |
+
+### 12.2 Rota protegida
+
+| Verificação | Resultado |
+|-------------|-----------|
+| URL | `https://autotrade-staging.mercadodariqueza.com.br/admin/risk/real-trading-guard` |
+| Sem sessão | HTTP 307 para `/login?callbackUrl=%2Fadmin%2Frisk%2Freal-trading-guard` |
+| Após redirect | HTTP 200 na tela de login |
+| Navegador | Tela de login exibida |
+
+A rota está protegida por autenticação admin. Sem sessão autenticada, o painel não é exibido.
+
+### 12.3 Validação visual
+
+| Item | Resultado |
+|------|-----------|
+| Validação sem login | Aprovada — redirect para login |
+| Validação autenticada admin | Pendente por ausência de sessão admin segura nesta execução |
+| Status final | `APPROVED_WITH_RESTRICTIONS` |
+
+Não foram usadas credenciais, secrets ou sessão admin forçada. A validação visual do conteúdo autenticado ficou restrita ao build local/staging e à revisão do código implementado na Fase 6.4.
+
+Conteúdos esperados pelo painel:
+
+- conta real bloqueada por padrão;
+- produção real não liberada;
+- dispatch automático desativado;
+- política padrão: bloquear `REAL`;
+- `DEMO` permitido conforme regras existentes;
+- `REAL` sem flag bloqueado;
+- `REAL` com flag sem allowlist bloqueado;
+- `REAL` com flag e allowlist descrito como tecnicamente possível, mas sem liberação operacional;
+- allowlist exibida apenas como contagem e IDs mascarados;
+- nenhum valor bruto de env;
+- nenhum secret;
+- nenhum botão ou toggle de ativação.
+
+### 12.4 Restrições mantidas
+
+- Conta real não foi usada.
+- Conta real continua não liberada.
+- Produção real continua não liberada.
+- Dinheiro real continua não liberado.
+- Dispatch automático continua desativado.
+- Nenhum env foi alterado.
+- Nenhum schema/migration foi criado.
+- Nenhum EA cliente ou EA Mãe foi alterado.
+- Nenhum toggle ou botão de liberação foi criado.
+
+---
+
 *Mercado da Riqueza AutoTrade — Real Trading Guard. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*

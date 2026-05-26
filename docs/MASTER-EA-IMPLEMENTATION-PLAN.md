@@ -376,6 +376,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **6.2** | Homologada com restrições — `APPROVED_WITH_RESTRICTIONS` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#9-homologação-staging--fase-62) — deploy staging do guard validado; smoke DEMO e simulação REAL pendentes por segurança; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.3** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#10-fase-63--harness-seguro-de-diagnóstico) — harness seguro de diagnóstico do Real Trading Guard; valida cenários DEMO/REAL sem conta real, sem banco e sem env real; conta real, produção real e dispatch automático continuam bloqueados |
 | **6.4** | Implementada localmente | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#11-fase-64--painel-admin-read-only) — painel admin read-only do Real Trading Guard; visibilidade operacional sem controle de liberação; conta real, produção real e dispatch automático continuam bloqueados |
+| **6.5** | Homologada com restrições — `APPROVED_WITH_RESTRICTIONS` | [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#12-homologação-staging--fase-65) — deploy staging do painel admin validado e rota protegida; validação visual autenticada pendente por ausência de sessão admin segura; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1262,6 +1263,32 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 **Escopo da Fase 6.4:** criar uma tela admin para auditoria operacional do Real Trading Guard, sem alterar envs, banco, schema, EA cliente, EA Mãe ou fluxo de dispatch.
 
 **Próxima etapa:** usar a tela apenas para inspeção operacional. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
+
+### Fase 6.5 — Homologação Staging do Painel Real Trading Guard
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md#12-homologação-staging--fase-65)  
+**Objetivo:** homologar em staging o painel admin read-only do Real Trading Guard.
+
+| Item | Resultado |
+|------|-----------|
+| Deploy staging | Realizado com `vercel --prod --force` |
+| Deploy ID | `dpl_EhrsMyozCUnb7qfr2BQMoqgXLxWa` |
+| Ready state | `READY` |
+| Alias oficial | `https://autotrade-staging.mercadodariqueza.com.br` |
+| Rota admin | `/admin/risk/real-trading-guard` |
+| Sem sessão | Redirect HTTP 307 para login |
+| Validação autenticada | Pendente por ausência de sessão admin segura |
+| Env bruto exposto | NÃO |
+| Toggle de real trading | NÃO |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Escopo da Fase 6.5:** validar deploy, rota protegida e documentação do painel read-only. Não foram usadas credenciais admin, secrets ou qualquer mecanismo para contornar autenticação.
+
+**Próxima etapa:** validar visualmente o conteúdo autenticado quando houver sessão admin segura disponível. Esta fase não libera conta real, produção real, dinheiro real ou dispatch automático.
 
 ---
 
