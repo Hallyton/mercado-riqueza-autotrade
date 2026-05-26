@@ -357,6 +357,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **4.3** | Executada e aprovada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo nº 1 aprovada com `beta-demo-001-buy-002`; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
 | **4.4** | Concluída — `APPROVED_FOR_DEBUGMODE_FALSE_GATE` | [`CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) — Sessões 02 BUY, 03 SELL e 04 retry/idempotência aprovadas; produção real e ordem real continuam bloqueadas |
 | **4.5** | Documentada | [`DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) — gate para demo com `DebugMode=false`; produção real, conta real e dispatch automático continuam bloqueados |
+| **4.6** | Pendente de revisão — `PENDING_REVIEW` | [`DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) — resultado preliminar do gate; `DebugMode=false` ainda não autorizado |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -798,6 +799,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** executar o gate e, se aprovado, planejar uma sessão demo com `DebugMode=false`. Produção real, conta real e dispatch automático permanecem fora de escopo.
 
+### Fase 4.6 — Execução do Gate para Demo com DebugMode=false
+
+**Status:** `PENDING_REVIEW`  
+**Documento:** [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md)  
+**Objetivo:** registrar a revisão operacional do gate antes de permitir ordem em conta demo com o EA cliente em `DebugMode=false`.
+
+| Item | Status |
+|------|--------|
+| Resultado do gate | `PENDING_REVIEW` |
+| Participante | Cliente Staging |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Perfil | `conservador` |
+| Ativo permitido | `WDOM26` |
+| Produção real | **Bloqueada** |
+| Conta real | **Bloqueada** |
+| Dispatch automático | **Bloqueado** |
+| `DebugMode=false` | **Ainda não autorizado** |
+| Billing/DARF/dashboard cliente | **Inalterados** |
+
+**Resultado da Fase 4.6:** o gate foi registrado em `PENDING_REVIEW` porque a aprovação final exige confirmação operacional manual de itens como EA instalado/apontado para staging, WebRequest liberado, heartbeat `ONLINE`, ausência de posições/ordens pendentes, logs MT5 visíveis, responsável e horário definidos.
+
+**Próxima etapa:** validar os itens pendentes do checklist. Se todos forem confirmados como OK, atualizar o resultado para `APPROVED_FOR_DEMO_DEBUGMODE_FALSE_TEST` e só então planejar uma sessão demo controlada com `DebugMode=false`. Produção real, conta real e dispatch automático permanecem bloqueados.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -864,6 +888,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) | Roteiro e registro da sessão beta demo controlada nº 1 (Fase 4.3) |
 | [`docs/CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md`](CONTROLLED-BETA-RECURRING-SESSIONS-PLAN.md) | Plano de sessões beta demo recorrentes (Fase 4.4) |
 | [`docs/DEMO-DEBUGMODE-FALSE-GATE.md`](DEMO-DEBUGMODE-FALSE-GATE.md) | Gate para conta demo com DebugMode=false (Fase 4.5) |
+| [`docs/DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md`](DEMO-DEBUGMODE-FALSE-GATE-RESULTS.md) | Resultado do gate para conta demo com DebugMode=false (Fase 4.6) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
