@@ -107,9 +107,32 @@ Cobertura mínima:
 
 | Sessão | Data | MasterSignalId | Side | Origem | InstructionId | DebugMode | Tracking | Ordem real | Status | Observações |
 |--------|------|----------------|------|--------|---------------|-----------|----------|------------|--------|-------------|
-| 02 | PENDENTE | PENDENTE | BUY | EA Mãe ou simulador | PENDENTE | true | PENDENTE | NÃO | PENDENTE | BUY via EA Mãe ou simulador |
+| 02 | 2026-05-26 | `beta-demo-002-buy-001` | BUY | EA Mãe ou simulador | Ver painel/banco — tracking `EXECUTED` confirmado | true | `EXECUTED` | NÃO | APROVADA | Admin dispatch manual; `Instruction MASTER_SIGNAL`; EA processou em `DEBUG_MODE`; 1/1/1 |
 | 03 | PENDENTE | PENDENTE | SELL | EA Mãe ou simulador | PENDENTE | true | PENDENTE | NÃO | PENDENTE | SELL via EA Mãe ou simulador |
 | 04 | PENDENTE | PENDENTE | N/A | EA Mãe ou simulador | PENDENTE | true | PENDENTE | NÃO | PENDENTE | Retry/idempotência ou expiração |
+
+### Sessão 02 — BUY via EA Mãe ou simulador
+
+| Campo | Valor |
+|-------|-------|
+| Status final | APROVADA |
+| MasterSignalId | `beta-demo-002-buy-001` |
+| Participante | Cliente Staging |
+| LicenseId | `cmpj3wby70005sx18ot5e939p` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Ativo | `WDOM26` |
+| Side | BUY |
+| OrderType | MARKET |
+| Purpose | ENTRY |
+| Profile | `conservador` |
+| Modo | `DebugMode=true` |
+| InstructionId | Ver painel/banco — tracking `EXECUTED` confirmado |
+| Resultado intake | MasterSignal criado com sucesso; painel mostrou intake e dispatch |
+| Resultado dispatch | Admin fez dispatch manual; dispatch automático continuou desativado |
+| Resultado EA cliente | EA cliente processou a instruction; `DEBUG_MODE` impediu envio de ordem real; execution report recebido |
+| Resultado painel | Status DB `DISPATCHED`; consolidado `EXECUTED`; Elegíveis: 1; Ignorados: 0; Instructions: 1; Executadas: 1; Pendentes: 0; Falhas: 0; Dispatches/instruções/executadas: 1/1/1; Source: `MASTER_SIGNAL` |
+| Ordem real enviada | NÃO |
+| Observações | Primeira sessão recorrente pós-beta demo aprovada com tracking `EXECUTED` e sem ordem real |
 
 ---
 
@@ -161,7 +184,7 @@ Somente discutir Gate para Demo com `DebugMode=false` se:
 
 ## 10. Status do plano
 
-Status inicial: `PLANNED`
+Status atual: `IN_PROGRESS`
 
 Opções futuras:
 
