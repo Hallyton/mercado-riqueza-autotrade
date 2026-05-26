@@ -369,6 +369,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.6** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) — índice do pacote de governança para conta real; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.7** | Documentada — `EXECUTIVE_STATUS_DOCUMENTED` | [`PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md) — relatório executivo do estado atual do projeto; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.8** | Documentada | [`AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md) — pacote de apresentação para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.9** | Documentada — `MEETING_BRIEFING_READY` | [`AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md) — roteiro de reunião com corretora, jurídico ou parceiro; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1097,6 +1098,27 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Observação:** este pacote não libera conta real, produção real ou dispatch automático. Serve apenas como material de apresentação e alinhamento.
 
+### Fase 5.9 — Roteiro de Reunião com Corretora / Jurídico / Parceiro
+
+**Status:** `MEETING_BRIEFING_READY`  
+**Documento:** [`docs/AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md)  
+**Objetivo:** preparar pauta de reunião sem liberar conta real.
+
+| Item | Status |
+|------|--------|
+| Briefing de reunião | Documentado |
+| Público-alvo | Corretora / jurídico / parceiro técnico / investidor |
+| Status técnico | VALIDADO EM STAGING / DEMO |
+| Decisão atual | `REAL_ACCOUNT_NOT_APPROVED` |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+
+**Escopo da Fase 5.9:** preparar pauta de reunião com objetivo, resumo do projeto, status atual, validações, perguntas por público, riscos, documentos de apoio, decisões esperadas e próximos passos possíveis.
+
+**Próxima etapa:** usar o briefing em reunião ou preparar versão em apresentação/slides. Este roteiro não libera conta real, produção real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1174,6 +1196,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) | Índice do pacote de governança para conta real (Fase 5.6) |
 | [`docs/PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md) | Relatório executivo do estado atual do projeto (Fase 5.7) |
 | [`docs/AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md) | Pacote de apresentação para parceiros (Fase 5.8) |
+| [`docs/AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md) | Roteiro de reunião com corretora, jurídico ou parceiro (Fase 5.9) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
