@@ -368,6 +368,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.5** | Documentada — `PENDING_REVIEWS` | [`REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) — plano de revisão jurídica, operacional e técnica; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.6** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) — índice do pacote de governança para conta real; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.7** | Documentada — `EXECUTIVE_STATUS_DOCUMENTED` | [`PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md) — relatório executivo do estado atual do projeto; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.8** | Documentada | [`AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md) — pacote de apresentação para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1076,6 +1077,26 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa recomendada:** revisão jurídica/operacional ou pausa controlada para avaliação estratégica. Não avançar para conta real sem revisão jurídica, limites definidos, checklist individual aprovado e decisão final manual.
 
+### Fase 5.8 — Pacote de Apresentação para Corretora / Jurídico / Parceiro
+
+**Status:** documentado  
+**Documento:** [`docs/AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md)  
+**Objetivo:** preparar material externo sem liberar conta real.
+
+| Item | Status |
+|------|--------|
+| Pacote de apresentação | Documentado |
+| Público-alvo | Corretora / jurídico / parceiro técnico / investidor |
+| Status técnico | VALIDADO EM STAGING / DEMO |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+
+**Escopo da Fase 5.8:** consolidar uma narrativa para parceiros sobre o projeto, fluxo validado, evidências, travas, status atual, lacunas para conta real e próximos passos possíveis.
+
+**Observação:** este pacote não libera conta real, produção real ou dispatch automático. Serve apenas como material de apresentação e alinhamento.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1152,6 +1173,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) | Plano de revisão jurídica e operacional para conta real (Fase 5.5) |
 | [`docs/REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) | Índice do pacote de governança para conta real (Fase 5.6) |
 | [`docs/PROJECT-EXECUTIVE-STATUS-REPORT.md`](PROJECT-EXECUTIVE-STATUS-REPORT.md) | Relatório executivo do estado atual do projeto (Fase 5.7) |
+| [`docs/AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md) | Pacote de apresentação para parceiros (Fase 5.8) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
