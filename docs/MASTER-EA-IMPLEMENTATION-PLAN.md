@@ -371,6 +371,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.8** | Documentada | [`AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md) — pacote de apresentação para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.9** | Documentada — `MEETING_BRIEFING_READY` | [`AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md) — roteiro de reunião com corretora, jurídico ou parceiro; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.10** | Documentada | [`AUTOTRADE-PARTNER-MEETING-INVITE.md`](AUTOTRADE-PARTNER-MEETING-INVITE.md) — convite executivo para reunião com corretora, jurídico ou parceiro; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.11** | Documentada — `OUTREACH_MESSAGES_READY` | [`AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md) — mensagens de abordagem para corretora, jurídico, parceiro técnico ou investidor; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1141,6 +1142,27 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Observação:** o convite não libera conta real, produção real, dinheiro real ou dispatch automático. Serve apenas para iniciar alinhamento com corretora, jurídico ou parceiro técnico.
 
+### Fase 5.11 — Mensagens de Abordagem para Corretora / Jurídico / Parceiro
+
+**Status:** `OUTREACH_MESSAGES_READY`  
+**Documento:** [`docs/AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md)  
+**Objetivo:** preparar comunicação externa sem liberar conta real.
+
+| Item | Status |
+|------|--------|
+| Mensagens de abordagem | Documentadas |
+| Canais | WhatsApp, LinkedIn, e-mail formal, follow-up |
+| Público-alvo | Corretora / jurídico / parceiro técnico / investidor |
+| Status técnico | VALIDADO EM STAGING / DEMO |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+
+**Escopo da Fase 5.11:** criar mensagens prontas de abordagem, incluindo versões curtas, e-mails segmentados, follow-up pós-reunião, anexos sugeridos e frases obrigatórias de cautela.
+
+**Próxima etapa:** enviar mensagem a parceiro/corretora ou preparar apresentação/slides. Estas mensagens não liberam conta real, produção real, dinheiro real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1220,6 +1242,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/AUTOTRADE-PARTNER-PRESENTATION-PACK.md`](AUTOTRADE-PARTNER-PRESENTATION-PACK.md) | Pacote de apresentação para parceiros (Fase 5.8) |
 | [`docs/AUTOTRADE-PARTNER-MEETING-BRIEFING.md`](AUTOTRADE-PARTNER-MEETING-BRIEFING.md) | Roteiro de reunião com corretora, jurídico ou parceiro (Fase 5.9) |
 | [`docs/AUTOTRADE-PARTNER-MEETING-INVITE.md`](AUTOTRADE-PARTNER-MEETING-INVITE.md) | Convite executivo para reunião com corretora, jurídico ou parceiro (Fase 5.10) |
+| [`docs/AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md`](AUTOTRADE-PARTNER-OUTREACH-MESSAGE.md) | Mensagens de abordagem para corretora, jurídico ou parceiro (Fase 5.11) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
