@@ -366,6 +366,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **5.3** | Documentada — `DRAFT_CHECKLIST` | [`REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) — checklist individual para revisão de conta real ultra-controlada; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.4** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) — relatório de consolidação do gate de conta real; conta real, produção real e dispatch automático continuam bloqueados |
 | **5.5** | Documentada — `PENDING_REVIEWS` | [`REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) — plano de revisão jurídica, operacional e técnica; conta real, produção real e dispatch automático continuam bloqueados |
+| **5.6** | Documentada — `REAL_ACCOUNT_NOT_APPROVED` | [`REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) — índice do pacote de governança para conta real; conta real, produção real e dispatch automático continuam bloqueados |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -1028,6 +1029,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** revisão jurídica/operacional/técnica e definição de limites, se houver decisão futura de avançar. `READY_FOR_RISK_COMMITTEE_REVIEW` ainda não libera conta real.
 
+### Fase 5.6 — Índice do Pacote de Governança para Conta Real
+
+**Status:** `REAL_ACCOUNT_NOT_APPROVED`  
+**Documento:** [`docs/REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md)  
+**Objetivo:** organizar documentos para revisão futura de conta real.
+
+| Item | Status |
+|------|--------|
+| Índice do pacote de governança | Documentado |
+| Status atual | `REAL_ACCOUNT_NOT_APPROVED` |
+| Revisão jurídica | **Pendente** |
+| Revisão operacional | **Pendente** |
+| Revisão técnica | **Pendente** |
+| Limites financeiros | **Indefinidos** |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Bloqueado** |
+
+**Escopo da Fase 5.6:** consolidar o índice dos documentos de governança necessários para revisão futura, a ordem recomendada de leitura e as pendências bloqueantes.
+
+**Próxima etapa:** encaminhar o pacote para revisão jurídica/operacional/técnica somente se houver decisão estratégica de avançar. Este índice não libera conta real, produção real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
@@ -1102,6 +1126,7 @@ Antes de **qualquer** alteração em `prisma/schema.prisma` ou migrations:
 | [`docs/REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md`](REAL-ACCOUNT-INDIVIDUAL-APPROVAL-CHECKLIST.md) | Checklist individual de aprovação para conta real ultra-controlada (Fase 5.3) |
 | [`docs/REAL-ACCOUNT-RISK-GATE-SUMMARY.md`](REAL-ACCOUNT-RISK-GATE-SUMMARY.md) | Relatório de consolidação do gate de conta real (Fase 5.4) |
 | [`docs/REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md`](REAL-ACCOUNT-LEGAL-OPERATIONAL-REVIEW-PLAN.md) | Plano de revisão jurídica e operacional para conta real (Fase 5.5) |
+| [`docs/REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md`](REAL-ACCOUNT-GOVERNANCE-PACK-INDEX.md) | Índice do pacote de governança para conta real (Fase 5.6) |
 | [`AGENTS.md`](../AGENTS.md) | Caixa preta, auditoria, halts |
 
 ---
