@@ -354,7 +354,7 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | **3.2** | Encerrada — `APPROVED_FOR_CONTROLLED_BETA` | [`SIMULATED-PRODUCTION-FINAL-REPORT.md`](SIMULATED-PRODUCTION-FINAL-REPORT.md) — 10/10 ciclos aprovados; produção real e ordem real continuam não liberadas |
 | **4.1** | Documentada | [`CONTROLLED-BETA-GATE.md`](CONTROLLED-BETA-GATE.md) — gate de beta controlado; produção real, ordem real e dispatch automático continuam bloqueados |
 | **4.2** | Documentada | [`CONTROLLED-BETA-PARTICIPANT-001.md`](CONTROLLED-BETA-PARTICIPANT-001.md) — participante beta demo nº 1; Cliente Staging; `52609973 @ XPMT5-DEMO`; produção real e ordem real continuam bloqueadas |
-| **4.3** | Planejada/documentada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo controlada nº 1; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
+| **4.3** | Executada e aprovada | [`CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md) — sessão beta demo nº 1 aprovada com `beta-demo-001-buy-002`; `DebugMode=true`; produção real e ordem real continuam bloqueadas |
 
 **Fase 2.5 — detalhes operacionais:**
 
@@ -717,27 +717,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ### Fase 4.3 — Sessão Beta Demo Controlada nº 1
 
-**Status:** planejada/documentada  
+**Status:** executada e aprovada  
 **Documento:** [`docs/CONTROLLED-BETA-SESSION-001.md`](CONTROLLED-BETA-SESSION-001.md)  
 **Participante:** Cliente Staging  
-**Modo:** `DebugMode=true`
+**Modo:** `DebugMode=true`  
+**MasterSignalId oficial:** `beta-demo-001-buy-002`
 
 | Item | Status |
 |------|--------|
-| Sessão beta demo controlada nº 1 | Planejada |
+| Sessão beta demo controlada nº 1 | Aprovada |
 | LicenseId | `cmpj3wby70005sx18ot5e939p` |
 | Conta | `52609973 @ XPMT5-DEMO` |
 | Perfil | `conservador` |
 | Ativo permitido | `WDOM26` |
-| Status inicial da sessão | `PENDING_EXECUTION` |
+| Status final da sessão | `APPROVED` |
+| Tracking | `EXECUTED` |
 | Produção real | **Bloqueada** |
 | Ordem real | **Bloqueada** |
 | Dispatch automático | **Bloqueado** |
 | Billing/DARF/dashboard cliente | **Inalterados** |
 
-**Escopo da Fase 4.3:** documentar o roteiro e o registro de evidências da primeira sessão beta demo controlada, com pré-check obrigatório, execução via EA Mãe ou simulador, dispatch manual admin, EA cliente em `DebugMode=true`, tracking e critérios de aprovação/reprovação.
+**Resultado da Fase 4.3:** sessão beta demo nº 1 aprovada com o MasterSignal `beta-demo-001-buy-002`. O EA cliente estava anexado no gráfico, apontando para staging, com `DebugMode=true`, heartbeat `ONLINE` e WebRequest liberado. O painel mostrou `VALIDATED` / `NOT_DISPATCHED` antes do disparo, o admin revisou elegibilidade e disparou manualmente, a `Instruction` `MASTER_SIGNAL` foi criada, o EA recebeu a instruction, o `DEBUG_MODE` impediu ordem real, o execution report foi enviado e o tracking ficou `EXECUTED`.
 
-**Próxima etapa:** executar a sessão no staging/demo/`DebugMode=true` e registrar o resultado. Qualquer uso de conta real exige gate futuro específico.
+**Restrições mantidas:** produção real bloqueada; ordem real bloqueada; dispatch automático desativado; beta real exige gate futuro específico.
+
+**Próxima etapa recomendada:** Fase 4.4 — Plano de Sessões Beta Demo recorrentes ou Gate para Demo sem `DebugMode`, ainda sem conta real.
 
 ---
 

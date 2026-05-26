@@ -19,6 +19,8 @@ Esta sessão **não** libera produção real, **não** libera ordem real, **não
 | Perfil | `conservador` |
 | Modo | `DebugMode=true` |
 | Status inicial | `PLANNED` |
+| Status final | `APPROVED` |
+| MasterSignalId oficial | `beta-demo-001-buy-002` |
 
 ---
 
@@ -90,23 +92,23 @@ Esta sessão **não** libera produção real, **não** libera ordem real, **não
 
 ## 5. Evidências da sessão
 
-```text
-Data/hora:
-Responsável:
-MasterSignalId:
-InstructionId:
-Resultado intake:
-Resultado preview:
-Resultado dispatch:
-Resultado EA cliente:
-Resultado tracking:
-DebugMode:
-Ordem real enviada:
-Incidentes:
-Rollback usado:
-Status final:
-Observações:
-```
+| Campo | Valor |
+|-------|-------|
+| Data/hora | 2026-05-26 |
+| Responsável | Operação Mercado da Riqueza / homologação assistida |
+| MasterSignalId | `beta-demo-001-buy-002` |
+| InstructionId | Ver painel/banco — tracking `EXECUTED` confirmado |
+| Resultado intake | MasterSignal criado; painel mostrou `VALIDATED` / `NOT_DISPATCHED` antes do disparo; `POST /api/master/signals` continuou sem dispatch automático |
+| Resultado preview | Admin revisou elegibilidade antes do disparo manual |
+| Resultado dispatch | Admin disparou manualmente; `Instruction MASTER_SIGNAL` criada |
+| Resultado EA cliente | EA cliente `MR_AutoTrade_Executor` anexado no gráfico, apontando para staging, com heartbeat `ONLINE`; instruction recebida; `DEBUG_MODE` impediu envio de ordem real; execution report enviado para a API |
+| Resultado tracking | Tracking no painel ficou `EXECUTED`; Status consolidado: `EXECUTED`; Instructions: 1; Executadas: 1; Pendentes: 0; Falhas: 0; Source: `MASTER_SIGNAL` |
+| DebugMode | `true` |
+| Ordem real enviada | NÃO |
+| Incidentes | Houve tentativa anterior com EAs não anexados ao gráfico; essa tentativa não foi usada como evidência principal da sessão |
+| Rollback usado | Não |
+| Status final | `APPROVED` |
+| Observações | Evidência oficial registrada com `beta-demo-001-buy-002`, executada com EAs anexados e pré-check correto. Sessão aprovada com `DebugMode=true`, sem ordem real e com tracking `EXECUTED`. |
 
 ---
 
@@ -143,7 +145,7 @@ Reprovar ou pausar se:
 
 ## 8. Resultado final
 
-Status inicial: `PENDING_EXECUTION`
+Status final: `APPROVED`
 
 Opções futuras:
 
@@ -156,7 +158,7 @@ Opções futuras:
 
 ## 9. Próxima ação
 
-Executar a sessão real no staging/demo/`DebugMode=true` e preencher as evidências.
+Manter a produção real bloqueada e definir a próxima etapa operacional: Fase 4.4 — Plano de Sessões Beta Demo recorrentes ou Gate para Demo sem `DebugMode`, ainda sem conta real.
 
 ---
 

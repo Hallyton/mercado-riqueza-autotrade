@@ -19,7 +19,7 @@ Este registro **não** libera produção real, **não** libera ordem real, **nã
 | Perfil | `conservador` |
 | Ativo permitido | `WDOM26` |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| Status | `CANDIDATO_BETA_DEMO` |
+| Status | `APPROVED_FOR_DEMO_BETA_SESSION` |
 
 ---
 
@@ -168,13 +168,21 @@ Decisão da sessão:
 - `REJECTED`
 - `COMPLETED`
 
-Status inicial: `CANDIDATO_BETA_DEMO`.
+Status atual: `APPROVED_FOR_DEMO_BETA_SESSION`.
 
 ---
 
-## 11. Próxima ação recomendada
+## 11. Sessões registradas
 
-Executar a sessão beta demo controlada nº 1 com este participante, ainda com `DebugMode=true`, e registrar evidências.
+| Sessão | MasterSignalId | Status | Observação |
+|--------|----------------|--------|------------|
+| Beta Demo Controlada nº 1 | `beta-demo-001-buy-002` | `APPROVED` | Sessão aprovada com `DebugMode=true`, sem ordem real e com tracking `EXECUTED` |
+
+---
+
+## 12. Próxima ação recomendada
+
+Definir a próxima etapa operacional: plano de sessões beta demo recorrentes ou gate para demo sem `DebugMode`, ainda sem conta real.
 
 ---
 
