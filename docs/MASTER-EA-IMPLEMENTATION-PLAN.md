@@ -1354,6 +1354,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Restrições mantidas:** conta real continua bloqueada, produção real continua bloqueada, dinheiro real continua bloqueado e dispatch automático continua desativado. A política padrão permanece bloquear `REAL`.
 
+### Fase 6.8 — Relatório Final do Real Trading Guard
+
+**Status:** `REAL_TRADING_GUARD_VALIDATED_FOR_STAGING_DEMO`  
+**Documento:** [`docs/REAL-TRADING-GUARD-FINAL-REPORT.md`](REAL-TRADING-GUARD-FINAL-REPORT.md)  
+**Objetivo:** consolidar implementação, testes, homologações, painel admin, smoke DEMO e restrições mantidas da trava de conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Implementação do guard | Consolidada |
+| Política padrão | `BLOCK_REAL_BY_DEFAULT` |
+| Status admin | `REAL_TRADING_BLOCKED` |
+| Harness local | `8/8` cenários `PASS` |
+| Painel admin | Somente leitura, sem toggle e sem botão de ativação |
+| Smoke DEMO | `real-guard-demo-smoke-002` com tracking `EXECUTED` |
+| `ENABLE_REAL_TRADING` | Não configurado |
+| Allowlist | Não configurada |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 6.8:** relatório final criado para consolidar a validação do Real Trading Guard em staging/demo. A decisão final é que a trava está validada para proteger o ambiente staging/demo e manter conta `REAL` bloqueada por padrão.
+
+**Próxima etapa:** definir a próxima frente técnica ou auditoria. Qualquer avanço futuro com conta real exige gate jurídico, operacional e técnico específico.
+
 ---
 
 ## 13. Riscos e cuidados
