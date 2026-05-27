@@ -1797,6 +1797,27 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** preencher operadores, anexar prints redigidos no cofre interno, executar sessão AutoTrading controlada e reavaliar promoção do hardening.
 
+### Fase 8.6 — Definição Nominal de Operadores e Matriz de Permissões
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documentos:** [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md), [`docs/VPS-MT5-OPERATORS-RESPONSIBILITY-RESULTS.md`](VPS-MT5-OPERATORS-RESPONSIBILITY-RESULTS.md)  
+**Objetivo:** remover bloqueio operacional de responsáveis `A DEFINIR` no ambiente VPS/MT5.
+
+| Item | Resultado |
+|------|-----------|
+| Operadores | **HALLYTON** — todos os papéis |
+| Matriz de permissões | 12 ações atribuídas a HALLYTON |
+| Bloqueio `A DEFINIR` | Removido |
+| Conta real | **Bloqueada** (gate, jurídico, limites, hardening, checklist) |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Suplente operacional | Pendente |
+
+**Resultado da Fase 8.6:** operadores e permissões definidos nominalmente. Reduz restrição operacional da Fase 8.5; **não** libera conta real.
+
+**Próxima etapa:** suplente operacional, evidências visuais pendentes e sessão AutoTrading controlada.
+
 ---
 
 ## 13. Riscos e cuidados

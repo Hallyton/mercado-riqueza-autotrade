@@ -2,7 +2,7 @@
 
 **Data:** 2026-05-27  
 **Fase:** 8.3 — Definição de Operadores, Responsabilidades e Política de AutoTrading  
-**Status:** `DRAFT_OPERATIONAL_POLICY`
+**Status:** `APPROVED_WITH_RESTRICTIONS` (operadores definidos — Fase 8.6)
 
 Documentos relacionados: [`docs/VPS-MT5-HARDENING-VALIDATION.md`](VPS-MT5-HARDENING-VALIDATION.md), [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md), [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md).
 
@@ -28,36 +28,38 @@ Esta política:
 
 | Papel | Responsável |
 |-------|-------------|
-| Responsável técnico | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável operacional | A DEFINIR — BLOQUEIA CONTA REAL |
-| Operador MT5/VPS | A DEFINIR — BLOQUEIA CONTA REAL |
-| Admin autorizado ao dispatch | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável pelo rollback | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável por evidências | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável por revisão pós-sessão | A DEFINIR — BLOQUEIA CONTA REAL |
+| Responsável técnico | HALLYTON |
+| Responsável operacional | HALLYTON |
+| Operador MT5/VPS | HALLYTON |
+| Admin autorizado ao dispatch | HALLYTON |
+| Responsável pelo rollback | HALLYTON |
+| Responsável por evidências | HALLYTON |
+| Responsável por revisão pós-sessão | HALLYTON |
 
-**Regra:** enquanto qualquer papel crítico permanecer `A DEFINIR`, a decisão global permanece `REAL_ACCOUNT_NOT_APPROVED`.
+**Observação (Fase 8.6):** a definição nominal dos operadores reduz o bloqueio operacional de responsáveis `A DEFINIR`, mas **NÃO libera conta real**. Conta real continua dependente de gate futuro, revisão jurídica, limites financeiros, checklist individual, hardening completo e aprovação explícita.
+
+**Regra:** a decisão global permanece `REAL_ACCOUNT_NOT_APPROVED` até gates de governança e hardening completos, independentemente dos nomes acima.
 
 ---
 
 ## 3. Matriz de permissões
 
-| Ação | Quem pode executar (inicial) |
-|------|------------------------------|
-| Acessar VPS | A DEFINIR — BLOQUEIA CONTA REAL |
-| Abrir MT5 | A DEFINIR — BLOQUEIA CONTA REAL |
-| Anexar/remover EA | A DEFINIR — BLOQUEIA CONTA REAL |
-| Alterar parâmetros do EA | A DEFINIR — BLOQUEIA CONTA REAL |
-| Ligar/desligar AutoTrading | A DEFINIR — BLOQUEIA CONTA REAL |
-| Enviar MasterSignal | A DEFINIR — BLOQUEIA CONTA REAL |
-| Fazer dispatch admin | A DEFINIR — BLOQUEIA CONTA REAL |
-| Acionar rollback | A DEFINIR — BLOQUEIA CONTA REAL |
-| Revogar device/token | A DEFINIR — BLOQUEIA CONTA REAL |
-| Coletar logs | A DEFINIR — BLOQUEIA CONTA REAL |
-| Aprovar sessão | A DEFINIR — BLOQUEIA CONTA REAL |
-| Encerrar sessão | A DEFINIR — BLOQUEIA CONTA REAL |
+| Ação | Quem pode executar |
+|------|-------------------|
+| Acessar VPS | HALLYTON |
+| Abrir MT5 | HALLYTON |
+| Anexar/remover EA | HALLYTON |
+| Alterar parâmetros do EA | HALLYTON |
+| Ligar/desligar AutoTrading | HALLYTON |
+| Enviar MasterSignal | HALLYTON |
+| Fazer dispatch admin | HALLYTON |
+| Acionar rollback | HALLYTON |
+| Revogar device/token | HALLYTON |
+| Coletar logs | HALLYTON |
+| Aprovar sessão | HALLYTON |
+| Encerrar sessão | HALLYTON |
 
-**Próximo passo:** substituir cada `A DEFINIR` por nome (ou função formal) + suplente documentado.
+**Suplente:** a definir em revisão operacional futura — sessões críticas exigem responsável presente.
 
 ---
 
@@ -154,6 +156,8 @@ Bloquear ou pausar a sessão imediatamente se:
 
 ## 9. Status da política
 
+**Status atual:** `APPROVED_WITH_RESTRICTIONS` (Fase 8.6)
+
 **Status inicial:** `DRAFT_OPERATIONAL_POLICY`
 
 Status possíveis:
@@ -169,13 +173,18 @@ Status possíveis:
 
 ## 10. Próxima ação recomendada
 
-1. Preencher **nomes** (e suplentes) em todos os papéis da seção 2.
-2. Completar a **matriz de permissões** (seção 3).
-3. Executar uma sessão demo/staging registrando ligar/desligar AutoTrading conforme seções 6 e 7.
-4. Anexar evidências: WebRequest, `MQL5/Files`, amostra de log MT5 redigido.
-5. Atualizar [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md) e promover status desta política para `READY_FOR_DEMO_USE` ou `APPROVED_WITH_RESTRICTIONS`.
-6. Manter conta real bloqueada até novo gate explícito.
+1. Definir **suplente** documentado para cada papel crítico.
+2. Executar sessão demo/staging com AutoTrading conforme seções 6 e 7 e registrar evidências.
+3. Anexar prints redigidos: WebRequest, `MQL5/Files`, VPS/Windows, log MT5 (cofre interno).
+4. Promover para `READY_FOR_DEMO_USE` após evidência de sessão AutoTrading controlada.
+5. Manter conta real bloqueada até novo gate explícito.
 
 ---
 
-*Mercado da Riqueza AutoTrade — política operacional em rascunho. Operadores indefinidos bloqueiam conta real. Produção real e dispatch automático permanecem bloqueados.*
+## 11. Fase 8.6 — Operadores definidos
+
+**Documento de resultado:** [`docs/VPS-MT5-OPERATORS-RESPONSIBILITY-RESULTS.md`](VPS-MT5-OPERATORS-RESPONSIBILITY-RESULTS.md)
+
+---
+
+*Mercado da Riqueza AutoTrade — política operacional com operadores definidos. Conta real, produção real e dispatch automático permanecem bloqueados.*

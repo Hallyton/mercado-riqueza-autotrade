@@ -111,13 +111,13 @@ Nenhum secret, token, senha ou print bruto foi incluído neste repositório.
 
 | Papel | Status | Responsável |
 |-------|--------|-------------|
-| Responsável técnico | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável operacional | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
-| Operador MT5/VPS | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
-| Admin autorizado ao dispatch | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável pelo rollback | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável por evidências | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
-| Responsável por revisão pós-sessão | PENDENTE | A DEFINIR — BLOQUEIA CONTA REAL |
+| Responsável técnico | APROVADO | HALLYTON (Fase 8.6) |
+| Responsável operacional | APROVADO | HALLYTON (Fase 8.6) |
+| Operador MT5/VPS | APROVADO | HALLYTON (Fase 8.6) |
+| Admin autorizado ao dispatch | APROVADO | HALLYTON (Fase 8.6) |
+| Responsável pelo rollback | APROVADO | HALLYTON (Fase 8.6) |
+| Responsável por evidências | APROVADO | HALLYTON (Fase 8.6) |
+| Responsável por revisão pós-sessão | APROVADO | HALLYTON (Fase 8.6) |
 
 ---
 
@@ -140,7 +140,7 @@ Nenhum secret, token, senha ou print bruto foi incluído neste repositório.
 - Amostra de log MT5 arquivada (cofre interno).
 - AutoTrading: prints ligado/desligado conforme política 8.3.
 - Ordem/posição no fechamento de sessão.
-- **Todos os operadores** com nome formal.
+- Suplente operacional documentado (operadores principais: HALLYTON — Fase 8.6).
 
 ### Itens reprovados
 
@@ -150,7 +150,7 @@ Nenhum secret, token, senha ou print bruto foi incluído neste repositório.
 
 | Risco | Severidade | Bloqueia conta real? |
 |-------|------------|----------------------|
-| Operadores `A DEFINIR` | Alta | Sim |
+| Operadores sem suplente | Baixa | Não isoladamente |
 | Hardening VPS/Windows sem prints | Média | Indiretamente |
 | `device_token` em disco sem permissões evidenciadas | Média | Indiretamente |
 | AutoTrading sem evidência visual de controle | Média | Indiretamente |
@@ -163,7 +163,7 @@ Nenhum secret, token, senha ou print bruto foi incluído neste repositório.
 - 1 item WebRequest (lista completa).
 - 1 item `MQL5/Files` (pasta).
 - 1 arquivo de log redigido no cofre.
-- 7 nomes de operadores.
+- Suplente operacional.
 - Sessão dedicada AutoTrading (pacote 8.4, seção 9) — `MasterSignalId` a definir.
 
 ---
@@ -185,12 +185,28 @@ Mesmo com este status:
 
 ## 11. Próxima ação recomendada
 
-1. Preencher **nomes** em [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md).
+1. Definir **suplente** operacional na política 8.3/8.6.
 2. Coletar **prints redigidos** pendentes (seções 3, 5, 6) no cofre `evidencias/vps-mt5-staging/`.
 3. Executar **sessão demo** com AutoTrading controlado (política 8.3) e registrar `MasterSignalId`.
 4. Arquivar **amostra de log** redigida fora do Git.
 5. Revisar [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md) após novas evidências.
 6. Promover pacote 8.4 para `APPROVED` somente quando operadores e evidências críticas estiverem completos.
+
+---
+
+## 12. Fase 8.6 — Operadores e Responsabilidades
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-OPERATORS-RESPONSIBILITY-RESULTS.md`](VPS-MT5-OPERATORS-RESPONSIBILITY-RESULTS.md)
+
+| Item | Situação |
+|------|----------|
+| Operadores definidos | OK — **HALLYTON** em todos os papéis |
+| Operadores `A DEFINIR` | Encerrado |
+| Matriz de permissões | Preenchida com HALLYTON |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
 
 ---
 
