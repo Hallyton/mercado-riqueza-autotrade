@@ -111,6 +111,7 @@ describe("POST /api/master/signals", () => {
 
   afterEach(() => {
     delete process.env.MASTER_EA_API_SECRET;
+    delete process.env.AUTH_SECRET;
   });
 
   it("1) retorna 503 se MASTER_EA_API_SECRET ausente", async () => {
@@ -132,6 +133,9 @@ describe("POST /api/master/signals", () => {
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.code).toBe("MASTER_AUTH_REQUIRED");
+    expect(masterCreate).not.toHaveBeenCalled();
+    expect(dispatchCreate).not.toHaveBeenCalled();
+    expect(instructionCreate).not.toHaveBeenCalled();
   });
 
   it("3) retorna 401 se secret inválido", async () => {
@@ -164,6 +168,9 @@ describe("POST /api/master/signals", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.code).toBe("VALIDATION_ERROR");
+    expect(masterCreate).not.toHaveBeenCalled();
+    expect(dispatchCreate).not.toHaveBeenCalled();
+    expect(instructionCreate).not.toHaveBeenCalled();
   });
 
   it("7) cria MasterSignal válido", async () => {
@@ -253,9 +260,14 @@ describe("POST /api/master/signals", () => {
   });
 
   it("14) não expõe secret em resposta", async () => {
+    process.env.AUTH_SECRET = "test-auth-secret-do-not-log";
     const res = await POST(makeRequest(validPayload()));
     const text = await res.text();
     expect(text).not.toContain(SECRET);
+    expect(text).not.toContain("test-auth-secret-do-not-log");
+    expect(text).not.toContain("MASTER_EA_API_SECRET");
+    expect(text).not.toContain("AUTH_SECRET");
+    delete process.env.AUTH_SECRET;
   });
 
   it("15) retorna dispatch NOT_STARTED", async () => {
@@ -336,6 +348,23 @@ describe("POST /api/master/signals", () => {
     expect(res.status).toBe(200);
     expect(body.idempotent).toBe(true);
     expect(body.dispatch).toBe("NOT_STARTED");
+  });
+
+  it("20b) retry idempotente preserva status DISPATCHED existente sem novo dispatch", async () => {
+    masterFindUnique.mockImplementation(async () =>
+      existingRow({ status: MasterSignalStatus.DISPATCHED })
+    );
+
+    const res = await POST(makeRequest(validPayload()));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.idempotent).toBe(true);
+    expect(body.status).toBe(MasterSignalStatus.DISPATCHED);
+    expect(body.dispatch).toBe("NOT_STARTED");
+    expect(masterCreate).not.toHaveBeenCalled();
+    expect(dispatchCreate).not.toHaveBeenCalled();
+    expect(instructionCreate).not.toHaveBeenCalled();
   });
 
   it("21) retry idempotente não cria MasterSignalDispatch", async () => {

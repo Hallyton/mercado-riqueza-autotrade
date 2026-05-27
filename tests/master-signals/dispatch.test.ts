@@ -384,6 +384,20 @@ describe("dispatchValidatedMasterSignal", () => {
     });
   });
 
+  it("2b) bloqueia dispatch expirado sem criar Instruction", async () => {
+    masterFindUnique.mockResolvedValue(
+      validatedSignal({ expiresAt: new Date(Date.now() - 1_000) })
+    );
+
+    await expect(dispatchValidatedMasterSignal("msig-dispatch-001")).rejects.toMatchObject({
+      code: "MASTER_SIGNAL_EXPIRED",
+    });
+
+    expect(masterUpdateMany).not.toHaveBeenCalled();
+    expect(instructionCreate).not.toHaveBeenCalled();
+    expect(dispatchUpsert).not.toHaveBeenCalled();
+  });
+
   it("3) cria Instruction para licença elegível", async () => {
     masterFindUnique.mockResolvedValue(validatedSignal());
     const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
@@ -475,6 +489,30 @@ describe("dispatchValidatedMasterSignal", () => {
     expect(result.idempotent).toBe(true);
     expect(result.instructionsCreated).toBe(1);
     expect(masterUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("6b) retry terminal PARTIALLY_DISPATCHED não duplica Instruction", async () => {
+    masterFindUnique.mockResolvedValue(
+      validatedSignal({ status: MasterSignalStatus.PARTIALLY_DISPATCHED })
+    );
+    dispatchFindMany.mockResolvedValue([
+      {
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        instructionId: "inst-1",
+      },
+      {
+        status: MasterSignalDispatchStatus.FAILED,
+        instructionId: null,
+      },
+    ]);
+
+    const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
+
+    expect(result.idempotent).toBe(true);
+    expect(result.instructionsCreated).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(masterUpdateMany).not.toHaveBeenCalled();
+    expect(instructionCreate).not.toHaveBeenCalled();
   });
 
   it("7) atualiza MasterSignal para DISPATCHED quando cria instruction", async () => {

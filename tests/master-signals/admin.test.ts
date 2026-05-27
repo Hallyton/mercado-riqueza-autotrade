@@ -406,6 +406,24 @@ describe("tracking summary helpers", () => {
     ).toBe("NOT_DISPATCHED");
   });
 
+  it("deriveConsolidatedTrackingStatus retorna EXPIRED sem dispatch quando expiresAt passou", () => {
+    expect(
+      deriveConsolidatedTrackingStatus({
+        masterStatus: MasterSignalStatus.VALIDATED,
+        summary: {
+          dispatchCount: 0,
+          instructionCount: 0,
+          executedCount: 0,
+          failedCount: 0,
+          pendingCount: 0,
+          expiredCount: 0,
+          skippedCount: 0,
+        },
+        expiresAt: new Date(Date.now() - 1_000),
+      })
+    ).toBe("EXPIRED");
+  });
+
   it("deriveConsolidatedTrackingStatus não retorna DISPATCHED_PENDING para skipped-only", () => {
     expect(
       deriveConsolidatedTrackingStatus({

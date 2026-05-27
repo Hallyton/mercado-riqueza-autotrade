@@ -1450,6 +1450,32 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir para auditoria de MasterSignal/dispatch e idempotência ponta a ponta.
 
+### Fase 7.4 — Auditoria de MasterSignal, Dispatch e Idempotência
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-AUDIT-MASTER-SIGNAL-DISPATCH-RESULTS.md`](PRE-REAL-AUDIT-MASTER-SIGNAL-DISPATCH-RESULTS.md)  
+**Objetivo:** validar intake MasterSignal, autenticação do EA Mãe, idempotência, expiração, elegibilidade, dispatch manual, criação de `Instruction MASTER_SIGNAL`, bloqueio de duplicidade e tracking consolidado.
+
+| Item | Resultado |
+|------|-----------|
+| Rota avaliada | `POST /api/master/signals` |
+| Serviços avaliados | `intakeMasterSignal`, `dispatchValidatedMasterSignal`, `dispatchMasterSignalFromAdmin`, eligibility e tracking admin |
+| Testes ajustados | `tests/master-signals/route.test.ts`, `tests/master-signals/dispatch.test.ts`, `tests/master-signals/admin.test.ts` |
+| Teste focado | 79/79 passing |
+| Achados críticos | Nenhum |
+| Correção funcional | Nenhuma |
+| Dispatch automático no intake | NÃO |
+| Retry idempotente | Sem duplicar dispatch/instruction |
+| Real Trading Guard no dispatch | Respeitado |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.4:** auditoria aprovada para MasterSignal, dispatch manual e idempotência no contexto staging/demo. O intake permanece sem dispatch automático, o dispatch repetido não duplica instruction e o tracking consolidado mantém estados legíveis e auditáveis.
+
+**Próxima etapa:** seguir a auditoria por blocos, com foco em observabilidade/logs, rollback e cenários integrados de retry/offline/online.
+
 ---
 
 ## 13. Riscos e cuidados
