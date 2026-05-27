@@ -155,6 +155,60 @@ describe("reportExecution", () => {
     );
   });
 
+  it("não duplica execution REJECTED em retry de OrderSend rejeitado", async () => {
+    vi.mocked(prisma.execution.findFirst).mockResolvedValue({
+      id: "ex-rejected",
+      instructionId: "inst-debug-1",
+      status: ExecutionStatus.REJECTED,
+      executedAt: new Date(),
+    } as never);
+
+    const result = await reportExecution(ctx as never, {
+      instruction_id: "inst-debug-1",
+      status: "REJECTED",
+      error_code: "BROKER_REJECT",
+      error_message: "Mercado fechado",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.idempotent).toBe(true);
+    expect(result.orderStatus).toBe(OrderLogStatus.REJECTED);
+    expect(prisma.execution.create).not.toHaveBeenCalled();
+    expect(prisma.instruction.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "inst-debug-1" },
+        data: { currentStatus: OrderLogStatus.REJECTED },
+      })
+    );
+  });
+
+  it("redige erro sensível de OrderSend antes de persistir execution e status log", async () => {
+    const result = await reportExecution(ctx as never, {
+      instruction_id: "inst-debug-1",
+      status: "REJECTED",
+      error_code: "BROKER_REJECT",
+      error_message: "OrderSend failed Authorization: Bearer raw-token AUTH_SECRET=raw",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.orderStatus).toBe(OrderLogStatus.REJECTED);
+    expect(prisma.execution.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorMessage: "[REDACTED]",
+        }),
+      })
+    );
+    expect(prisma.instructionStatusLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: OrderLogStatus.REJECTED,
+          message: "[REDACTED]",
+        }),
+      })
+    );
+  });
+
   it("idempotente quando instrução já está EXECUTED", async () => {
     vi.mocked(prisma.execution.findFirst).mockResolvedValue({
       id: "ex-existing",

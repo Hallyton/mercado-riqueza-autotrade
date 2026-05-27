@@ -2,11 +2,19 @@ import { existsSync, readdirSync, readFileSync } from "fs";
 import path from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { authMock, dispatchMasterSignalFromAdmin, mapMasterSignalDispatchError } =
+const {
+  authMock,
+  dispatchMasterSignalFromAdmin,
+  mapMasterSignalDispatchError,
+  emergencyCancelPendingOrders,
+  pauseLicenseNewEntries,
+} =
   vi.hoisted(() => ({
     authMock: vi.fn(),
     dispatchMasterSignalFromAdmin: vi.fn(),
     mapMasterSignalDispatchError: vi.fn(),
+    emergencyCancelPendingOrders: vi.fn(),
+    pauseLicenseNewEntries: vi.fn(),
   }));
 
 vi.mock("@/auth", () => ({
@@ -24,10 +32,17 @@ vi.mock("@/lib/master-signals/admin-dispatch", () => ({
   mapMasterSignalDispatchError,
 }));
 
+vi.mock("@/lib/admin/commands", () => ({
+  emergencyCancelPendingOrders,
+  pauseLicenseNewEntries,
+}));
+
 import { requireAppRole } from "@/lib/auth/session";
 import { requireAdminApiSession } from "@/lib/auth/admin-api";
 import { resolvePostLoginDestination } from "@/lib/auth/callback-url";
 import { POST as dispatchMasterSignalRoute } from "@/app/api/admin/master-signals/[masterSignalId]/dispatch/route";
+import { POST as emergencyCancelOrdersRoute } from "@/app/api/admin/emergency/cancel-orders/route";
+import { POST as pauseEntriesRoute } from "@/app/api/admin/licenses/[licenseId]/pause-entries/route";
 
 const ADMIN_API_DIR = path.join(process.cwd(), "app", "api", "admin");
 const ADMIN_APP_DIR = path.join(process.cwd(), "app", "admin");
@@ -126,6 +141,35 @@ describe("auditoria admin auth e rotas protegidas", () => {
 
     expect(response.status).toBe(401);
     expect(dispatchMasterSignalFromAdmin).not.toHaveBeenCalled();
+  });
+
+  it("emergency/cancel-orders exige admin e não é público", async () => {
+    authMock.mockResolvedValue(null);
+
+    const response = await emergencyCancelOrdersRoute(
+      new Request("http://test.local/api/admin/emergency/cancel-orders", {
+        method: "POST",
+        body: JSON.stringify({ licenseId: "lic-1", reason: "rollback" }),
+      })
+    );
+
+    expect(response.status).toBe(401);
+    expect(emergencyCancelPendingOrders).not.toHaveBeenCalled();
+  });
+
+  it("pause-entries exige admin e não é público", async () => {
+    authMock.mockResolvedValue(null);
+
+    const response = await pauseEntriesRoute(
+      new Request("http://test.local/api/admin/licenses/lic-1/pause-entries", {
+        method: "POST",
+        body: JSON.stringify({ pause: true, reason: "rollback" }),
+      }),
+      { params: Promise.resolve({ licenseId: "lic-1" }) }
+    );
+
+    expect(response.status).toBe(401);
+    expect(pauseLicenseNewEntries).not.toHaveBeenCalled();
   });
 
   it("dispatch admin autenticado permite execução manual para OPS", async () => {

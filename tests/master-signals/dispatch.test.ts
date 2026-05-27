@@ -415,6 +415,32 @@ describe("dispatchValidatedMasterSignal", () => {
     );
   });
 
+  it("3d) dispatch com EA offline cria instruction pendente para reconexão", async () => {
+    masterFindUnique.mockResolvedValue(validatedSignal());
+    heartbeatFindFirst.mockResolvedValue(null);
+
+    const result = await dispatchValidatedMasterSignal("msig-dispatch-001");
+
+    expect(result.instructionsCreated).toBe(1);
+    expect(result.status).toBe(MasterSignalStatus.DISPATCHED);
+    expect(instructionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          licenseId: "lic-eligible",
+          currentStatus: OrderLogStatus.RECEIVED,
+          source: InstructionSource.MASTER_SIGNAL,
+        }),
+      })
+    );
+    expect(statusLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: OrderLogStatus.RECEIVED,
+        }),
+      })
+    );
+  });
+
   it("3c) bloqueia dispatch para licença com heartbeat REAL sem flag de liberação", async () => {
     masterFindUnique.mockResolvedValue(validatedSignal());
     heartbeatFindFirst.mockResolvedValue({ tradeMode: TradeMode.REAL });

@@ -1499,6 +1499,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir a auditoria por blocos, com foco em rollback, incident response e cenários integrados de retry/offline/online.
 
+### Fase 7.6 — Auditoria de Rollback, Retry, Offline/Online e Recuperação
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-AUDIT-ROLLBACK-RECOVERY-RESULTS.md`](PRE-REAL-AUDIT-ROLLBACK-RECOVERY-RESULTS.md)  
+**Objetivo:** validar comportamento de recuperação operacional em EA offline/online, instruction pendente, retries de pull/execution report, execution duplicada, expiração, falha de `OrderSend`, pausa/cancelamento admin e consistência do tracking após falhas.
+
+| Item | Resultado |
+|------|-----------|
+| Cenários avaliados | EA offline, reconexão, retry de pull, retry de execution, rejected/failed, expiração, pausa e cancelamento emergencial |
+| Testes ajustados | `tests/master-signals/dispatch.test.ts`, `tests/master-signals/admin.test.ts`, `tests/ea/instructions.test.ts`, `tests/ea/executions.test.ts`, `tests/admin/auth-routes.test.ts`, `tests/admin/commands.test.ts` |
+| Teste focado | 97/97 passing |
+| Achados críticos | Nenhum |
+| Correções aplicadas | Redaction de mensagens operacionais de execution/`OrderSend` antes de persistir |
+| Retry de pull | Não duplica instruction; `SENT` sem execution permanece entregável |
+| Retry de execution report | Idempotente para execution terminal existente |
+| Rollback admin | Pausa/cancelamento protegidos por admin e com trilha preservada |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.6:** auditoria aprovada para rollback, retry, offline/online e recuperação no contexto staging/demo. O fluxo preserva histórico, evita duplicidades testadas e mantém recuperação operacional sem envio real.
+
+**Próxima etapa:** seguir a auditoria por blocos, com foco em incident response/runbook e validações manuais controladas em staging com EA em `DebugMode=true`.
+
 ---
 
 ## 13. Riscos e cuidados

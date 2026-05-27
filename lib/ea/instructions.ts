@@ -34,6 +34,25 @@ function toNumber(value: Prisma.Decimal | null | undefined): number | null {
   return Number(value);
 }
 
+function redactOperationalMessage(message: string | undefined): string | undefined {
+  if (!message) return message;
+  const lowered = message.toLowerCase();
+  if (
+    lowered.includes("bearer ") ||
+    lowered.includes("authorization") ||
+    lowered.includes("master_ea_api_secret") ||
+    lowered.includes("auth_secret") ||
+    lowered.includes("database_url") ||
+    lowered.includes("activation_code") ||
+    lowered.includes("postgres://") ||
+    lowered.includes("token") ||
+    lowered.includes("secret")
+  ) {
+    return "[REDACTED]";
+  }
+  return message;
+}
+
 export function mapInstructionToEaPayload(
   instruction: {
     id: string;
@@ -68,6 +87,7 @@ async function appendStatus(
   message?: string,
   metadata?: Prisma.InputJsonValue
 ) {
+  const safeMessage = redactOperationalMessage(message);
   await prisma.$transaction([
     prisma.instruction.update({
       where: { id: instructionId },
@@ -77,7 +97,7 @@ async function appendStatus(
       data: {
         instructionId,
         status,
-        message,
+        message: safeMessage,
         metadata,
       },
     }),
@@ -371,6 +391,7 @@ export async function reportExecution(
     body.status === "FILLED" || body.status === "PARTIAL"
       ? OrderLogStatus.EXECUTED
       : OrderLogStatus.REJECTED;
+  const safeErrorMessage = redactOperationalMessage(body.error_message);
 
   await prisma.execution.create({
     data: {
@@ -382,7 +403,7 @@ export async function reportExecution(
       fillQuantity: body.fill_quantity,
       slippage: body.slippage,
       errorCode: body.error_code,
-      errorMessage: body.error_message,
+      errorMessage: safeErrorMessage,
       executedAt: body.executed_at ? new Date(body.executed_at) : new Date(),
     },
   });
@@ -390,7 +411,7 @@ export async function reportExecution(
   await appendStatus(
     instruction.id,
     orderStatus,
-    body.error_message ?? `Execução ${body.status}`
+    safeErrorMessage ?? `Execução ${body.status}`
   );
 
   await createAuditLog({

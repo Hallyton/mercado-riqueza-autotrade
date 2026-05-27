@@ -304,6 +304,66 @@ describe("getMasterSignalTrackingForAdmin", () => {
     expect(tracking!.consolidatedStatus).toBe("DISPATCHED_PENDING");
   });
 
+  it("retorna FAILED e failedCount quando OrderSend é rejeitado", async () => {
+    masterFindUnique.mockResolvedValue({
+      ...baseSignal,
+      status: MasterSignalStatus.DISPATCHED,
+    });
+    dispatchFindMany.mockResolvedValue([
+      {
+        id: "disp-failed",
+        licenseId: "lic-1",
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        reason: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        license: {
+          id: "lic-1",
+          status: LicenseStatus.ACTIVE,
+          user: { email: "c@test.com", name: null },
+          subscription: null,
+          mt5Account: null,
+          exposureProfile: null,
+          devices: [],
+          eaHeartbeats: [],
+        },
+        instruction: {
+          id: "inst-failed",
+          source: InstructionSource.MASTER_SIGNAL,
+          currentStatus: OrderLogStatus.REJECTED,
+          symbol: "PETR4",
+          side: InstructionSide.BUY,
+          orderType: "MARKET",
+          purpose: InstructionPurpose.ENTRY,
+          quantity: 1,
+          expiresAt: new Date(Date.now() + 3600_000),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          executions: [
+            {
+              id: "ex-failed",
+              status: ExecutionStatus.REJECTED,
+              brokerTicket: null,
+              errorCode: "BROKER_REJECT",
+              errorMessage: "[REDACTED]",
+              executedAt: new Date(),
+              createdAt: new Date(),
+            },
+          ],
+        },
+      },
+    ]);
+
+    const tracking = await getMasterSignalTrackingForAdmin("ms-test-001");
+
+    expect(tracking!.summary.failedCount).toBe(1);
+    expect(tracking!.summary.executedCount).toBe(0);
+    expect(tracking!.summary.pendingCount).toBe(0);
+    expect(tracking!.rows[0].executionStatus).toBe("FAILED");
+    expect(tracking!.rows[0].instruction?.executions[0].errorMessage).toBe("[REDACTED]");
+    expect(tracking!.consolidatedStatus).toBe("FAILED");
+  });
+
   it("retorna skipped/reason e não marca pendente quando não há elegíveis", async () => {
     masterFindUnique.mockResolvedValue({
       ...baseSignal,

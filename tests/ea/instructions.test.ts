@@ -365,6 +365,65 @@ describe("Fila entregável ao EA", () => {
     expect(prisma.instruction.update).not.toHaveBeenCalled();
   });
 
+  it("pull repetido não cria instruction nova e só muda RECEIVED para SENT uma vez", async () => {
+    vi.mocked(prisma.instruction.findMany)
+      .mockResolvedValueOnce([
+        {
+          id: "inst-retry",
+          purpose: InstructionPurpose.ENTRY,
+          symbol: "PETR4",
+          side: "BUY",
+          orderType: "MARKET",
+          quantity: new Decimal(100),
+          stopLoss: null,
+          takeProfit: null,
+          expiresAt: new Date(Date.now() + 60_000),
+          idempotencyKey: "k-retry",
+          currentStatus: OrderLogStatus.RECEIVED,
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          id: "inst-retry",
+          purpose: InstructionPurpose.ENTRY,
+          symbol: "PETR4",
+          side: "BUY",
+          orderType: "MARKET",
+          quantity: new Decimal(100),
+          stopLoss: null,
+          takeProfit: null,
+          expiresAt: new Date(Date.now() + 60_000),
+          idempotencyKey: "k-retry",
+          currentStatus: OrderLogStatus.SENT,
+        },
+      ] as never);
+
+    const first = await pullInstructionsForEa(ctx as never);
+    const second = await pullInstructionsForEa(ctx as never);
+
+    expect(first).toHaveLength(1);
+    expect(second).toHaveLength(1);
+    expect(first[0].instruction_id).toBe("inst-retry");
+    expect(second[0].instruction_id).toBe("inst-retry");
+    expect(prisma.instruction.create).toBeUndefined();
+    expect(prisma.instruction.update).toHaveBeenCalledTimes(1);
+    expect(prisma.instructionStatusLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("where de entrega exclui instruction expirada e status terminal", () => {
+    expect(deliverableInstructionWhere("lic1", new Date("2026-05-26T20:00:00Z"))).toEqual({
+      licenseId: "lic1",
+      expiresAt: { gt: new Date("2026-05-26T20:00:00Z") },
+      OR: [
+        { currentStatus: OrderLogStatus.RECEIVED },
+        {
+          currentStatus: OrderLogStatus.SENT,
+          executions: { none: {} },
+        },
+      ],
+    });
+  });
+
   it("heartbeat deliverable count alinha com pull autorizado", async () => {
     vi.mocked(prisma.instruction.findMany).mockResolvedValue([
       {
