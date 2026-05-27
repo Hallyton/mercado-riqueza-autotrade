@@ -563,6 +563,65 @@ describe("getMasterSignalDetailsForAdmin", () => {
     const details = await getMasterSignalDetailsForAdmin("ms-test-001");
     expect(details!.instructions[0].source).toBe(MASTER_SIGNAL_INSTRUCTION_SOURCE);
   });
+
+  it("reconstrói linha MasterSignal -> Dispatch -> Instruction -> Execution", async () => {
+    masterFindUnique.mockResolvedValue({
+      ...baseSignal,
+      status: MasterSignalStatus.DISPATCHED,
+    });
+    dispatchFindMany.mockResolvedValue([
+      {
+        id: "disp-chain",
+        licenseId: "lic-1",
+        status: MasterSignalDispatchStatus.INSTRUCTION_CREATED,
+        reason: null,
+        instructionId: "inst-chain",
+        createdAt: new Date("2026-05-26T20:00:00Z"),
+        license: {
+          id: "lic-1",
+          user: { email: "client@example.com" },
+          mt5Account: { login: "123", server: "Demo" },
+          exposureProfile: { slug: "conservador" },
+        },
+        instruction: {
+          id: "inst-chain",
+          licenseId: "lic-1",
+          currentStatus: OrderLogStatus.EXECUTED,
+          symbol: "PETR4",
+          side: InstructionSide.BUY,
+          purpose: InstructionPurpose.ENTRY,
+          source: InstructionSource.MASTER_SIGNAL,
+          createdAt: new Date("2026-05-26T20:01:00Z"),
+          executions: [
+            {
+              id: "exec-chain",
+              status: ExecutionStatus.FILLED,
+              brokerTicket: "debug-ticket",
+              executedAt: new Date("2026-05-26T20:02:00Z"),
+            },
+          ],
+        },
+      },
+    ]);
+
+    const details = await getMasterSignalDetailsForAdmin("ms-test-001");
+
+    expect(details!.signal.masterSignalId).toBe("ms-test-001");
+    expect(details!.dispatches[0]).toMatchObject({
+      id: "disp-chain",
+      instructionId: "inst-chain",
+      licenseId: "lic-1",
+    });
+    expect(details!.instructions[0]).toMatchObject({
+      id: "inst-chain",
+      source: MASTER_SIGNAL_INSTRUCTION_SOURCE,
+      currentStatus: OrderLogStatus.EXECUTED,
+    });
+    expect(details!.instructions[0].executions[0]).toMatchObject({
+      id: "exec-chain",
+      status: ExecutionStatus.FILLED,
+    });
+  });
 });
 
 describe("previewMasterSignalDispatch", () => {

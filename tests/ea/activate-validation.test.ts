@@ -82,4 +82,26 @@ describe("activateEaDevice validações", () => {
       expect.objectContaining({ action: "ea.activation_rejected" })
     );
   });
+
+  it("persiste somente tokenHash do device, nunca o token bruto", async () => {
+    const result = await activateEaDevice({
+      activationCode: "CODE",
+      deviceId: "vps-1",
+      fingerprint: "fp-1",
+      eaVersion: "1.0.0",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.device_token).toBeTruthy();
+    }
+    const createArg = prismaMock.device.create.mock.calls[0][0];
+    const persisted = JSON.stringify(createArg.data);
+    expect(createArg.data).toHaveProperty("tokenHash");
+    expect(createArg.data).not.toHaveProperty("device_token");
+    expect(createArg.data).not.toHaveProperty("token");
+    if (result.ok) {
+      expect(persisted).not.toContain(result.device_token);
+    }
+  });
 });

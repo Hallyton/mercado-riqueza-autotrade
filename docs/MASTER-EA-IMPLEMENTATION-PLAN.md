@@ -1524,6 +1524,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir a auditoria por blocos, com foco em incident response/runbook e validações manuais controladas em staging com EA em `DebugMode=true`.
 
+### Fase 7.7 — Auditoria de Banco, Prisma, Integridade e Histórico
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-AUDIT-DATABASE-PRISMA-RESULTS.md`](PRE-REAL-AUDIT-DATABASE-PRISMA-RESULTS.md)  
+**Objetivo:** validar schema Prisma, modelos críticos, relações, constraints, índices, payloads redigidos, retenção de histórico, ausência de secrets persistidos e compatibilidade de rollback sem apagar trilhas operacionais.
+
+| Item | Resultado |
+|------|-----------|
+| Modelos avaliados | `User`, `License`, `Device`, `ActivationCode`, `Instruction`, `Execution`, `MasterSignal`, `MasterSignalDispatch`, `AdminAction`, `AuditLog` |
+| Relações avaliadas | `User -> License`, `License -> Device`, `License -> Instruction`, `Instruction -> Execution`, `MasterSignal -> Dispatch -> Instruction -> Execution` |
+| Testes ajustados | `tests/database/prisma-integrity.test.ts`, `tests/ea/activate-validation.test.ts`, `tests/ea/executions.test.ts`, `tests/master-signals/admin.test.ts` |
+| Teste focado | 49/49 passing |
+| Achados críticos | Nenhum |
+| Correção de schema/migration | Nenhuma |
+| Correções aplicadas | Testes de integridade de schema, token hash, status terminal e reconstrução histórica |
+| Histórico de rollback | Preservado por `InstructionStatusLog`, `AdminAction` e `AuditLog` |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.7:** auditoria aprovada para banco, Prisma, integridade e histórico no contexto staging/demo. Não houve migration/schema, e as pendências restantes são recomendações de política formal de retenção/arquivamento para fase futura.
+
+**Próxima etapa:** seguir a auditoria por blocos, com foco em incident response/runbook e validações manuais controladas em staging.
+
 ---
 
 ## 13. Riscos e cuidados

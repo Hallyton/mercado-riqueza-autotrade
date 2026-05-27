@@ -182,6 +182,29 @@ describe("reportExecution", () => {
     );
   });
 
+  it("não sobrescreve terminal REJECTED com retry posterior FILLED", async () => {
+    vi.mocked(prisma.execution.findFirst).mockResolvedValue({
+      id: "ex-rejected",
+      instructionId: "inst-debug-1",
+      status: ExecutionStatus.REJECTED,
+      executedAt: new Date(),
+    } as never);
+    vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
+      id: "inst-debug-1",
+      licenseId: "lic1",
+      purpose: InstructionPurpose.ENTRY,
+      currentStatus: OrderLogStatus.REJECTED,
+    } as never);
+
+    const result = await reportExecution(ctx as never, debugModePayload);
+
+    expect(result.ok).toBe(true);
+    expect(result.idempotent).toBe(true);
+    expect(result.orderStatus).toBe(OrderLogStatus.REJECTED);
+    expect(prisma.execution.create).not.toHaveBeenCalled();
+    expect(prisma.instruction.update).not.toHaveBeenCalled();
+  });
+
   it("redige erro sensível de OrderSend antes de persistir execution e status log", async () => {
     const result = await reportExecution(ctx as never, {
       instruction_id: "inst-debug-1",
