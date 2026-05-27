@@ -1705,6 +1705,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** executar checklist manualmente na VPS/MT5, preencher evidências, definir operadores e registrar status final (`APPROVED` ou `APPROVED_WITH_RESTRICTIONS`).
 
+### Fase 8.2 — Preenchimento Manual do Checklist VPS/MT5
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md)  
+**Objetivo:** registrar evidências operacionais do ambiente VPS/MT5 com preenchimento manual do checklist da Fase 8.1.
+
+| Item | Resultado |
+|------|-----------|
+| Ambiente | Staging — `52609973 @ XPMT5-DEMO`, API `autotrade-staging.mercadodariqueza.com.br` |
+| Evidências | Homologação staging/VPS, runbook `runbook-demo-session-001`, auditoria MQL5 (7.8) |
+| VPS/Windows | Maioria `PENDENTE` — sem prints de infraestrutura |
+| MT5 / WebRequest / EA cliente | Predominantemente `APROVADO` |
+| Operadores | `A DEFINIR` — bloqueia conta real |
+| Itens reprovados | Nenhum |
+| Status final | `APPROVED_WITH_RESTRICTIONS` |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.2:** checklist preenchido com restrições. MT5 e integração staging estão evidenciados; hardening Windows/VPS completo e operadores nomeados permanecem pendentes.
+
+**Próxima etapa:** definir operadores, coletar prints redigidos (WebRequest, `MQL5/Files`, RDP/firewall), formalizar AutoTrading e promover para `APPROVED` apenas se todos os critérios da Fase 8.1 forem atendidos.
+
 ---
 
 ## 13. Riscos e cuidados

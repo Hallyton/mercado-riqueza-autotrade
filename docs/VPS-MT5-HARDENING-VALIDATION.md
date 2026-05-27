@@ -2,7 +2,7 @@
 
 **Data:** 2026-05-27  
 **Fase:** 8.1 — Validação Operacional do Hardening VPS/MT5  
-**Status:** `PENDING_OPERATIONAL_VALIDATION`
+**Status:** `APPROVED_WITH_RESTRICTIONS` (atualizado na Fase 8.2)
 
 Documentos relacionados: [`docs/PRE-REAL-AUDIT-ENVIRONMENT-MT5-HARDENING.md`](PRE-REAL-AUDIT-ENVIRONMENT-MT5-HARDENING.md), [`docs/PRE-REAL-TECHNICAL-AUDIT-FINAL-REPORT.md`](PRE-REAL-TECHNICAL-AUDIT-FINAL-REPORT.md), [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md).
 
@@ -215,6 +215,8 @@ Reprovar se:
 
 ## 14. Status da validação
 
+**Status atual:** `APPROVED_WITH_RESTRICTIONS` (Fase 8.2)
+
 **Status inicial:** `PENDING_OPERATIONAL_VALIDATION`
 
 Status possíveis:
@@ -226,11 +228,11 @@ Status possíveis:
 
 ---
 
-## 15. Decisão inicial
+## 15. Decisão
 
-**Status:** `PENDING_OPERATIONAL_VALIDATION`
+**Status (Fase 8.2):** `APPROVED_WITH_RESTRICTIONS`
 
-**Motivo:** a validação depende de conferência manual da VPS/Windows/MT5 e preenchimento dos checklists com evidências. Até que os itens sejam verificados e registrados, conta real permanece bloqueada.
+**Motivo:** checklist preenchido com evidências de homologação staging e runbook; pendências em VPS/Windows, operadores e alguns itens MT5/Files/AutoTrading. Conta real permanece bloqueada.
 
 ---
 
@@ -245,4 +247,25 @@ Status possíveis:
 
 ---
 
-*Mercado da Riqueza AutoTrade — validação operacional de hardening VPS/MT5 pendente. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
+---
+
+## 17. Fase 8.2 — Preenchimento Manual do Checklist
+
+**Data:** 2026-05-27  
+**Documento de resultado:** [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md)  
+**Status final:** `APPROVED_WITH_RESTRICTIONS`
+
+| Resumo | Valor |
+|--------|--------|
+| Itens aprovados | MT5 DEMO, EA cliente, WebRequest staging, procedimentos de device, logs estáticos sem secrets |
+| Itens pendentes | VPS/Windows (maioria), operadores, `MQL5/Files`, AutoTrading formal, amostra de logs MT5 |
+| Itens reprovados | Nenhum |
+| Conta real | Não usada — bloqueada |
+| Produção real | Bloqueada |
+| Dispatch automático | Desativado |
+
+**Conclusão:** checklist preenchido com base em evidências documentais de homologação staging/VPS e runbook. Hardening de infraestrutura Windows e operadores nomeados permanecem como restrição antes de qualquer gate de conta real.
+
+---
+
+*Mercado da Riqueza AutoTrade — validação operacional de hardening VPS/MT5: `APPROVED_WITH_RESTRICTIONS` (Fase 8.2). Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
