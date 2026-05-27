@@ -1729,6 +1729,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** definir operadores, coletar prints redigidos (WebRequest, `MQL5/Files`, RDP/firewall), formalizar AutoTrading e promover para `APPROVED` apenas se todos os critérios da Fase 8.1 forem atendidos.
 
+### Fase 8.3 — Definição de Operadores, Responsabilidades e Política de AutoTrading
+
+**Status:** `DRAFT_OPERATIONAL_POLICY`  
+**Documento:** [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md)  
+**Objetivo:** formalizar quem acessa VPS/MT5, quem opera EA, quem faz dispatch, quem aciona rollback e qual é a política de AutoTrading em staging/demo.
+
+| Item | Resultado |
+|------|-----------|
+| Papéis operacionais | 7 papéis definidos — nomes `A DEFINIR` (bloqueia conta real) |
+| Matriz de permissões | 12 ações — responsáveis `A DEFINIR` |
+| Política de AutoTrading | Formalizada (ligar/desligar, DebugMode, demo vs. real) |
+| Procedimentos | Antes/depois de AutoTrading + critérios de bloqueio |
+| Operadores nomeados | Pendente |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.3:** política operacional criada em rascunho. AutoTrading e responsabilidades estão documentados; preenchimento de nomes e evidências de sessão permanece pendente.
+
+**Próxima etapa:** preencher nomes na política, validar matriz de permissões, executar sessão demo com AutoTrading conforme política e anexar evidências WebRequest/MT5.
+
 ---
 
 ## 13. Riscos e cuidados

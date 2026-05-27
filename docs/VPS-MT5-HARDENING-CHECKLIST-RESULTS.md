@@ -208,4 +208,25 @@ Mesmo com este status:
 
 ---
 
+## 12. Fase 8.3 — Operadores, Responsabilidades e AutoTrading
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md)  
+**Status da política:** `DRAFT_OPERATIONAL_POLICY`
+
+| Item | Situação |
+|------|----------|
+| Política criada | OK — papéis, matriz de permissões, AutoTrading, procedimentos e critérios de bloqueio |
+| Operadores nomeados | Pendente — todos os papéis permanecem `A DEFINIR — BLOQUEIA CONTA REAL` |
+| AutoTrading formalizado | OK — regras escritas nas seções 4, 6 e 7 da política |
+| Matriz de permissões | Pendente — preencher responsáveis por ação |
+| Impacto no checklist 8.2 | Itens de AutoTrading e operadores passam a ter referência formal; evidência de execução ainda pendente |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
+
+**Conclusão:** a Fase 8.3 resolve a pendência documental de política de AutoTrading e estrutura de operadores; o preenchimento de nomes e evidências permanece necessário antes de promover hardening ou política para status sem restrições críticas.
+
+---
+
 *Mercado da Riqueza AutoTrade — resultado do checklist de hardening VPS/MT5 com restrições. Conta real, produção real e dispatch automático permanecem bloqueados.*
