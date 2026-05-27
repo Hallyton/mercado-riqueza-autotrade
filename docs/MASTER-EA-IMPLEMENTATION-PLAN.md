@@ -1866,6 +1866,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** definir suplente operacional; manter runbook em sessões recorrentes; gate explícito antes de qualquer conta real.
 
+### Fase 8.9 — Relatório Final de Hardening Operacional VPS/MT5
+
+**Status:** `VPS_MT5_HARDENING_APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/VPS-MT5-HARDENING-FINAL-REPORT.md`](VPS-MT5-HARDENING-FINAL-REPORT.md)  
+**Objetivo:** consolidar validações operacionais VPS/MT5 (fases 8.1–8.8), sessão demo com AutoTrading controlado e restrições remanescentes.
+
+| Item | Resultado |
+|------|-----------|
+| Decisão hardening | `VPS_MT5_HARDENING_APPROVED_WITH_RESTRICTIONS` |
+| Decisão conta real | `REAL_ACCOUNT_NOT_APPROVED` |
+| Evidência mais recente | Fase 8.8 — `autotrading-policy-demo-001`, tracking `EXECUTED` |
+| Operador | HALLYTON |
+| Suplente | A DEFINIR |
+| Evidências visuais no Git | Nenhuma (sigilo — Fase 8.7) |
+| Código / EA / schema / env / deploy | Nenhuma alteração nesta fase |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.9:** trilha documental de hardening VPS/MT5 encerrada com aprovação **com restrições**. Autoriza continuidade demo/staging conforme runbook e política; **não** autoriza conta real nem produção real.
+
+**Próxima etapa:** criar tag do marco de hardening; decidir entre revisão jurídica, definição de limites financeiros ou planejamento de novo gate futuro para conta real ultra-controlada.
+
 ---
 
 ## 13. Riscos e cuidados
