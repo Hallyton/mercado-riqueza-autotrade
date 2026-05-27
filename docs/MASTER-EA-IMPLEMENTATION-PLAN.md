@@ -1625,20 +1625,25 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ### Fase 7.11 — Validação do Runbook em Sessão Demo/Staging
 
-**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Status:** `APPROVED`  
 **Documento:** [`docs/PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md`](PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md)  
 **Objetivo:** confirmar que o runbook operacional diário é aplicável na operação de staging/demo, com checklists, evidências e rollback documentados.
 
 | Item | Resultado |
 |------|-----------|
-| Validação documental do runbook | OK |
-| Execução operacional completa | **Pendente** — evidência visual no admin |
-| MasterSignalId (sessão planejada) | `runbook-demo-session-001` |
+| Validação documental e operacional do runbook | OK |
+| Evidência visual no admin | OK — `/admin/master-signals/runbook-demo-session-001` |
+| MasterSignalId | `runbook-demo-session-001` |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| Conta (especificação) | `52609973 @ XPMT5-DEMO` |
-| Tracking `EXECUTED` no painel | **Pendente** — confirmar em `/admin/master-signals/runbook-demo-session-001` |
-| Conta real usada | Não |
-| Runbook (status documental) | `APPROVED_WITH_RESTRICTIONS` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| `tradeMode` / DebugMode | `DEMO` / `true` |
+| Tracking final | `EXECUTED` |
+| Dispatches / instruções / executadas | `1 / 1 / 1` |
+| Dispatch | Manual |
+| Real Trading Guard bloqueou DEMO | Não |
+| Ordem real enviada | Não |
+| Rollback | Não utilizado |
+| Runbook (status) | `READY_FOR_DEMO_OPERATIONS` |
 | Papéis operacionais | `A DEFINIR` — bloqueia conta real |
 | Código / EA / schema / env / deploy | Nenhuma alteração |
 | Conta real | **Bloqueada** |
@@ -1646,11 +1651,9 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Dinheiro real | **Bloqueado** |
 | Dispatch automático | **Desativado** |
 
-**Resultado da Fase 7.11:** runbook criado e validado **documentalmente**. A sessão com `runbook-demo-session-001` foi especificada, mas a confirmação autônoma no admin (tracking `EXECUTED`) não foi obtida durante a execução do agente (autenticação admin e validação via API/secret indisponíveis). Status operacional equivalente: `PENDING_OPERATIONAL_EVIDENCE` até confirmação visual no painel.
+**Resultado da Fase 7.11:** runbook validado em sessão demo/staging real com `runbook-demo-session-001`, checklists operacionais aplicados, tracking `EXECUTED` confirmado no painel, `DebugMode=true` e sem ordem real. Pendência de evidência operacional resolvida.
 
-**Pendência:** confirmar no admin que `runbook-demo-session-001` está com tracking **`EXECUTED`** antes de promover a fase para `APPROVED` operacional.
-
-**Próxima etapa:** executar ou confirmar a sessão demo/staging no painel, registrar evidência visual e preencher responsáveis operacionais no runbook.
+**Próxima etapa:** preencher responsáveis operacionais no runbook e repetir o checklist em novas sessões demo/staging antes de qualquer gate de conta real.
 
 ---
 
