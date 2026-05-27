@@ -1842,6 +1842,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** para conta real futura, definir gate com evidência adequada; manter staging/demo conforme runbook e política 8.3.
 
+### Fase 8.8 — Sessão Demo com AutoTrading Controlado pela Política Operacional
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/VPS-MT5-AUTOTRADING-POLICY-SESSION-RESULTS.md`](VPS-MT5-AUTOTRADING-POLICY-SESSION-RESULTS.md)  
+**Objetivo:** validar na prática a política de AutoTrading (ligar/desligar conforme sessão, checklist pré/pós, dispatch manual, `DebugMode=true`).
+
+| Item | Resultado |
+|------|-----------|
+| Operador | HALLYTON |
+| MasterSignalId | `autotrading-policy-demo-001` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| Tracking | `EXECUTED` |
+| AutoTrading | Controlado conforme política 8.3 |
+| Evidência | Textual — sem prints no Git |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.8:** política de AutoTrading validada em sessão demo/staging com fluxo ponta a ponta documentado. Não libera conta real nem produção real.
+
+**Próxima etapa:** definir suplente operacional; manter runbook em sessões recorrentes; gate explícito antes de qualquer conta real.
+
 ---
 
 ## 13. Riscos e cuidados

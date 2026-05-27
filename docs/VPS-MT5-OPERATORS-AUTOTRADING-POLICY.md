@@ -174,9 +174,9 @@ Status possíveis:
 ## 10. Próxima ação recomendada
 
 1. Definir **suplente** documentado para cada papel crítico.
-2. Executar sessão demo/staging com AutoTrading conforme seções 6 e 7 e registrar evidências.
-3. Anexar prints redigidos: WebRequest, `MQL5/Files`, VPS/Windows, log MT5 (cofre interno).
-4. Promover para `READY_FOR_DEMO_USE` após evidência de sessão AutoTrading controlada.
+2. ~~Executar sessão demo/staging com AutoTrading conforme seções 6 e 7~~ — **concluído (Fase 8.8, `APPROVED`)**.
+3. Anexar prints redigidos no cofre interno (opcional; Git sem binários por sigilo).
+4. Avaliar promoção para `READY_FOR_DEMO_USE` após suplente definido.
 5. Manter conta real bloqueada até novo gate explícito.
 
 ---
@@ -187,4 +187,29 @@ Status possíveis:
 
 ---
 
-*Mercado da Riqueza AutoTrade — política operacional com operadores definidos. Conta real, produção real e dispatch automático permanecem bloqueados.*
+## 12. Fase 8.8 — Sessão Demo com AutoTrading Controlado
+
+**Data:** 2026-05-27  
+**Documento de resultado:** [`docs/VPS-MT5-AUTOTRADING-POLICY-SESSION-RESULTS.md`](VPS-MT5-AUTOTRADING-POLICY-SESSION-RESULTS.md)  
+**Status da sessão:** `APPROVED`  
+**Operador:** HALLYTON
+
+| Item | Resultado |
+|------|-----------|
+| MasterSignalId | `autotrading-policy-demo-001` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| `DebugMode` | `true` |
+| `tradeMode` | `DEMO` |
+| AutoTrading antes/durante/depois | Desligado / ligado (sessão) / desligado |
+| Tracking final | `EXECUTED` |
+| Dispatch | Manual (admin) |
+| Dispatch automático | Desativado |
+| Ordem real | Nenhuma |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+
+**Conclusão:** validação **prática** da política de AutoTrading em sessão demo/staging concluída. A política documental permanece `APPROVED_WITH_RESTRICTIONS` (suplente `A DEFINIR`, evidências visuais sem anexo por sigilo — Fase 8.7).
+
+---
+
+*Mercado da Riqueza AutoTrade — política operacional com operadores definidos e sessão AutoTrading demo validada (8.8). Conta real, produção real e dispatch automático permanecem bloqueados.*

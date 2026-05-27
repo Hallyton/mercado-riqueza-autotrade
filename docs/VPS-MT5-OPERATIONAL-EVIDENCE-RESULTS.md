@@ -243,4 +243,27 @@ Mesmo com este status:
 
 ---
 
+## 15. Fase 8.8 — Sessão Demo com AutoTrading Controlado
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-AUTOTRADING-POLICY-SESSION-RESULTS.md`](VPS-MT5-AUTOTRADING-POLICY-SESSION-RESULTS.md)  
+**Status:** `APPROVED`  
+**Operador:** HALLYTON
+
+| Item | Situação |
+|------|----------|
+| Política AutoTrading validada na prática | OK |
+| MasterSignalId | `autotrading-policy-demo-001` |
+| Tracking | `EXECUTED` |
+| `DebugMode=true` / `tradeMode=DEMO` | OK |
+| Dispatch manual | OK |
+| Prints no Git | Nenhum |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
+
+**Conclusão:** Fase 8.8 registra validação operacional da política de AutoTrading em demo; complementa evidências documentais das fases 8.2–8.7 sem liberar conta real.
+
+---
+
 *Mercado da Riqueza AutoTrade — registro de evidências operacionais VPS/MT5 com restrições. Sem binários no Git. Conta real, produção real e dispatch automático permanecem bloqueados.*
