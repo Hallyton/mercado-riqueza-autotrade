@@ -1574,6 +1574,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir a auditoria por blocos, com foco em runbook operacional, incident response e validações manuais controladas em staging.
 
+### Fase 7.9 — Auditoria de Ambiente, VPS, MT5 e Hardening Operacional
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/PRE-REAL-AUDIT-ENVIRONMENT-MT5-HARDENING.md`](PRE-REAL-AUDIT-ENVIRONMENT-MT5-HARDENING.md)  
+**Objetivo:** definir requisitos mínimos de hardening operacional para Windows/VPS, MetaTrader 5, `MQL5/Files`, WebRequest, AutoTrading, logs, acesso remoto, tokens locais e rollback antes de qualquer conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Escopo | VPS/Windows, MT5, `MQL5/Files`, logs, WebRequest, AutoTrading, credenciais MT5, acesso remoto, firewall, backup e operadores |
+| Status | `APPROVED_WITH_RESTRICTIONS` por depender de validação manual do ambiente real/VPS/MT5 |
+| Código alterado | Nenhum |
+| EA alterado | Nenhum |
+| Schema/migration | Nenhum |
+| Testes/build | Não executados — alteração documental |
+| Restrição principal | Operadores autorizados e política de acesso ainda `A DEFINIR — BLOQUEIA CONTA REAL` |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.9:** checklist de hardening operacional aprovado com restrições. A fase não valida uma VPS real específica; define os critérios que precisam ser cumpridos antes de qualquer ambiente com risco maior.
+
+**Próxima etapa:** validar ambiente/VPS/MT5 real ou criar checklist de operação diária com responsáveis definidos.
+
 ---
 
 ## 13. Riscos e cuidados
