@@ -210,4 +210,25 @@ Mesmo com este status:
 
 ---
 
+## 13. Fase 8.7 — Registro de Evidências Visuais Redigidas
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-VISUAL-EVIDENCE-REGISTER.md`](VPS-MT5-VISUAL-EVIDENCE-REGISTER.md)  
+**Status:** `PENDING_EVIDENCE`
+
+| Item | Situação |
+|------|----------|
+| Documento criado | OK — índice de evidências visuais redigidas |
+| Prints/binários no Git | **Nenhum** commitado |
+| Logs brutos no Git | **Nenhum** commitado |
+| Evidências visuais conferidas | **Pendentes** — todos os itens em `PENDENTE` no registro 8.7 |
+| Cofre sugerido | `evidencias/vps-mt5-staging/` (fora do Git) |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
+
+**Conclusão:** a Fase 8.7 estrutura o registro de evidências visuais sem expor dados sensíveis no repositório. O status operacional de hardening permanece `APPROVED_WITH_RESTRICTIONS` até prints serem coletados e marcados no cofre.
+
+---
+
 *Mercado da Riqueza AutoTrade — registro de evidências operacionais VPS/MT5 com restrições. Sem binários no Git. Conta real, produção real e dispatch automático permanecem bloqueados.*

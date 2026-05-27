@@ -1818,6 +1818,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** suplente operacional, evidências visuais pendentes e sessão AutoTrading controlada.
 
+### Fase 8.7 — Registro das Evidências Visuais Redigidas VPS/MT5
+
+**Status:** `PENDING_EVIDENCE`  
+**Documento:** [`docs/VPS-MT5-VISUAL-EVIDENCE-REGISTER.md`](VPS-MT5-VISUAL-EVIDENCE-REGISTER.md)  
+**Objetivo:** registrar evidências visuais do ambiente VPS/MT5 sem commitar prints, imagens, logs brutos ou dados sensíveis.
+
+| Item | Resultado |
+|------|-----------|
+| Registro estruturado | OK — VPS, MT5, WebRequest, Files, logs, AutoTrading |
+| Prints/binários no Git | Nenhum |
+| Cofre sugerido | `evidencias/vps-mt5-staging/` (fora do Git) |
+| Evidências conferidas | Todas `PENDENTE` até coleta manual |
+| Suplente operacional | A DEFINIR |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.7:** formulário de registro visual criado com status `PENDING_EVIDENCE`. Nenhum artefato sensível no repositório.
+
+**Próxima etapa:** coletar prints redigidos no cofre, atualizar status item a item e promover registro quando evidências críticas estiverem conferidas.
+
 ---
 
 ## 13. Riscos e cuidados

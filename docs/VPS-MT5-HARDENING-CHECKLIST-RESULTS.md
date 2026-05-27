@@ -266,4 +266,23 @@ Mesmo com este status:
 
 ---
 
+## 15. Fase 8.7 — Registro de Evidências Visuais Redigidas
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-VISUAL-EVIDENCE-REGISTER.md`](VPS-MT5-VISUAL-EVIDENCE-REGISTER.md)  
+**Status:** `PENDING_EVIDENCE`
+
+| Item | Situação |
+|------|----------|
+| Registro visual estruturado | OK |
+| Prints commitados no Git | Não |
+| Evidências visuais conferidas | Pendentes |
+| Operadores (Fase 8.6) | HALLYTON — definidos |
+| Suplente | A DEFINIR |
+| Conta real | **Bloqueada** |
+
+**Conclusão:** checklist 8.2 mantém `APPROVED_WITH_RESTRICTIONS` até evidências visuais serem coletadas no cofre interno e refletidas neste registro.
+
+---
+
 *Mercado da Riqueza AutoTrade — resultado do checklist de hardening VPS/MT5 com restrições. Conta real, produção real e dispatch automático permanecem bloqueados.*
