@@ -2,7 +2,7 @@
 
 **Data:** 2026-05-27  
 **Fase:** 8.4 — Pacote de Evidências Operacionais VPS/MT5  
-**Status:** `PENDING_EVIDENCE`
+**Status:** `APPROVED_WITH_RESTRICTIONS` (registro Fase 8.5 — coleta parcial)
 
 Documentos relacionados: [`docs/VPS-MT5-HARDENING-VALIDATION.md`](VPS-MT5-HARDENING-VALIDATION.md), [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md), [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md), [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md).
 
@@ -174,17 +174,35 @@ Status possíveis:
 
 ## 12. Resumo de pendências (contagem)
 
-| Categoria | Itens | Pendentes |
-|-----------|-------|-----------|
+| Categoria | Itens | Pendentes (após Fase 8.5) |
+|-----------|-------|---------------------------|
 | VPS/Windows | 6 | 6 |
-| MetaTrader 5 | 6 | 6 |
-| WebRequest | 4 | 4 |
-| MQL5/Files | 5 | 5 |
-| Logs | 5 | 5 |
+| MetaTrader 5 | 8 | 3 |
+| WebRequest | 4 | 1 |
+| MQL5/Files | 5 | 1 |
+| Logs | 6 | 1 |
 | Operadores | 7 | 7 |
 | Sessão AutoTrading | 1 bloco | 1 |
 
-**Total aproximado:** 34 itens de evidência em `PENDENTE` até coleta manual.
+**Total aproximado:** ~20 itens ainda `PENDENTE` — ver [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md`](VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md).
+
+---
+
+## 13. Fase 8.5 — Registro das Evidências Operacionais
+
+**Data:** 2026-05-27  
+**Documento de resultado:** [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md`](VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md)  
+**Status final:** `APPROVED_WITH_RESTRICTIONS`
+
+| Item | Situação |
+|------|----------|
+| Evidências coletadas (descritivas) | OK — MT5 DEMO, EA, WebRequest staging, tokens/logs sem exposição no repo |
+| Prints no Git | Nenhum — conforme política |
+| Redaction | Aplicada |
+| Pendências | VPS/Windows, operadores, prints AutoTrading/Files/WebRequest lista, log arquivado |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
 
 ---
 

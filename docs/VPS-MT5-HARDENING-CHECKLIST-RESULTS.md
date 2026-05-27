@@ -249,4 +249,21 @@ Mesmo com este status:
 
 ---
 
+## 14. Fase 8.5 — Registro das Evidências Operacionais
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md`](VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md)  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+| Item | Situação |
+|------|----------|
+| Registro de evidências | OK — descritivo, sem binários no Git |
+| Alinhamento com checklist 8.2 | Mantém `APPROVED_WITH_RESTRICTIONS` |
+| Operadores | Ainda `A DEFINIR` |
+| Conta real | **Bloqueada** |
+
+**Conclusão:** evidências operacionais parciais registradas; pendências de infra VPS, operadores e prints visuais permanecem antes de promover hardening ou política para `APPROVED` pleno.
+
+---
+
 *Mercado da Riqueza AutoTrade — resultado do checklist de hardening VPS/MT5 com restrições. Conta real, produção real e dispatch automático permanecem bloqueados.*

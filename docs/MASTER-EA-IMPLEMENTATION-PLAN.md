@@ -1774,6 +1774,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** coletar prints redigidos, preencher operadores, executar sessão demo com AutoTrading controlado e atualizar status do pacote.
 
+### Fase 8.5 — Registro das Evidências Operacionais VPS/MT5
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md`](VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md)  
+**Objetivo:** registrar evidências operacionais redigidas do ambiente VPS/MT5, sem commitar prints ou dados sensíveis.
+
+| Item | Resultado |
+|------|-----------|
+| Redaction | Aplicada — sem tokens/secrets/senhas/envs no repo |
+| Prints no Git | Nenhum |
+| Evidências aprovadas (descritivas) | MT5 DEMO, EA, WebRequest staging, device procedures, logs estáticos |
+| Evidências pendentes | VPS/Windows prints, operadores, Files, lista WebRequest, log arquivado, AutoTrading visual |
+| Pacote 8.4 | Atualizado para `APPROVED_WITH_RESTRICTIONS` (coleta parcial) |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.5:** registro documental das evidências coletadas até o momento, com restrições explícitas. Conta real permanece bloqueada enquanto operadores e evidências críticas de infra estiverem pendentes.
+
+**Próxima etapa:** preencher operadores, anexar prints redigidos no cofre interno, executar sessão AutoTrading controlada e reavaliar promoção do hardening.
+
 ---
 
 ## 13. Riscos e cuidados
