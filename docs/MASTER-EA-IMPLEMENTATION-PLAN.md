@@ -1752,6 +1752,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** preencher nomes na política, validar matriz de permissões, executar sessão demo com AutoTrading conforme política e anexar evidências WebRequest/MT5.
 
+### Fase 8.4 — Pacote de Evidências Operacionais VPS/MT5
+
+**Status:** `PENDING_EVIDENCE`  
+**Documento:** [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-PACK.md`](VPS-MT5-OPERATIONAL-EVIDENCE-PACK.md)  
+**Objetivo:** organizar a coleta de evidências redigidas do ambiente VPS/Windows/MT5 antes de qualquer avanço de gate.
+
+| Item | Resultado |
+|------|-----------|
+| Categorias | VPS/Windows, MT5, WebRequest, `MQL5/Files`, logs, operadores, sessão AutoTrading |
+| Regras de redaction | Documentadas (sem tokens, secrets, senhas MT5, envs) |
+| Evidências | Todas `PENDENTE` até coleta manual |
+| Armazenamento | Fora do Git (cofre/pasta interna) |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.4:** pacote de evidências criado com status `PENDING_EVIDENCE`. Checklist 8.2 e política 8.3 permanecem com restrições até prints e operadores serem registrados.
+
+**Próxima etapa:** coletar prints redigidos, preencher operadores, executar sessão demo com AutoTrading controlado e atualizar status do pacote.
+
 ---
 
 ## 13. Riscos e cuidados

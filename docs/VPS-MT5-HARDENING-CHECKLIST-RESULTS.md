@@ -229,4 +229,24 @@ Mesmo com este status:
 
 ---
 
+## 13. Fase 8.4 — Pacote de Evidências Operacionais VPS/MT5
+
+**Data:** 2026-05-27  
+**Documento:** [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-PACK.md`](VPS-MT5-OPERATIONAL-EVIDENCE-PACK.md)  
+**Status do pacote:** `PENDING_EVIDENCE`
+
+| Item | Situação |
+|------|----------|
+| Pacote criado | OK — índice de evidências VPS, MT5, WebRequest, Files, logs, operadores e sessão AutoTrading |
+| Regras de redaction | OK — documentadas |
+| Evidências coletadas | **Pendentes** — ~34 itens em `PENDENTE` |
+| Operadores | Ainda `A DEFINIR` na política 8.3 |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
+
+**Conclusão:** a Fase 8.4 não altera o status do checklist 8.2 (`APPROVED_WITH_RESTRICTIONS`); organiza o que falta coletar antes de promover hardening ou política operacional.
+
+---
+
 *Mercado da Riqueza AutoTrade — resultado do checklist de hardening VPS/MT5 com restrições. Conta real, produção real e dispatch automático permanecem bloqueados.*
