@@ -1549,6 +1549,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir a auditoria por blocos, com foco em incident response/runbook e validações manuais controladas em staging.
 
+### Fase 7.8 — Auditoria de EA Cliente e EA Mãe
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/PRE-REAL-AUDIT-EA-CLIENT-MASTER-RESULTS.md`](PRE-REAL-AUDIT-EA-CLIENT-MASTER-RESULTS.md)  
+**Objetivo:** auditar contratos operacionais, documentação, parâmetros, segurança, payloads e fluxos de integração do EA cliente `MR_AutoTrade_Executor` e do EA Mãe `MR_AutoTrade_Master_Signal`.
+
+| Item | Resultado |
+|------|-----------|
+| Documentos avaliados | `docs/EA-API.md`, `docs/MASTER-EA-MQL5-V1.md`, `docs/MASTER-EA-SIGNAL-SIMULATOR.md`, relatórios Real Trading Guard / DebugMode / auditorias anteriores |
+| Arquivos MQL5 avaliados | `ea/mql5/MR_AutoTrade_Executor.mq5`, `ea/mql5/MR_AutoTrade_Master_Signal.mq5`, includes `MR_AT_*` e `MR_MS_*` |
+| Testes adicionados | `tests/ea/mql-contracts.test.ts` |
+| Teste focado | 55/55 passing |
+| Achados críticos | Nenhum |
+| Alteração MQL5 | Nenhuma |
+| Status | `APPROVED_WITH_RESTRICTIONS` por depender de recompilação/smoke manual no MetaTrader |
+| Restrição principal | `device_token` é armazenado localmente pelo EA cliente; exige hardening da VPS/MT5 |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.8:** auditoria aprovada com restrições para contratos do EA cliente e EA Mãe. Os papéis permanecem separados, o EA Mãe não envia ordens, o EA cliente segue executor licenciado e `REAL` continua bloqueado pelo backend.
+
+**Próxima etapa:** seguir a auditoria por blocos, com foco em runbook operacional, incident response e validações manuais controladas em staging.
+
 ---
 
 ## 13. Riscos e cuidados
