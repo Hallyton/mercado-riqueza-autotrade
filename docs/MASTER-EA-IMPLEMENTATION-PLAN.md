@@ -1598,6 +1598,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** validar ambiente/VPS/MT5 real ou criar checklist de operação diária com responsáveis definidos.
 
+### Fase 7.10 — Runbook Operacional Diário e Checklist de Sessão
+
+**Status:** `DRAFT_OPERATIONAL_RUNBOOK`  
+**Documento:** [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md)  
+**Objetivo:** padronizar preparação, execução, monitoramento, encerramento, evidências e rollback de sessões controladas antes de qualquer conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Escopo | Staging/demo, conta demo, `DebugMode=true` por padrão, dispatch manual, monitoramento admin, evidências e rollback |
+| Não autorizado | Conta real, dinheiro real, produção real, dispatch automático, múltiplos clientes/ativos ou operação sem responsável/evidência |
+| Papéis operacionais | `A DEFINIR` — bloqueia qualquer sessão real futura |
+| Checklists criados | Pré-sessão, criação do sinal, dispatch admin, EA cliente, tracking, pós-sessão e evidência |
+| Código alterado | Nenhum |
+| EA alterado | Nenhum |
+| Schema/migration | Nenhum |
+| Testes/build | Não executados — alteração documental |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.10:** runbook criado em status `DRAFT_OPERATIONAL_RUNBOOK`. O documento serve como base para sessões demo/staging e precisa ser validado em operação controlada antes de avançar para qualquer revisão de maior risco.
+
+**Próxima etapa:** validar o runbook em uma sessão demo/staging e preencher responsáveis/evidências.
+
 ---
 
 ## 13. Riscos e cuidados
