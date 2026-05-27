@@ -1623,6 +1623,35 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** validar o runbook em uma sessão demo/staging e preencher responsáveis/evidências.
 
+### Fase 7.11 — Validação do Runbook em Sessão Demo/Staging
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md`](PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md)  
+**Objetivo:** confirmar que o runbook operacional diário é aplicável na operação real de staging/demo, com checklists, evidências e rollback documentados.
+
+| Item | Resultado |
+|------|-----------|
+| MasterSignalId | `runbook-demo-session-001` |
+| Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
+| Conta | `52609973 @ XPMT5-DEMO` |
+| `tradeMode` / DebugMode | `DEMO` / `true` |
+| Tracking final | `EXECUTED` |
+| Dispatches / instruções / executadas | `1 / 1 / 1` |
+| Dispatch | Manual |
+| Real Trading Guard bloqueou DEMO | Não |
+| Rollback | Não utilizado |
+| Runbook (status) | `READY_FOR_DEMO_OPERATIONS` |
+| Papéis operacionais | `A DEFINIR` — bloqueia conta real |
+| Código alterado | Nenhum |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.11:** runbook validado em sessão demo/staging controlada com tracking `EXECUTED`, `DebugMode=true` e sem ordem real. O documento operacional passa de rascunho para uso recorrente em demo/staging, mantendo papéis e conta real bloqueados.
+
+**Próxima etapa:** preencher responsáveis operacionais no runbook e repetir o checklist em novas sessões demo/staging antes de qualquer gate de conta real.
+
 ---
 
 ## 13. Riscos e cuidados

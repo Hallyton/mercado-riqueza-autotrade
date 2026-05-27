@@ -238,6 +238,8 @@ Template:
 
 ## 13. Status do Runbook
 
+**Status atual:** `READY_FOR_DEMO_OPERATIONS` (após validação Fase 7.11)
+
 **Status inicial:** `DRAFT_OPERATIONAL_RUNBOOK`
 
 Status possíveis:
@@ -268,4 +270,29 @@ Antes de qualquer sessão com risco maior, transformar este runbook em checklist
 
 ---
 
-*Mercado da Riqueza AutoTrade — runbook operacional diário em rascunho. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
+## 16. Validação em sessão demo/staging — Fase 7.11
+
+**Data:** 2026-05-27  
+**Documento de resultado:** [`docs/PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md`](PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md)  
+**Status da validação:** `APPROVED`
+
+| Campo | Resultado |
+|-------|-----------|
+| MasterSignalId | `runbook-demo-session-001` |
+| Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
+| Conta MT5 | `52609973 @ XPMT5-DEMO` |
+| `tradeMode` | `DEMO` |
+| `DebugMode` | `true` |
+| Dispatch | Manual |
+| Tracking final | `EXECUTED` |
+| Dispatches / instruções / executadas | `1 / 1 / 1` |
+| Real Trading Guard bloqueou DEMO | Não |
+| Ordem real enviada | Não |
+| Rollback usado | Não |
+| Incidentes | Nenhum |
+
+**Conclusão:** o runbook é aplicável na operação diária demo/staging. Papéis operacionais permanecem `A DEFINIR` e continuam bloqueando qualquer sessão com conta real.
+
+---
+
+*Mercado da Riqueza AutoTrade — runbook validado para operações demo/staging. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
