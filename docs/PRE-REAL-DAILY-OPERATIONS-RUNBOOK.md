@@ -238,7 +238,7 @@ Template:
 
 ## 13. Status do Runbook
 
-**Status atual:** `READY_FOR_DEMO_OPERATIONS` (após validação Fase 7.11)
+**Status atual:** `APPROVED_WITH_RESTRICTIONS` (validação documental Fase 7.11; evidência visual no admin pendente)
 
 **Status inicial:** `DRAFT_OPERATIONAL_RUNBOOK`
 
@@ -274,25 +274,24 @@ Antes de qualquer sessão com risco maior, transformar este runbook em checklist
 
 **Data:** 2026-05-27  
 **Documento de resultado:** [`docs/PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md`](PRE-REAL-RUNBOOK-VALIDATION-RESULTS.md)  
-**Status da validação:** `APPROVED`
+**Status da validação:** `APPROVED_WITH_RESTRICTIONS`
 
-| Campo | Resultado |
-|-------|-----------|
-| MasterSignalId | `runbook-demo-session-001` |
+| Item | Situação |
+|------|----------|
+| Runbook criado e validado documentalmente | OK |
+| Execução operacional (sessão demo/staging) | Depende de confirmação visual no admin |
+| MasterSignalId planejado | `runbook-demo-session-001` |
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
-| Conta MT5 | `52609973 @ XPMT5-DEMO` |
-| `tradeMode` | `DEMO` |
-| `DebugMode` | `true` |
-| Dispatch | Manual |
-| Tracking final | `EXECUTED` |
-| Dispatches / instruções / executadas | `1 / 1 / 1` |
-| Real Trading Guard bloqueou DEMO | Não |
-| Ordem real enviada | Não |
-| Rollback usado | Não |
-| Incidentes | Nenhum |
+| Conta MT5 (especificação) | `52609973 @ XPMT5-DEMO` |
+| Conta real usada | Não |
+| Produção real | Bloqueada |
+| Dispatch automático | Desativado |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
 
-**Conclusão:** o runbook é aplicável na operação diária demo/staging. Papéis operacionais permanecem `A DEFINIR` e continuam bloqueando qualquer sessão com conta real.
+**Pendência:** confirmar em `/admin/master-signals/runbook-demo-session-001` que o tracking está **`EXECUTED`** antes de considerar a fase operacionalmente `APPROVED`.
+
+**Conclusão:** o runbook é aplicável como procedimento documentado em demo/staging. Papéis operacionais permanecem `A DEFINIR` e continuam bloqueando qualquer sessão com conta real.
 
 ---
 
-*Mercado da Riqueza AutoTrade — runbook validado para operações demo/staging. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*
+*Mercado da Riqueza AutoTrade — runbook validado documentalmente; evidência operacional no admin pendente. Conta real, produção real, dinheiro real e dispatch automático permanecem bloqueados.*

@@ -2,24 +2,33 @@
 
 **Data:** 2026-05-27  
 **Fase:** 7.11 — Validação do Runbook em Sessão Demo/Staging  
-**Status:** `APPROVED`
+**Status:** `APPROVED_WITH_RESTRICTIONS`
 
 ---
 
 ## 1. Escopo
 
-Validação operacional do [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md) em sessão controlada **demo/staging**, sem conta real, sem produção real, sem dispatch automático e com `DebugMode=true` no EA cliente.
+Validação do [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md) em sessão controlada **demo/staging**, sem conta real, sem produção real, sem dispatch automático e com `DebugMode=true` no EA cliente.
 
 | Item | Valor |
 |------|--------|
 | Ambiente | `https://autotrade-staging.mercadodariqueza.com.br` |
 | Branch de referência | `staging-vps-homologacao` |
-| MasterSignalId | `runbook-demo-session-001` |
-| Conta MT5 | `52609973 @ XPMT5-DEMO` |
-| Tipo / `tradeMode` | `DEMO` |
-| DebugMode EA cliente | `true` |
-| Dispatch | Manual (admin) |
-| Rollback | Não utilizado |
+| MasterSignalId (sessão planejada) | `runbook-demo-session-001` |
+| Conta MT5 (especificação operacional) | `52609973 @ XPMT5-DEMO` |
+| Tipo / `tradeMode` (esperado) | `DEMO` |
+| DebugMode EA cliente (esperado) | `true` |
+| Dispatch (esperado) | Manual (admin) |
+
+**O que foi validado nesta fase:**
+
+- Runbook criado e aplicável **documentalmente** (checklists, rollback, evidências, restrições).
+- Roteiro da sessão demo/staging definido com `MasterSignalId` `runbook-demo-session-001`.
+
+**O que não foi validado autonomamente nesta fase:**
+
+- Confirmação visual no painel admin do fluxo completo até tracking `EXECUTED`.
+- Autenticação admin e verificação via API/`MASTER_EA_API_SECRET` durante a execução do agente (bloqueios de credencial/sessão no ambiente de execução).
 
 ---
 
@@ -27,7 +36,7 @@ Validação operacional do [`docs/PRE-REAL-DAILY-OPERATIONS-RUNBOOK.md`](PRE-REA
 
 `runbook-demo-session-001`
 
-Payload de intake:
+Payload planejado para intake:
 
 | Campo | Valor |
 |-------|--------|
@@ -39,32 +48,17 @@ Payload de intake:
 | `profile` | `conservador` |
 | `expires_in_seconds` | `300` |
 
+**Evidência operacional no admin:** pendente — ver seção 13.
+
 ---
 
 ## 3. Checklist pré-sessão
 
 | Item | Resultado |
 |------|-----------|
-| Git/versão esperada registrada | OK |
-| Ambiente correto (staging) | OK |
-| URL correta | OK |
-| Admin acessível | OK |
-| Real Trading Guard visível | OK |
-| Conta real bloqueada | OK |
-| Dispatch automático desativado | OK |
-| Conta MT5 `52609973 @ XPMT5-DEMO` | OK |
-| Tipo DEMO confirmado | OK |
-| EA cliente anexado | OK |
-| EA apontando para staging | OK |
-| `DebugMode=true` | OK |
-| Heartbeat `ONLINE` | OK |
-| WebRequest staging liberado | OK |
-| AutoTrading conforme política | OK |
-| Sem ordens pendentes desconhecidas | OK |
-| Sem posições abertas desconhecidas | OK |
-| Logs MT5 visíveis | OK |
-| Rollback conhecido | OK |
-| Evidência preparada | OK |
+| Runbook e checklists documentados | OK — validação documental |
+| Git/versão, ambiente, URL, restrições (conta real, dispatch automático) | OK — conforme especificação da fase |
+| Admin, Real Trading Guard, MT5, EA, heartbeat, WebRequest | **Pendente** — confirmação visual/operacional no ambiente |
 
 ---
 
@@ -72,14 +66,8 @@ Payload de intake:
 
 | Item | Resultado |
 |------|-----------|
-| `MasterSignalId` único | OK — `runbook-demo-session-001` |
-| `Symbol` / `Side` / `OrderType` / `Purpose` / `Profile` | OK — `WDOM26` / `BUY` / `MARKET` / `ENTRY` / `conservador` |
-| `expires_in_seconds <= 300` | OK — `300` |
-| `IdempotencyKey` correta | OK |
-| Secret protegido | OK — sem exposição em prints/logs |
-| Nenhum dispatch automático | OK |
-
-**Status intake:** `VALIDATED` / **dispatch:** `NOT_DISPATCHED` (antes do disparo manual).
+| Payload e `MasterSignalId` definidos no runbook | OK — documental |
+| Intake `VALIDATED` / `NOT_DISPATCHED` no painel | **Pendente** — evidência visual no admin |
 
 ---
 
@@ -87,16 +75,8 @@ Payload de intake:
 
 | Item | Resultado |
 |------|-----------|
-| Painel `VALIDATED` / pré-dispatch | OK |
-| Preview de elegibilidade revisado | OK |
-| Perfil / licença / conta corretos | OK |
-| `tradeMode=DEMO` | OK |
-| Real Trading Guard não bloqueou DEMO | OK |
-| Dispatch manual (botão admin) | OK |
-| Confirmação visual | OK |
-| Nenhum segundo dispatch | OK |
-
-**Status DB após dispatch:** `DISPATCHED`.
+| Dispatch manual, elegibilidade DEMO, Real Trading Guard | **Pendente** — evidência visual no admin |
+| Status DB `DISPATCHED` após disparo | **Pendente** — evidência visual no admin |
 
 ---
 
@@ -104,13 +84,7 @@ Payload de intake:
 
 | Item | Resultado |
 |------|-----------|
-| Instruction recebida | OK |
-| Source `MASTER_SIGNAL` | OK |
-| Payload parseado | OK |
-| `DebugMode=true` respeitado | OK |
-| Ordem real não enviada | OK — `DebugMode` bloqueou `OrderSend` |
-| Execution report enviado | OK |
-| Logs sem secrets | OK |
+| Instruction `MASTER_SIGNAL`, `DebugMode=true`, execution report | **Pendente** — evidência visual no admin + logs MT5 |
 
 ---
 
@@ -118,12 +92,10 @@ Payload de intake:
 
 | Item | Resultado |
 |------|-----------|
-| Status consolidado | `EXECUTED` |
-| Dispatches / instruções / executadas | `1 / 1 / 1` |
-| Pendentes / falhas / ignorados | Conforme painel — sem falha operacional |
-| Source `MASTER_SIGNAL` | OK |
-| Motivo legível | OK |
-| Timestamps coerentes | OK |
+| Status consolidado `EXECUTED` | **Pendente** — evidência visual no admin |
+| Contadores `1 / 1 / 1` | **Pendente** — evidência visual no admin |
+
+**Resultado esperado após sessão confirmada:** tracking `EXECUTED`, dispatches/instruções/executadas `1 / 1 / 1`.
 
 ---
 
@@ -131,27 +103,24 @@ Payload de intake:
 
 | Item | Resultado |
 |------|-----------|
-| Tracking final registrado | OK — `EXECUTED` |
-| Evidências salvas | OK |
-| EA em `DebugMode=true` / AutoTrading conforme política | OK |
-| Sem posição/ordem inesperada | OK |
-| Logs coletados sem secrets | OK |
-| Incidentes | Nenhum |
-| Status final registrado | OK |
+| Evidências, logs sem secrets, ausência de ordem real | **Pendente** — após confirmação da sessão no admin |
+| Incidentes | Nenhum registrado na documentação desta fase |
 
 ---
 
 ## 9. Incidentes
 
-Nenhum incidente operacional ou de segurança durante a sessão.
+Nenhum incidente de segurança registrado na elaboração/revisão documental.
+
+**Limitação de execução:** durante a validação pelo agente não foi possível autenticar no admin nem validar intake/dispatch/tracking via API (secret/sessão indisponíveis no ambiente de execução).
 
 ---
 
 ## 10. Rollback
 
-**Rollback usado:** não.
+**Rollback usado:** não aplicável nesta fase documental.
 
-Procedimento de rollback permanece documentado no runbook para sessões futuras.
+Procedimento de rollback permanece no runbook para sessões futuras.
 
 ---
 
@@ -159,31 +128,46 @@ Procedimento de rollback permanece documentado no runbook para sessões futuras.
 
 | # | Ajuste | Prioridade |
 |---|--------|------------|
-| 1 | Preencher papéis operacionais (`A DEFINIR`) antes de qualquer gate de conta real | Alta |
-| 2 | Anexar template de evidência preenchido (seção 12) a cada sessão demo/staging | Média |
-| 3 | Referenciar explicitamente o simulador CLI (`npm run master:signal`) como alternativa ao EA Mãe MQL5 no checklist de sinal | Baixa |
-| 4 | Manter link para Real Trading Guard no pré-check de toda sessão | Baixa |
-
-Nenhum ajuste bloqueia o uso do runbook em **demo/staging** com as restrições atuais.
+| 1 | Exigir print ou confirmação explícita do painel `/admin/master-signals/<id>` antes de marcar fase como `APPROVED` | Alta |
+| 2 | Preencher papéis operacionais (`A DEFINIR`) antes de qualquer gate de conta real | Alta |
+| 3 | Anexar template de evidência (seção 12) preenchido em cada sessão | Média |
+| 4 | Referenciar simulador CLI (`npm run master:signal`) no checklist de sinal | Baixa |
 
 ---
 
 ## 12. Decisão final
 
-**Status:** `APPROVED`
+**Status:** `APPROVED_WITH_RESTRICTIONS`
 
-O runbook operacional diário foi aplicado com sucesso em sessão demo/staging controlada. O fluxo intake → dispatch manual → instruction `MASTER_SIGNAL` → execution report → tracking `EXECUTED` permaneceu íntegro com `DebugMode=true` e `tradeMode=DEMO`.
+O runbook operacional diário foi **criado e validado documentalmente** (estrutura, checklists, rollback, restrições e roteiro de sessão demo/staging). A **execução operacional completa** depende de confirmação visual no painel admin.
 
-Esta decisão:
+Esta decisão confirma:
 
-- **Não** libera conta real.
-- **Não** libera produção real.
-- **Não** libera dinheiro real.
-- **Não** ativa dispatch automático.
-- **Não** altera código, EA, schema, envs ou deploy.
+- Runbook aplicável como procedimento em demo/staging.
+- Nenhum uso de conta real nesta fase.
+- Produção real continua bloqueada.
+- Dispatch automático continua desativado.
+- Nenhum código, EA, schema, env ou deploy foi alterado.
 
-**Próxima etapa sugerida:** promover o runbook para `READY_FOR_DEMO_OPERATIONS` recorrente e preencher responsáveis operacionais antes de qualquer discussão de conta real.
+Esta decisão **não** confirma, até evidência visual:
+
+- Tracking `EXECUTED` para `runbook-demo-session-001`.
+- Fluxo intake → dispatch → EA → execution report verificado no admin.
+
+**Próxima etapa:** concluir pendência da seção 13 e, se confirmado `EXECUTED`, atualizar status operacional para `APPROVED`.
 
 ---
 
-*Mercado da Riqueza AutoTrade — validação do runbook operacional pré-real em demo/staging.*
+## 13. Pendência operacional
+
+Confirmar no painel:
+
+**`/admin/master-signals/runbook-demo-session-001`**
+
+que o tracking consolidado está **`EXECUTED`** (e contadores coerentes, ex.: `1 / 1 / 1`) antes de considerar a Fase 7.11 **operacionalmente** `APPROVED`.
+
+Até essa confirmação, o status permanece `APPROVED_WITH_RESTRICTIONS` (equivalente operacional: `PENDING_OPERATIONAL_EVIDENCE`).
+
+---
+
+*Mercado da Riqueza AutoTrade — validação documental do runbook pré-real; evidência visual no admin pendente.*
