@@ -1681,6 +1681,32 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ---
 
+## Fase 8 — Ambiente operacional e hardening VPS/MT5
+
+### Fase 8.1 — Validação Operacional do Hardening VPS/MT5
+
+**Status:** `PENDING_OPERATIONAL_VALIDATION`  
+**Documento:** [`docs/VPS-MT5-HARDENING-VALIDATION.md`](VPS-MT5-HARDENING-VALIDATION.md)  
+**Objetivo:** validar o ambiente operacional Windows/VPS/MetaTrader 5 onde o EA cliente e o EA Mãe rodam, com foco em tokens locais, WebRequest, AutoTrading, logs, acesso remoto e rollback.
+
+| Item | Resultado |
+|------|-----------|
+| Escopo | VPS/Windows, MT5, `MQL5/Files`, WebRequest, AutoTrading, logs, operadores, rollback |
+| Checklists | VPS/Windows, MT5, tokens locais, WebRequest, AutoTrading, logs — todos `PENDENTE` |
+| Operadores | `A DEFINIR` — bloqueia conta real |
+| Referência técnica | [`PRE-REAL-AUDIT-ENVIRONMENT-MT5-HARDENING.md`](PRE-REAL-AUDIT-ENVIRONMENT-MT5-HARDENING.md) (requisitos — Fase 7.9) |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 8.1:** formulário de validação operacional criado. A conferência manual na VPS/MT5 e o preenchimento de evidências permanecem pendentes.
+
+**Próxima etapa:** executar checklist manualmente na VPS/MT5, preencher evidências, definir operadores e registrar status final (`APPROVED` ou `APPROVED_WITH_RESTRICTIONS`).
+
+---
+
 ## 13. Riscos e cuidados
 
 | Risco | Mitigação |
