@@ -1820,16 +1820,17 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ### Fase 8.7 — Registro das Evidências Visuais Redigidas VPS/MT5
 
-**Status:** `PENDING_EVIDENCE`  
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
 **Documento:** [`docs/VPS-MT5-VISUAL-EVIDENCE-REGISTER.md`](VPS-MT5-VISUAL-EVIDENCE-REGISTER.md)  
 **Objetivo:** registrar evidências visuais do ambiente VPS/MT5 sem commitar prints, imagens, logs brutos ou dados sensíveis.
 
 | Item | Resultado |
 |------|-----------|
-| Registro estruturado | OK — VPS, MT5, WebRequest, Files, logs, AutoTrading |
-| Prints/binários no Git | Nenhum |
-| Cofre sugerido | `evidencias/vps-mt5-staging/` (fora do Git) |
-| Evidências conferidas | Todas `PENDENTE` até coleta manual |
+| Motivo do encerramento | Evidências visuais **dispensadas por sigilo**; validação por **declaração operacional** (HALLYTON) |
+| Prints/binários no Git | Nenhum — não coletados nesta etapa |
+| Logs brutos no Git | Nenhum |
+| Tokens/secrets/senhas expostos | Não |
+| Restrição conta real futura | Ausência de prints exige novo gate ou revisão presencial/controlada |
 | Suplente operacional | A DEFINIR |
 | Código / EA / schema / env / deploy | Nenhuma alteração |
 | Conta real | **Bloqueada** |
@@ -1837,9 +1838,9 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 | Dinheiro real | **Bloqueado** |
 | Dispatch automático | **Desativado** |
 
-**Resultado da Fase 8.7:** formulário de registro visual criado com status `PENDING_EVIDENCE`. Nenhum artefato sensível no repositório.
+**Resultado da Fase 8.7:** fase encerrada com `APPROVED_WITH_RESTRICTIONS`. Prints da VPS/MT5, WebRequest, `MQL5/Files`, logs e parâmetros do EA não foram coletados nem commitados por risco de informações sigilosas.
 
-**Próxima etapa:** coletar prints redigidos no cofre, atualizar status item a item e promover registro quando evidências críticas estiverem conferidas.
+**Próxima etapa:** para conta real futura, definir gate com evidência adequada; manter staging/demo conforme runbook e política 8.3.
 
 ---
 

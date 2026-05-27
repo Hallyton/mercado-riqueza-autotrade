@@ -2,7 +2,8 @@
 
 **Data:** 2026-05-27  
 **Fase:** 8.7 — Registro das Evidências Visuais Redigidas VPS/MT5  
-**Status:** `PENDING_EVIDENCE`
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Responsável pela declaração operacional:** HALLYTON
 
 Documentos relacionados: [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-PACK.md`](VPS-MT5-OPERATIONAL-EVIDENCE-PACK.md), [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md`](VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md), [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md).
 
@@ -52,12 +53,12 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 | Evidência | Status | Arquivo no cofre (referência) |
 |-----------|--------|----------------------------|
-| Ambiente/VPS identificado | PENDENTE | |
-| Windows Update conferido | PENDENTE | |
-| Defender/antivírus ativo | PENDENTE | |
-| Firewall ativo | PENDENTE | |
-| Política RDP/acesso remoto conferida | PENDENTE | |
-| Lista de acesso/operador conferida | PENDENTE | |
+| Ambiente/VPS identificado | DISPENSADO — sigilo | Sem anexo |
+| Windows Update conferido | DISPENSADO — sigilo | Sem anexo |
+| Defender/antivírus ativo | DISPENSADO — sigilo | Sem anexo |
+| Firewall ativo | DISPENSADO — sigilo | Sem anexo |
+| Política RDP/acesso remoto conferida | DISPENSADO — sigilo | Sem anexo |
+| Lista de acesso/operador conferida | DISPENSADO — sigilo | Sem anexo |
 
 ---
 
@@ -65,13 +66,13 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 | Evidência | Status | Arquivo no cofre (referência) |
 |-----------|--------|----------------------------|
-| Conta `52609973 @ XPMT5-DEMO` confirmada | PENDENTE | |
-| Tipo DEMO confirmado | PENDENTE | |
-| Servidor `XPMT5-DEMO` confirmado | PENDENTE | |
-| EA cliente anexado | PENDENTE | |
-| Parâmetros do EA conferidos com secrets ocultos | PENDENTE | |
-| AutoTrading visualmente conferido | PENDENTE | |
-| Aba de ordens/posições sem pendências desconhecidas | PENDENTE | |
+| Conta `52609973 @ XPMT5-DEMO` confirmada | DISPENSADO — sigilo | Sem anexo |
+| Tipo DEMO confirmado | DISPENSADO — sigilo | Sem anexo |
+| Servidor `XPMT5-DEMO` confirmado | DISPENSADO — sigilo | Sem anexo |
+| EA cliente anexado | DISPENSADO — sigilo | Sem anexo |
+| Parâmetros do EA conferidos com secrets ocultos | DISPENSADO — sigilo | Sem anexo |
+| AutoTrading visualmente conferido | DISPENSADO — sigilo | Sem anexo |
+| Aba de ordens/posições sem pendências desconhecidas | DISPENSADO — sigilo | Sem anexo |
 
 ---
 
@@ -79,10 +80,10 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 | Evidência | Status | Arquivo no cofre (referência) |
 |-----------|--------|----------------------------|
-| Lista de URLs permitidas no MT5 conferida | PENDENTE | |
-| Domínio staging presente: `https://autotrade-staging.mercadodariqueza.com.br` | PENDENTE | |
-| Ausência de domínios desnecessários | PENDENTE | |
-| Ambiente correto (sem produção/`www`) | PENDENTE | |
+| Lista de URLs permitidas no MT5 conferida | DISPENSADO — sigilo | Sem anexo |
+| Domínio staging presente: `https://autotrade-staging.mercadodariqueza.com.br` | DISPENSADO — sigilo | Sem anexo |
+| Ausência de domínios desnecessários | DISPENSADO — sigilo | Sem anexo |
+| Ambiente correto (sem produção/`www`) | DISPENSADO — sigilo | Sem anexo |
 
 ---
 
@@ -90,10 +91,10 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 | Evidência | Status | Arquivo no cofre (referência) |
 |-----------|--------|----------------------------|
-| Pasta `MQL5/Files` localizada | PENDENTE | |
-| `device_token` não exibido nos prints | PENDENTE | |
-| Arquivos locais fora do Git | PENDENTE | |
-| Procedimento de revogação conhecido | PENDENTE | |
+| Pasta `MQL5/Files` localizada | DISPENSADO — sigilo | Sem anexo |
+| `device_token` não exibido nos prints | DISPENSADO — sigilo | Sem anexo |
+| Arquivos locais fora do Git | APROVADO — documental | Repositório sem arquivos locais |
+| Procedimento de revogação conhecido | APROVADO — documental | Homologação + runbook |
 
 ---
 
@@ -101,11 +102,11 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 | Evidência | Status | Arquivo no cofre (referência) |
 |-----------|--------|----------------------------|
-| Amostra de log MT5 redigida | PENDENTE | |
-| Log sem activation code | PENDENTE | |
-| Log sem `device_token` | PENDENTE | |
-| Log sem `InpMasterSecret` | PENDENTE | |
-| Log sem `Authorization` / `Bearer` | PENDENTE | |
+| Amostra de log MT5 redigida | DISPENSADO — sigilo | Sem anexo |
+| Log sem activation code | DISPENSADO — sigilo | Auditoria 7.8 + declaração |
+| Log sem `device_token` | DISPENSADO — sigilo | Auditoria 7.8 + declaração |
+| Log sem `InpMasterSecret` | DISPENSADO — sigilo | Auditoria 7.8 + declaração |
+| Log sem `Authorization` / `Bearer` | DISPENSADO — sigilo | Auditoria 7.8 + declaração |
 
 ---
 
@@ -113,10 +114,10 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 | Evidência | Status | Arquivo no cofre (referência) |
 |-----------|--------|----------------------------|
-| AutoTrading desligado fora de sessão | PENDENTE | |
-| AutoTrading ligado somente em sessão autorizada | PENDENTE | |
-| Operador sabe desligar AutoTrading (HALLYTON) | PENDENTE | |
-| Operador sabe remover EA (HALLYTON) | PENDENTE | |
+| AutoTrading desligado fora de sessão | DISPENSADO — sigilo | Sem anexo |
+| AutoTrading ligado somente em sessão autorizada | DISPENSADO — sigilo | Sem anexo |
+| Operador sabe desligar AutoTrading (HALLYTON) | APROVADO — declaração | Política 8.3 |
+| Operador sabe remover EA (HALLYTON) | APROVADO — declaração | Política 8.3 |
 
 **Referência:** [`docs/VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md`](VPS-MT5-OPERATORS-AUTOTRADING-POLICY.md) seções 6 e 7.
 
@@ -132,34 +133,50 @@ Nenhum arquivo binário, imagem ou log bruto deve ser adicionado a este reposit�
 
 ---
 
-## 10. Decisão da Fase 8.7
+## 10. Dispensa de evidências visuais por sigilo
 
-**Status:** `PENDING_EVIDENCE`
+**Responsável pela declaração operacional:** HALLYTON  
+**Data da declaração:** 2026-05-27
 
-**Motivo:** o registro de evidências visuais foi estruturado, mas **prints redigidos e conferências visuais** ainda não foram anexados ao cofre interno nem marcados como `APROVADO` item a item.
+A coleta de prints e evidências visuais da VPS/MT5 (Windows, MetaTrader, WebRequest, `MQL5/Files`, logs, parâmetros do EA e AutoTrading) foi **dispensada nesta etapa** por risco de exposição de informações sigilosas, incluindo — sem limitação — tokens, paths locais, dados de conta, `device_token`, activation code, secrets, IPs ou outras informações sensíveis, mesmo com redação parcial.
 
-Status possíveis:
+**Decisões registradas:**
 
-| Status | Quando usar |
-|--------|-------------|
-| `PENDING_EVIDENCE` | Nenhuma ou poucas evidências visuais coletadas (**atual**) |
-| `APPROVED_WITH_RESTRICTIONS` | Evidências parciais; pendências não críticas |
-| `APPROVED` | Todas as evidências críticas conferidas e referenciadas no cofre |
-| `REJECTED` | Secret exposto, conta real, ou falha crítica de hardening |
+- Evidências visuais **dispensadas** por política de sigilo.
+- **Nenhum** print será commitado neste repositório.
+- **Nenhum** log bruto será commitado.
+- **Nenhum** token, secret ou senha será exposto na documentação.
+- Validação operacional **assumida por declaração** do responsável HALLYTON para staging/demo documental existente.
+- **Ausência de prints** mantém restrição operacional para qualquer **conta real** futura.
+- Para conta real futura: será necessário **novo gate** com evidência adequada ou **revisão presencial/controlada**.
 
-Conta real, produção real e dispatch automático **permanecem bloqueados**.
-
----
-
-## 11. Próxima ação recomendada
-
-1. Coletar **prints redigidos** na VPS/MT5 conforme seções 3–8.
-2. Salvar apenas no cofre `evidencias/vps-mt5-staging/` (fora do Git).
-3. Atualizar coluna **Status** e **Arquivo no cofre** deste documento item a item.
-4. Atualizar [`docs/VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md`](VPS-MT5-OPERATIONAL-EVIDENCE-RESULTS.md) e [`docs/VPS-MT5-HARDENING-CHECKLIST-RESULTS.md`](VPS-MT5-HARDENING-CHECKLIST-RESULTS.md).
-5. Definir **suplente operacional** na política 8.3/8.6.
-6. Promover status desta fase para `APPROVED_WITH_RESTRICTIONS` ou `APPROVED` somente após conferência visual completa.
+Esta dispensa **não** libera conta real, produção real, dinheiro real nem dispatch automático.
 
 ---
 
-*Mercado da Riqueza AutoTrade — registro de evidências visuais VPS/MT5. Nenhum print, binário ou log bruto no Git. Conta real, produção real e dispatch automático permanecem bloqueados.*
+## 11. Decisão da Fase 8.7
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+**Motivo:** fase encerrada por **declaração operacional** do responsável HALLYTON, com evidências visuais dispensadas por sigilo. Nenhum artefato visual foi anexado ou commitado.
+
+| Confirmação | Valor |
+|-------------|--------|
+| Prints commitados | Não |
+| Logs brutos commitados | Não |
+| Conta real | Bloqueada |
+| Produção real | Bloqueada |
+| Dispatch automático | Desativado |
+
+---
+
+## 12. Próxima ação recomendada
+
+1. Manter **zero** prints/logs brutos no Git.
+2. Para qualquer gate de **conta real**: exigir evidência visual adequada ou revisão presencial/controlada.
+3. Definir **suplente operacional** (restrição remanescente).
+4. Continuar operação staging/demo conforme runbook e política 8.3.
+
+---
+
+*Mercado da Riqueza AutoTrade — Fase 8.7 encerrada com restrições. Evidências visuais dispensadas por sigilo. Conta real, produção real e dispatch automático permanecem bloqueados.*

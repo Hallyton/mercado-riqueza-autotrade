@@ -270,18 +270,19 @@ Mesmo com este status:
 
 **Data:** 2026-05-27  
 **Documento:** [`docs/VPS-MT5-VISUAL-EVIDENCE-REGISTER.md`](VPS-MT5-VISUAL-EVIDENCE-REGISTER.md)  
-**Status:** `PENDING_EVIDENCE`
+**Status:** `APPROVED_WITH_RESTRICTIONS` (encerramento por declaração operacional — HALLYTON)
 
 | Item | Situação |
 |------|----------|
 | Registro visual estruturado | OK |
-| Prints commitados no Git | Não |
-| Evidências visuais conferidas | Pendentes |
-| Operadores (Fase 8.6) | HALLYTON — definidos |
+| Prints commitados no Git | Não — **dispensados por sigilo** |
+| Evidências visuais anexadas | Não — itens visuais sem anexo por política de sigilo |
+| Validação | Declaração operacional do responsável |
+| Operadores (Fase 8.6) | HALLYTON |
 | Suplente | A DEFINIR |
 | Conta real | **Bloqueada** |
 
-**Conclusão:** checklist 8.2 mantém `APPROVED_WITH_RESTRICTIONS` até evidências visuais serem coletadas no cofre interno e refletidas neste registro.
+**Conclusão:** Fase 8.7 encerrada com restrições. Itens visuais do hardening permanecem sem print anexado; para conta real futura será necessário novo gate com evidência adequada ou revisão presencial/controlada.
 
 ---
 

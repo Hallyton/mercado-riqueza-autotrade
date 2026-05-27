@@ -214,20 +214,32 @@ Mesmo com este status:
 
 **Data:** 2026-05-27  
 **Documento:** [`docs/VPS-MT5-VISUAL-EVIDENCE-REGISTER.md`](VPS-MT5-VISUAL-EVIDENCE-REGISTER.md)  
-**Status:** `PENDING_EVIDENCE`
+**Status inicial:** `PENDING_EVIDENCE` → **encerramento:** `APPROVED_WITH_RESTRICTIONS`
 
 | Item | Situação |
 |------|----------|
-| Documento criado | OK — índice de evidências visuais redigidas |
-| Prints/binários no Git | **Nenhum** commitado |
-| Logs brutos no Git | **Nenhum** commitado |
-| Evidências visuais conferidas | **Pendentes** — todos os itens em `PENDENTE` no registro 8.7 |
-| Cofre sugerido | `evidencias/vps-mt5-staging/` (fora do Git) |
+| Documento criado | OK |
+| Prints/binários no Git | **Nenhum** — não serão coletados nesta etapa |
+| Logs brutos no Git | **Nenhum** |
+
+---
+
+## 14. Fase 8.7 — Encerramento por declaração operacional
+
+**Responsável:** HALLYTON  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+| Item | Situação |
+|------|----------|
+| Prints coletados | **Não** — dispensados por risco de sigilo |
+| Validação | Por **declaração operacional** do responsável |
+| Tokens/secrets/senhas expostos | Não |
 | Conta real | **Bloqueada** |
 | Produção real | **Bloqueada** |
 | Dispatch automático | **Desativado** |
+| Restrição para conta real futura | Ausência de prints exige novo gate ou revisão presencial |
 
-**Conclusão:** a Fase 8.7 estrutura o registro de evidências visuais sem expor dados sensíveis no repositório. O status operacional de hardening permanece `APPROVED_WITH_RESTRICTIONS` até prints serem coletados e marcados no cofre.
+**Conclusão:** a Fase 8.7 foi encerrada sem anexar evidências visuais, por política de sigilo. O hardening operacional em staging/demo permanece suportado por documentação e homologação prévia; conta real continua bloqueada.
 
 ---
 
