@@ -1476,6 +1476,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir a auditoria por blocos, com foco em observabilidade/logs, rollback e cenários integrados de retry/offline/online.
 
+### Fase 7.5 — Auditoria de Tracking, Logs, Observabilidade e Redaction
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-AUDIT-TRACKING-OBSERVABILITY-RESULTS.md`](PRE-REAL-AUDIT-TRACKING-OBSERVABILITY-RESULTS.md)  
+**Objetivo:** validar tracking admin, status consolidado, contadores, skipped reasons, hints, `rawPayloadRedacted`, responses seguras, metadata de `AdminAction` / `AuditLog` e ausência de secrets em payloads/respostas testadas.
+
+| Item | Resultado |
+|------|-----------|
+| Áreas avaliadas | Tracking MasterSignal, redaction de payload, problem details, APIs EA, `AdminAction` / `AuditLog` |
+| Testes ajustados | `tests/master-signals/route.test.ts`, `tests/master-signals/admin.test.ts`, `tests/admin/record-action.test.ts`, `tests/ea/api-protections.test.ts` |
+| Teste focado | 57/57 passing |
+| Achados críticos | Nenhum |
+| Correções aplicadas | Redaction ampliada, mensagens de auth sem nome de env sensível e metadata admin redigida |
+| Secrets em responses testadas | NÃO |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.5:** auditoria aprovada para tracking, logs, observabilidade e redaction no contexto staging/demo. As respostas testadas não expõem secrets, o tracking mantém contadores/status consistentes e a trilha admin/audit redige metadata sensível.
+
+**Próxima etapa:** seguir a auditoria por blocos, com foco em rollback, incident response e cenários integrados de retry/offline/online.
+
 ---
 
 ## 13. Riscos e cuidados

@@ -103,6 +103,8 @@ const SENSITIVE_VALUES = [
   "master-secret-test",
   "postgres://secret-url",
   "raw-device-token",
+  "raw-activation-code",
+  "Bearer raw-bearer-token",
 ];
 
 async function responseText(response: Response): Promise<string> {

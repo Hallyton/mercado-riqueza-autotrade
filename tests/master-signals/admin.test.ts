@@ -546,18 +546,32 @@ describe("sanitizeRawPayloadForAdmin / redact", () => {
     const redacted = redactMasterSignalPayload({
       symbol: "PETR4",
       api_secret: "hidden",
+      Authorization: "Bearer hidden",
+      password: "hidden-password",
+      DATABASE_URL: "postgres://hidden",
+      activation_code: "hidden-code",
       strategy_hint: "x",
+      nested: {
+        device_token: "hidden-token",
+        comment: "Bearer hidden-value",
+      },
     });
     expect(redacted).not.toHaveProperty("api_secret");
+    expect(redacted).not.toHaveProperty("Authorization");
+    expect(redacted).not.toHaveProperty("password");
+    expect(redacted).not.toHaveProperty("DATABASE_URL");
+    expect(redacted).not.toHaveProperty("activation_code");
     expect(redacted).not.toHaveProperty("strategy_hint");
+    expect(JSON.stringify(redacted)).not.toContain("hidden");
     expect(redacted.symbol).toBe("PETR4");
   });
 
-  it("sanitizeRawPayloadForAdmin omite payload se fragmento sensível persistir", () => {
+  it("sanitizeRawPayloadForAdmin remove authorization sem omitir payload seguro", () => {
     const out = sanitizeRawPayloadForAdmin({
       authorization: "Bearer xyz",
+      symbol: "PETR4",
     } as never);
-    expect(out).toEqual({ redacted: true, note: "Payload omitido por segurança" });
+    expect(out).toEqual({ symbol: "PETR4" });
   });
 });
 

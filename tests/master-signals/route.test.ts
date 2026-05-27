@@ -118,8 +118,11 @@ describe("POST /api/master/signals", () => {
     delete process.env.MASTER_EA_API_SECRET;
     const res = await POST(makeRequest(validPayload()));
     expect(res.status).toBe(503);
-    const body = await res.json();
+    const text = await res.text();
+    const body = JSON.parse(text);
     expect(body.code).toBe("MASTER_SECRET_NOT_CONFIGURED");
+    expect(text).not.toContain("MASTER_EA_API_SECRET");
+    expect(text).not.toContain(SECRET);
   });
 
   it("2) retorna 401 se Authorization ausente", async () => {
@@ -131,8 +134,11 @@ describe("POST /api/master/signals", () => {
       })
     );
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const text = await res.text();
+    const body = JSON.parse(text);
     expect(body.code).toBe("MASTER_AUTH_REQUIRED");
+    expect(text).not.toContain(SECRET);
+    expect(text).not.toContain("MASTER_EA_API_SECRET");
     expect(masterCreate).not.toHaveBeenCalled();
     expect(dispatchCreate).not.toHaveBeenCalled();
     expect(instructionCreate).not.toHaveBeenCalled();
@@ -242,18 +248,40 @@ describe("POST /api/master/signals", () => {
     expect(res.status).toBe(409);
   });
 
-  it("13) rawPayloadRedacted não contém token/secret/strategy", async () => {
+  it("13) rawPayloadRedacted não contém token/secret/strategy/auth/password/env-like", async () => {
     await POST(
       makeRequest({
         ...validPayload(),
         api_token: "leak",
-        nested: { strategy_name: "hidden" },
+        Authorization: "Bearer raw-bearer-token",
+        password: "raw-password",
+        MASTER_EA_API_SECRET: "raw-master-secret",
+        AUTH_SECRET: "raw-auth-secret",
+        DATABASE_URL: "postgres://raw-db-secret",
+        activation_code: "raw-activation-code",
+        nested: {
+          strategy_name: "hidden",
+          comment: "Authorization: Bearer nested-raw-token",
+        },
         note: "ok",
       })
     );
     const createArg = masterCreate.mock.calls[0][0];
     const redacted = JSON.stringify(createArg.data.rawPayloadRedacted);
     expect(redacted).not.toContain("leak");
+    expect(redacted).not.toContain("raw-bearer-token");
+    expect(redacted).not.toContain("raw-password");
+    expect(redacted).not.toContain("raw-master-secret");
+    expect(redacted).not.toContain("raw-auth-secret");
+    expect(redacted).not.toContain("postgres://raw-db-secret");
+    expect(redacted).not.toContain("raw-activation-code");
+    expect(redacted).not.toContain("nested-raw-token");
+    expect(redacted).not.toContain("Authorization");
+    expect(redacted).not.toContain("password");
+    expect(redacted).not.toContain("MASTER_EA_API_SECRET");
+    expect(redacted).not.toContain("AUTH_SECRET");
+    expect(redacted).not.toContain("DATABASE_URL");
+    expect(redacted).not.toContain("activation_code");
     expect(redacted).not.toContain("strategy_name");
     expect(redacted).not.toContain("api_token");
     expect(redacted).toContain("note");

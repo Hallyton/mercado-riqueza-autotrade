@@ -1,11 +1,33 @@
 import { masterSignalInputSchema, type MasterSignalInput } from "@/lib/master-signals/schemas";
 import type { MasterSignalNormalizedPayload } from "@/lib/master-signals/types";
 
-const SENSITIVE_KEY_FRAGMENTS = ["secret", "token", "strategy", "internal_filter", "indicator"];
+const SENSITIVE_KEY_FRAGMENTS = [
+  "secret",
+  "token",
+  "password",
+  "authorization",
+  "bearer",
+  "database_url",
+  "activation_code",
+  "strategy",
+  "internal_filter",
+  "indicator",
+];
 
 function isSensitiveKey(key: string): boolean {
   const lowered = key.toLowerCase();
   return SENSITIVE_KEY_FRAGMENTS.some((fragment) => lowered.includes(fragment));
+}
+
+function isSensitiveString(value: string): boolean {
+  const lowered = value.toLowerCase();
+  return (
+    lowered.includes("bearer ") ||
+    lowered.includes("master_ea_api_secret") ||
+    lowered.includes("auth_secret") ||
+    lowered.includes("database_url") ||
+    lowered.includes("postgres://")
+  );
 }
 
 function redactValue(value: unknown): unknown {
@@ -22,6 +44,10 @@ function redactValue(value: unknown): unknown {
       output[key] = redactValue(nested);
     }
     return output;
+  }
+
+  if (typeof value === "string" && isSensitiveString(value)) {
+    return "[REDACTED]";
   }
 
   return value;

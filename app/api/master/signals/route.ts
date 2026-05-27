@@ -13,9 +13,9 @@ const AUTH_TITLES: Record<string, string> = {
 
 const AUTH_DETAILS: Record<string, string> = {
   MASTER_SECRET_NOT_CONFIGURED:
-    "MASTER_EA_API_SECRET não está configurado neste ambiente.",
+    "Credencial do EA Mãe não está configurada neste ambiente.",
   MASTER_AUTH_REQUIRED:
-    "Envie Authorization: Bearer <secret> ou X-Master-EA-Secret.",
+    "Envie uma credencial autorizada do EA Mãe.",
   MASTER_AUTH_INVALID: "Credencial do EA Mãe inválida.",
 };
 
