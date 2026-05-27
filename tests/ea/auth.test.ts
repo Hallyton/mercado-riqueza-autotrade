@@ -47,6 +47,18 @@ describe("LicenseToken", () => {
     expect(extractBearerToken(req)).toBe("secret-token");
   });
 
+  it("rejeita token ausente", async () => {
+    const req = new Request("http://x", {
+      headers: { "X-Device-Id": "dev-1" },
+    });
+
+    await expect(authenticateEaRequest(req)).rejects.toMatchObject({
+      code: "MISSING_TOKEN",
+      status: 401,
+    });
+    expect(prisma.device.findFirst).not.toHaveBeenCalled();
+  });
+
   it("rejeita token inválido", async () => {
     vi.mocked(prisma.device.findFirst).mockResolvedValue(null);
     const req = new Request("http://x", {
@@ -59,6 +71,14 @@ describe("LicenseToken", () => {
       code: "INVALID_TOKEN",
       status: 401,
     });
+    expect(prisma.device.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tokenHash: "hash-bad",
+          revokedAt: null,
+        }),
+      })
+    );
   });
 
   it("aceita licença ativa com token válido", async () => {
@@ -82,6 +102,29 @@ describe("LicenseToken", () => {
     const ctx = await authenticateEaRequest(req);
     expect(ctx.license.id).toBe("lic1");
     expect(ctx.requestId).toBe("req-1");
+  });
+
+  it("rejeita device_id divergente do token", async () => {
+    vi.mocked(prisma.device.findFirst).mockResolvedValue({
+      id: "d1",
+      deviceId: "dev-original",
+      licenseId: "lic1",
+      tokenHash: "hash-good",
+      revokedAt: null,
+      license: baseLicense,
+    } as never);
+
+    const req = new Request("http://x", {
+      headers: {
+        Authorization: "Bearer good",
+        "X-Device-Id": "dev-other",
+      },
+    });
+
+    await expect(authenticateEaRequest(req)).rejects.toMatchObject({
+      code: "DEVICE_MISMATCH",
+      status: 403,
+    });
   });
 });
 

@@ -1425,6 +1425,31 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** seguir a auditoria técnica por blocos, com foco em APIs EA e contratos de device/licença/token.
 
+### Fase 7.3 — Auditoria das APIs do EA
+
+**Status:** `APPROVED`  
+**Documento:** [`docs/PRE-REAL-AUDIT-EA-APIS-RESULTS.md`](PRE-REAL-AUDIT-EA-APIS-RESULTS.md)  
+**Objetivo:** validar autenticação/identificação do EA, licença/device/token, heartbeat, config, pull de instructions, execution report, payload inválido, idempotência e integração com Real Trading Guard.
+
+| Item | Resultado |
+|------|-----------|
+| APIs avaliadas | `POST /api/v1/ea/activate`, `GET /api/v1/ea/config`, `POST /api/v1/ea/heartbeat`, `GET /api/v1/ea/instructions`, `POST /api/v1/ea/executions`, `POST /api/v1/ea/instructions/ignore`, `POST /api/v1/ea/errors` |
+| Testes adicionados/ajustados | `tests/ea/api-protections.test.ts`, `tests/ea/auth.test.ts` |
+| Teste focado | 25/25 passing |
+| Achados críticos | Nenhum |
+| Correção funcional | Nenhuma |
+| Real Trading Guard em pull REAL | `instructions: []` + `real_trading_blocked=true` |
+| Device revogado | Bloqueado por busca com `revokedAt: null` |
+| Secrets em respostas testadas | NÃO |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.3:** auditoria aprovada para as APIs do EA no contexto staging/demo. Não foram encontrados achados críticos, e a integração com Real Trading Guard permaneceu bloqueando `REAL` por padrão sem quebrar `DEMO`.
+
+**Próxima etapa:** seguir para auditoria de MasterSignal/dispatch e idempotência ponta a ponta.
+
 ---
 
 ## 13. Riscos e cuidados
