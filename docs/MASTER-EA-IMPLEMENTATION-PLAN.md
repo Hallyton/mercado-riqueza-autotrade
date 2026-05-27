@@ -1655,6 +1655,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** preencher responsáveis operacionais no runbook e repetir o checklist em novas sessões demo/staging antes de qualquer gate de conta real.
 
+### Fase 7.12 — Relatório Final da Auditoria Técnica Pré-Conta Real
+
+**Status:** `PRE_REAL_TECHNICAL_AUDIT_APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/PRE-REAL-TECHNICAL-AUDIT-FINAL-REPORT.md`](PRE-REAL-TECHNICAL-AUDIT-FINAL-REPORT.md)  
+**Objetivo:** consolidar a auditoria técnica das Fases 7.1 a 7.11, Real Trading Guard (Fase 6) e evidência operacional do runbook.
+
+| Item | Resultado |
+|------|-----------|
+| Escopo consolidado | Auth/admin, APIs EA, MasterSignal, tracking, rollback, banco, EAs, ambiente MT5/VPS, runbook |
+| Status final | `PRE_REAL_TECHNICAL_AUDIT_APPROVED_WITH_RESTRICTIONS` |
+| Decisão atual | `REAL_ACCOUNT_NOT_APPROVED` |
+| Fases 7.2–7.7 | `APPROVED` |
+| Fases 7.8–7.9 | `APPROVED_WITH_RESTRICTIONS` |
+| Fase 7.11 | `APPROVED` — `runbook-demo-session-001`, tracking `EXECUTED` |
+| Código / EA / schema / env / deploy | Nenhuma alteração nesta fase |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Resultado da Fase 7.12:** auditoria técnica pré-conta real encerrada documentalmente. A plataforma permanece validada para staging/demo; restrições jurídicas, operacionais e de governança impedem conta real até novo gate explícito.
+
+**Próxima etapa:** criar tag do marco técnico e decidir entre revisão jurídica/operacional, hardening definitivo da VPS/MT5 ou definição de um gate futuro — sem liberar conta real, produção real ou dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
