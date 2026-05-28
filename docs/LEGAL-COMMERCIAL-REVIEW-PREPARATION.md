@@ -245,4 +245,22 @@ Incluir em materiais institucionais, comerciais e beta (ajustar redação final 
 
 ---
 
+## 15. Fase 10.3 — Beta DEMO Terms & Disclaimer Draft
+
+**Documento:** [`docs/BETA-DEMO-TERMS-DISCLAIMER-DRAFT.md`](BETA-DEMO-TERMS-DISCLAIMER-DRAFT.md)
+
+| Item | Situação |
+|------|----------|
+| Minuta criada | OK — termos, ciência de risco, disclaimers, aceite (campos a preencher) |
+| Status | `DRAFT_FOR_LEGAL_REVIEW` |
+| Contrato final | **Não** — depende de revisão jurídica |
+| Conta real | **Não liberada** |
+| Produção real | **Não liberada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+
+**Conclusão:** minuta beta DEMO disponível para envio ao jurídico. Uso em onboarding beta **somente** após aprovação formal da redação final.
+
+---
+
 *Mercado da Riqueza AutoTrade — preparação para revisão jurídica/comercial (Fase 10.2). Minuta de trabalho; não é contrato final. Conta real, produção real e dispatch automático permanecem bloqueados.*

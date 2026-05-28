@@ -2052,6 +2052,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa sugerida:** Fase 10.3 — Beta DEMO Terms & Disclaimer Draft.
 
+### Fase 10.3 — Beta DEMO Terms & Disclaimer Draft
+
+**Status:** `DRAFT_FOR_LEGAL_REVIEW`  
+**Documento:** [`docs/BETA-DEMO-TERMS-DISCLAIMER-DRAFT.md`](BETA-DEMO-TERMS-DISCLAIMER-DRAFT.md)  
+**Objetivo:** criar minuta preliminar de termos, ciência de risco e disclaimers para participante beta DEMO, pendente de revisão jurídica.
+
+| Item | Resultado |
+|------|-----------|
+| Natureza | Minuta — **não** contrato final |
+| Escopo | Beta DEMO/STAGING apenas |
+| Aceite participante | Template com campos A PREENCHER |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 10.3:** minuta enviável ao jurídico. Não libera conta real nem autoriza uso com dinheiro real até aprovação formal.
+
+**Próxima etapa sugerida:** Fase 10.4 — Institutional Presentation Deck Preparation.
+
 ---
 
 ## 13. Riscos e cuidados
