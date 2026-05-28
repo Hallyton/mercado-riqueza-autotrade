@@ -2074,6 +2074,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa sugerida:** Fase 10.4 — Institutional Presentation Deck Preparation.
 
+### Fase 10.4 — Institutional Presentation Deck Preparation
+
+**Status:** `INSTITUTIONAL_DECK_OUTLINE_READY`  
+**Documento:** [`docs/INSTITUTIONAL-PRESENTATION-DECK-PREPARATION.md`](INSTITUTIONAL-PRESENTATION-DECK-PREPARATION.md)  
+**Objetivo:** preparar o roteiro textual da apresentação institucional para corretoras, parceiros, jurídico, investidores e stakeholders comerciais, mantendo escopo DEMO/STAGING.
+
+| Item | Resultado |
+|------|-----------|
+| Slides | 17 slides (roteiro textual) |
+| PPTX | **Não** criado nesta fase |
+| Disclaimers / mensagens proibidas | Documentados no roteiro |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 10.4:** outline institucional pronto para conversão visual ou reunião com suporte dos docs listados no roteiro.
+
+**Próxima etapa sugerida:** Fase 10.5 — Institutional Deck Visual Draft ou Partner Meeting Package Finalization.
+
 ---
 
 ## 13. Riscos e cuidados
