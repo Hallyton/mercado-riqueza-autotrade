@@ -1890,6 +1890,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** criar tag do marco de hardening; decidir entre revisão jurídica, definição de limites financeiros ou planejamento de novo gate futuro para conta real ultra-controlada.
 
+### Fase 9.1 — Release Candidate Version Freeze
+
+**Status:** `RC_VERSION_LOCKED_FOR_DEMO_STAGING`  
+**Documento:** [`docs/RELEASE-CANDIDATE-VERSION-FREEZE.md`](RELEASE-CANDIDATE-VERSION-FREEZE.md)  
+**Objetivo:** congelar a arquitetura operacional/técnica homologada em DEMO/STAGING antes de qualquer expansão futura (fases 9.2–9.5).
+
+| Item | Resultado |
+|------|-----------|
+| Baseline | Fases 6.x (Real Trading Guard), 7.x (auditoria pré-real), 8.x (hardening VPS/MT5) |
+| Commit de referência | `6548c75` |
+| Sessões de referência | `runbook-demo-session-001`, `autotrading-policy-demo-001` — `EXECUTED` |
+| Código / EA / schema / env / deploy | Nenhuma alteração nesta fase |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 9.1:** RC documental congelada para DEMO/STAGING. Alterações pós-freeze limitadas a correções críticas, segurança, documentação e operação demo.
+
+**Próxima etapa:** Fase 9.2 (Branding & Institutional Readiness) ou tag formal do marco RC; manter bloqueios de conta real e dispatch automático.
+
 ---
 
 ## 13. Riscos e cuidados
