@@ -1982,6 +1982,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** Fase 9.5 — RC Final Report.
 
+### Fase 9.5 — RC Final Report
+
+**Status:** `RELEASE_CANDIDATE_DEMO_STAGING_READY`  
+**Documento:** [`docs/RELEASE-CANDIDATE-FINAL-REPORT.md`](RELEASE-CANDIDATE-FINAL-REPORT.md)  
+**Objetivo:** consolidar a Release Candidate DEMO/STAGING, reunindo freeze (9.1), branding (9.2), certificação demo (9.3) e fluxo do cliente beta DEMO (9.4).
+
+| Item | Resultado |
+|------|-----------|
+| Status RC | `RELEASE_CANDIDATE_DEMO_STAGING_READY` |
+| Trilhas base | 6.x Real Trading Guard, 7.x auditoria pré-real, 8.x hardening VPS/MT5 |
+| Evidências | `real-guard-demo-smoke-002`, `runbook-demo-session-001`, `autotrading-policy-demo-001` |
+| Contratos RC | Inalterados |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 9.5:** trilha RC DEMO/STAGING (9.1–9.5) encerrada documentalmente. Ambiente pronto para demonstrações e onboarding DEMO; **não** libera conta real nem produção real.
+
+**Próxima etapa sugerida:** Fase 10 — Preparação Institucional / Jurídica / Comercial, **sem** liberar conta real.
+
 ---
 
 ## 13. Riscos e cuidados
