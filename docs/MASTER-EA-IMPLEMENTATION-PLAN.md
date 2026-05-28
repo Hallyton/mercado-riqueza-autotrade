@@ -1912,6 +1912,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** Fase 9.2 (Branding & Institutional Readiness) ou tag formal do marco RC; manter bloqueios de conta real e dispatch automático.
 
+### Fase 9.2 — Branding & Institutional Readiness
+
+**Status:** `BRANDING_INSTITUTIONAL_READY_FOR_DEMO_RC`  
+**Documento:** [`docs/BRANDING-INSTITUTIONAL-READINESS.md`](BRANDING-INSTITUTIONAL-READINESS.md)  
+**Objetivo:** consolidar linguagem institucional, disclaimers, nomenclaturas e readiness de apresentação do RC DEMO/STAGING.
+
+| Item | Resultado |
+|------|-----------|
+| Nomenclaturas e mensagens | Padronizadas |
+| Disclaimers e mensagens proibidas | Definidos |
+| Badges institucionais | Definidos |
+| Linguagem parceiro / beta demo | Definida |
+| Contratos técnicos RC | Inalterados |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 9.2:** material-base institucional pronto para demonstrações em DEMO/STAGING. Não libera conta real nem produção real.
+
+**Próxima etapa:** Fase 9.3 — Demo Environment Certification.
+
 ---
 
 ## 13. Riscos e cuidados
