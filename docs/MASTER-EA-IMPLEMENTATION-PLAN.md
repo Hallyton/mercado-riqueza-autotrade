@@ -1959,6 +1959,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** Fase 9.4 — Demo Client Flow.
 
+### Fase 9.4 — Demo Client Flow
+
+**Status:** `DEMO_CLIENT_FLOW_DEFINED_FOR_RC`  
+**Documento:** [`docs/DEMO-CLIENT-FLOW.md`](DEMO-CLIENT-FLOW.md)  
+**Objetivo:** definir a jornada completa do cliente beta DEMO no RC DEMO/STAGING, desde onboarding até tracking e encerramento, sem liberar conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Jornada | 18 etapas documentadas (orientação → encerramento) |
+| Persona | Cliente Beta DEMO — `52609973 @ XPMT5-DEMO`, perfil conservador |
+| Evidências | `real-guard-demo-smoke-002`, `runbook-demo-session-001`, `autotrading-policy-demo-001` |
+| Contratos RC | Inalterados |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 9.4:** fluxo institucional e operacional do cliente beta DEMO definido para uso com ambiente certificado (9.3) e branding (9.2).
+
+**Próxima etapa:** Fase 9.5 — RC Final Report.
+
 ---
 
 ## 13. Riscos e cuidados
