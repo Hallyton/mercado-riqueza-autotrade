@@ -2028,6 +2028,30 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa sugerida:** Fase 10.2 — Legal & Commercial Review Preparation.
 
+### Fase 10.2 — Legal & Commercial Review Preparation
+
+**Status:** `LEGAL_COMMERCIAL_REVIEW_PREPARED`  
+**Documento:** [`docs/LEGAL-COMMERCIAL-REVIEW-PREPARATION.md`](LEGAL-COMMERCIAL-REVIEW-PREPARATION.md)  
+**Objetivo:** preparar checklist, perguntas, documentos e disclaimers para revisão jurídica/comercial antes de qualquer discussão de conta real.
+
+| Item | Resultado |
+|------|-----------|
+| Checklists | Jurídico (15), comercial (10), operacional (11) |
+| Perguntas | Corretora/parceiro (11), jurídico (11) |
+| Disclaimers mínimos | 9 itens recomendados |
+| Riscos identificados | 9 categorias documentadas |
+| Contrato final | **Não** — apenas preparação/minutas |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 10.2:** base preparada para revisão externa (jurídico, comercial, corretora). Não libera conta real nem transforma minuta em contrato final.
+
+**Próxima etapa sugerida:** Fase 10.3 — Beta DEMO Terms & Disclaimer Draft.
+
 ---
 
 ## 13. Riscos e cuidados
