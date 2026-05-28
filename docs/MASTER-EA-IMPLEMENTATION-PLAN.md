@@ -1936,6 +1936,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa:** Fase 9.3 — Demo Environment Certification.
 
+### Fase 9.3 — Demo Environment Certification
+
+**Status:** `DEMO_ENVIRONMENT_CERTIFIED`  
+**Documento:** [`docs/DEMO-ENVIRONMENT-CERTIFICATION.md`](DEMO-ENVIRONMENT-CERTIFICATION.md)  
+**Objetivo:** certificar formalmente o ambiente DEMO/STAGING para demonstrações e onboarding controlado.
+
+| Item | Resultado |
+|------|-----------|
+| Evidências | `real-guard-demo-smoke-002`, `runbook-demo-session-001`, `autotrading-policy-demo-001` |
+| Relatórios | Real Trading Guard, auditoria pré-real, hardening VPS/MT5, RC freeze, executivo |
+| Conta certificada | `52609973 @ XPMT5-DEMO` — `tradeMode=DEMO`, `DebugMode=true` |
+| Contratos RC | Inalterados |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 9.3:** ambiente DEMO/STAGING certificado documentalmente para uso institucional e beta. Não certifica conta real, produção real nem dispatch automático.
+
+**Próxima etapa:** Fase 9.4 — Demo Client Flow.
+
 ---
 
 ## 13. Riscos e cuidados
