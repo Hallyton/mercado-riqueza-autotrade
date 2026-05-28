@@ -2005,6 +2005,29 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa sugerida:** Fase 10 — Preparação Institucional / Jurídica / Comercial, **sem** liberar conta real.
 
+### Fase 10.1 — Institutional Readiness Pack
+
+**Status:** `INSTITUTIONAL_READINESS_PACK_READY`  
+**Documento:** [`docs/INSTITUTIONAL-READINESS-PACK.md`](INSTITUTIONAL-READINESS-PACK.md)  
+**Objetivo:** consolidar o pacote institucional do RC DEMO/STAGING para reuniões com corretoras, parceiros, jurídico, investidores e stakeholders comerciais.
+
+| Item | Resultado |
+|------|-----------|
+| Índice de documentos | RC, branding, certificação demo, fluxo cliente, executivo, parceiros, governança futura real |
+| Mensagem central | RC DEMO/STAGING; bloqueios real/produção/dispatch automático |
+| Materiais reunião | Ordem sugerida (8 itens) + perguntas corretora/jurídico |
+| Contratos RC | Inalterados |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 10.1:** pacote institucional indexado e pronto para uso em reuniões DEMO/STAGING. Não libera conta real nem produção real.
+
+**Próxima etapa sugerida:** Fase 10.2 — Legal & Commercial Review Preparation.
+
 ---
 
 ## 13. Riscos e cuidados
