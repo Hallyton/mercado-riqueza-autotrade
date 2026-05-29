@@ -2194,6 +2194,29 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 11.2 — Commercial Plan Catalog.
 
+### Fase 11.2 — Commercial Plan Catalog & Paid Robot Subscription Rules
+
+**Status:** `COMMERCIAL_PLAN_CATALOG_DEFINED_WITH_PRICE_AND_REAL_CONTROLS`  
+**Documento:** [`docs/COMMERCIAL-PLAN-CATALOG.md`](COMMERCIAL-PLAN-CATALOG.md)  
+**Objetivo:** definir catálogo comercial com R$ 300,00/robô, 1 robô inicial, até 4 futuros, caixa preta, magicNumber e controles pré-real.
+
+| Item | Resultado |
+|------|-----------|
+| Preço | R$ 300,00 por robô ativo |
+| Robôs iniciais | 1 por cliente |
+| Robôs futuros (estrutura) | Até 4 |
+| Planos | Single Robot, Multi-Robot Ready, Institutional/Custom |
+| Sigilo estratégia | Caixa preta documentada |
+| Controles real futuros | Margem, snapshots pré/pós pregão, ExecutorHealth |
+| Schema / migration / gateway | **Não** nesta fase |
+| Conta real | **Não** automática pelo pagamento |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED_AUTOMATICALLY` |
+
+**Resultado da Fase 11.2:** catálogo e regras de preço/limite definidos. Próximo: modelagem Subscription/License (11.3).
+
+**Próxima etapa sugerida:** Fase 11.3 — Subscription & License Data Model.
+
 ---
 
 ## 13. Riscos e cuidados
