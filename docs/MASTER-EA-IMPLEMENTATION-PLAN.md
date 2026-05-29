@@ -2315,6 +2315,25 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.4 — Controlled Real Pilot Dry Run.
 
+### Fase 12.4 — Controlled Real Pilot Dry Run
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/CONTROLLED-REAL-PILOT-DRY-RUN-RESULTS.md`](CONTROLLED-REAL-PILOT-DRY-RUN-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Dry run gate A–H | `tests/risk/controlled-real-pilot-dry-run.test.ts` — 9 cenários OK |
+| Migration staging remota | **Pendente** (`vercel env pull` sem DATABASE_URL) |
+| Schema local / script verificação | OK (`verify-staging-real-trading-schema.mjs`) |
+| EA MQL5 compile VPS | **Pendente** (manual MetaEditor) |
+| Endpoints staging | Preview **401** (protegido); domínio custom **404** nas rotas novas — redeploy |
+| Ordem real | **Nenhuma** enviada |
+| RealTradingApproval admin | **Pendente** (manual pós-migration) |
+| Dispatch automático | **Desativado** |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fase 12.5 — First Ultra-Controlled Real Order Gate.
+
 ---
 
 ## 13. Riscos e cuidados
