@@ -108,7 +108,8 @@ export async function processHeartbeat(
     server_time: snapshotAt.toISOString(),
     pending_instructions: await countDeliverableInstructionsForEa(
       ctx.license.id,
-      snapshotAt
+      snapshotAt,
+      ctx.license.userId
     ),
     halt_new_entries: flags.haltNewEntries,
     halt_all_trading: flags.haltAllTrading,

@@ -16,6 +16,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     execution: { create: vi.fn(), findFirst: vi.fn() },
     instructionStatusLog: { create: vi.fn() },
+    eaHeartbeat: { findFirst: vi.fn() },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   },
 }));
@@ -97,12 +98,17 @@ describe("reportExecution", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(assertInstructionAllowed).mockResolvedValue(undefined);
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({
+      tradeMode: "DEMO",
+    } as never);
     vi.mocked(prisma.execution.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
       id: "inst-debug-1",
       licenseId: "lic1",
       purpose: InstructionPurpose.ENTRY,
       currentStatus: OrderLogStatus.SENT,
+      magicNumber: null,
+      protectionBlocked: false,
     } as never);
     vi.mocked(prisma.execution.create).mockResolvedValue({ id: "ex1" } as never);
     vi.mocked(prisma.$transaction).mockImplementation(async (ops) => {

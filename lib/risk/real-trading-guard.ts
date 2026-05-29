@@ -1,8 +1,13 @@
 import { TradeMode } from "@prisma/client";
+import {
+  REAL_TRADING_REASONS,
+  REAL_TRADING_REASON_MESSAGES,
+  type RealTradingReasonCode,
+} from "@/lib/risk/real-trading-reasons";
 
-export const REAL_TRADING_DISABLED_CODE = "REAL_TRADING_DISABLED";
+export const REAL_TRADING_DISABLED_CODE = REAL_TRADING_REASONS.DISABLED;
 export const REAL_TRADING_DISABLED_REASON =
-  "Conta em modo REAL bloqueada pelo Real Trading Guard.";
+  REAL_TRADING_REASON_MESSAGES.REAL_TRADING_DISABLED;
 
 const ENABLED_VALUES = new Set(["true", "1"]);
 
@@ -21,8 +26,8 @@ export type RealTradingGuardDecision =
     }
   | {
       allowed: false;
-      code: typeof REAL_TRADING_DISABLED_CODE;
-      reason: typeof REAL_TRADING_DISABLED_REASON;
+      code: RealTradingReasonCode;
+      reason: string;
     };
 
 export function isRealTradingEnabled(env: EnvSource = process.env): boolean {

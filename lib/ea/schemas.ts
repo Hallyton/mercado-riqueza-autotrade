@@ -72,6 +72,58 @@ export const executionBodySchema = z.object({
   error_code: z.string().optional(),
   error_message: z.string().optional(),
   executed_at: executedAtSchema,
+  magic_number: z.number().int().positive().optional(),
+  account_login: z.string().min(1).max(64).optional(),
+  account_server: z.string().min(1).max(128).optional(),
+  symbol: z.string().min(1).max(32).optional(),
+});
+
+export const accountSnapshotBodySchema = z.object({
+  snapshot_type: z.enum(["PRE_MARKET", "PRE_TRADE", "POST_MARKET", "MANUAL"]),
+  account_login: z.string().min(1).max(64),
+  account_server: z.string().min(1).max(128),
+  environment: z.enum(["DEMO", "REAL"]),
+  currency: z.string().max(8).optional(),
+  balance: decimalString,
+  equity: decimalString,
+  margin: decimalString.optional(),
+  free_margin: decimalString.optional(),
+  margin_level: decimalString.optional(),
+  open_positions: z.array(z.record(z.unknown())).max(100).optional(),
+  pending_orders: z.array(z.record(z.unknown())).max(100).optional(),
+  active_magic_numbers: z.array(z.number().int().positive()).max(20).optional(),
+  captured_at: executedAtSchema,
+});
+
+export const executionProtectionBodySchema = z.object({
+  instruction_id: z.string().min(1),
+  execution_id: z.string().optional(),
+  account_login: z.string().min(1).max(64),
+  account_server: z.string().min(1).max(128),
+  symbol: z.string().min(1).max(32),
+  magic_number: z.number().int().positive(),
+  entry_order_ticket: z.string().optional(),
+  entry_deal_ticket: z.string().optional(),
+  stop_loss_present: z.boolean(),
+  take_profit_present: z.boolean(),
+  stop_loss_price: decimalString.optional(),
+  take_profit_price: decimalString.optional(),
+  stop_order_ticket: z.string().optional(),
+  take_order_ticket: z.string().optional(),
+  protection_mode: z.enum([
+    "ATTACHED_SL_TP",
+    "PENDING_PROTECTION_ORDERS",
+    "UNKNOWN",
+  ]),
+  protection_status: z.enum([
+    "PROTECTION_CONFIRMED",
+    "PROTECTION_FAILED",
+    "PROTECTION_PENDING",
+    "NOT_REQUIRED_FOR_DEBUG",
+  ]),
+  error_code: z.string().max(64).optional(),
+  error_message: z.string().max(4000).optional(),
+  reported_at: executedAtSchema,
 });
 
 export const errorBodySchema = z.object({

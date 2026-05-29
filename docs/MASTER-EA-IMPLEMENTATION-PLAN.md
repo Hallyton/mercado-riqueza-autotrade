@@ -2261,6 +2261,23 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 11.5 — Account Snapshot & Margin Control Architecture.
 
+### Fase 12.1 — Real Account Controlled Pilot Implementation
+
+**Status:** `REAL_TRADING_CONTROLLED_PILOT_IMPLEMENTED_STAGING`  
+**Documento:** [`docs/REAL-TRADING-CONTROLLED-PILOT-IMPLEMENTATION.md`](REAL-TRADING-CONTROLLED-PILOT-IMPLEMENTATION.md)
+
+| Item | Resultado |
+|------|-----------|
+| Modelos | RealTradingApproval, AccountSnapshot, RealTradePreflight, ExecutionProtectionReport |
+| Preflight | Margem, snapshot PRE_MARKET, EA online, approval, proteção anterior |
+| API EA | account-snapshots, execution-protection |
+| Admin UI | Aprovações, snapshots, preflights, proteção SL/TP |
+| Conta real | Gate admin + env; **não** automática por pagamento |
+| Dispatch automático | **Desativado** |
+| Estratégia | Caixa preta preservada |
+
+**Próxima etapa sugerida:** validação operacional do piloto em staging + evolução EA Executor.
+
 ---
 
 ## 13. Riscos e cuidados

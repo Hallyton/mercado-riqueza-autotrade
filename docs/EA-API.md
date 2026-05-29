@@ -87,7 +87,57 @@ Payload de instrução (somente execução):
   "stop_loss": 28.5,
   "take_profit": 30.0,
   "expires_at": "2026-05-20T18:00:00.000Z",
-  "idempotency_key": "uuid"
+  "idempotency_key": "uuid",
+  "magic_number": 910001,
+  "account_login": "12345",
+  "account_server": "Broker-Server",
+  "requires_protection_confirmation": true
+}
+```
+
+Campos `magic_number`, `account_login`, `account_server` e `requires_protection_confirmation` são usados no **piloto de conta real** (quando `trade_mode` REAL e gate aprovado). O EA Executor deve confirmar stop/take via `/execution-protection` antes de novas entradas no mesmo `magic_number`.
+
+---
+
+## POST `/account-snapshots`
+
+Registra snapshot de conta (PRE_MARKET obrigatório no dia antes de operação real).
+
+```json
+{
+  "snapshot_type": "PRE_MARKET",
+  "account_login": "12345",
+  "account_server": "Broker-Server",
+  "environment": "REAL",
+  "balance": 100000,
+  "equity": 100000,
+  "free_margin": 80000,
+  "margin_level": 500,
+  "open_positions": [],
+  "pending_orders": [],
+  "active_magic_numbers": [910001],
+  "captured_at": "2026-05-27T10:00:00Z"
+}
+```
+
+---
+
+## POST `/execution-protection`
+
+Confirma posicionamento de stop/take após execução (conta real exige `PROTECTION_CONFIRMED`).
+
+```json
+{
+  "instruction_id": "uuid",
+  "account_login": "12345",
+  "account_server": "Broker-Server",
+  "symbol": "WDOM26",
+  "magic_number": 910001,
+  "stop_loss_present": true,
+  "take_profit_present": true,
+  "protection_mode": "ATTACHED_SL_TP",
+  "protection_status": "PROTECTION_CONFIRMED",
+  "reported_at": "2026-05-27T10:05:00Z"
 }
 ```
 

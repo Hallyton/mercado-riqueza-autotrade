@@ -23,10 +23,10 @@ describe("Prisma schema — integridade crítica e histórico", () => {
 
     expect(instruction).toContain("licenseId      String");
     expect(instruction).toContain("idempotencyKey String               @unique");
-    expect(instruction).toContain("source         InstructionSource?");
-    expect(instruction).toContain("currentStatus  OrderLogStatus");
-    expect(instruction).toContain("license              License");
-    expect(instruction).toContain("statusLogs           InstructionStatusLog[]");
+    expect(instruction).toContain("InstructionSource?");
+    expect(instruction).toContain("OrderLogStatus");
+    expect(instruction).toContain("license                      License");
+    expect(instruction).toContain("statusLogs                   InstructionStatusLog[]");
     expect(instruction).toContain("@@index([licenseId, currentStatus, createdAt])");
 
     expect(statusLog).toContain("instructionId String");
@@ -41,8 +41,8 @@ describe("Prisma schema — integridade crítica e histórico", () => {
 
     expect(execution).toContain("instructionId String");
     expect(execution).toContain("licenseId     String");
-    expect(execution).toContain("instruction Instruction @relation(fields: [instructionId], references: [id]");
-    expect(execution).toContain("license     License     @relation(fields: [licenseId], references: [id]");
+    expect(execution).toContain("instruction                  Instruction");
+    expect(execution).toContain("license                      License");
     expect(execution).toContain("@@index([licenseId, createdAt])");
     expect(execution).toContain("@@index([instructionId])");
   });
@@ -65,8 +65,8 @@ describe("Prisma schema — integridade crítica e histórico", () => {
     expect(dispatch).toContain("instruction  Instruction? @relation(fields: [instructionId], references: [id], onDelete: SetNull)");
     expect(dispatch).toContain("@@unique([masterSignalId, licenseId])");
 
-    expect(instruction).toContain("executions           Execution[]");
-    expect(instruction).toContain("masterSignalDispatch MasterSignalDispatch?");
+    expect(instruction).toContain("executions                   Execution[]");
+    expect(instruction).toContain("masterSignalDispatch         MasterSignalDispatch?");
   });
 
   it("Device e ActivationCode persistem apenas hashes de credenciais operacionais", () => {

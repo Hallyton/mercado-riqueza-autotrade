@@ -10,6 +10,10 @@ import { createAuditLog } from "@/lib/audit/log";
 import { assertInstructionAllowed, LicensePolicyError } from "@/lib/licensing/instruction-policy";
 import { getLicenseOperationalFlags } from "@/lib/licensing/service";
 import prisma from "@/lib/prisma";
+import { markProtectionPendingForRealExecution } from "@/lib/risk/execution-protection";
+import { redactSensitiveMessage } from "@/lib/risk/redact-message";
+import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
+import { runRealTradePreflight } from "@/lib/risk/real-trade-preflight";
 import {
   evaluateRealTradingGuard,
   type RealTradingGuardDecision,
@@ -27,6 +31,10 @@ export type EaInstructionPayload = {
   take_profit: number | null;
   expires_at: string;
   idempotency_key: string;
+  magic_number?: number;
+  account_login?: string;
+  account_server?: string;
+  requires_protection_confirmation?: boolean;
 };
 
 function toNumber(value: Prisma.Decimal | null | undefined): number | null {
@@ -34,24 +42,7 @@ function toNumber(value: Prisma.Decimal | null | undefined): number | null {
   return Number(value);
 }
 
-function redactOperationalMessage(message: string | undefined): string | undefined {
-  if (!message) return message;
-  const lowered = message.toLowerCase();
-  if (
-    lowered.includes("bearer ") ||
-    lowered.includes("authorization") ||
-    lowered.includes("master_ea_api_secret") ||
-    lowered.includes("auth_secret") ||
-    lowered.includes("database_url") ||
-    lowered.includes("activation_code") ||
-    lowered.includes("postgres://") ||
-    lowered.includes("token") ||
-    lowered.includes("secret")
-  ) {
-    return "[REDACTED]";
-  }
-  return message;
-}
+const redactOperationalMessage = redactSensitiveMessage;
 
 export function mapInstructionToEaPayload(
   instruction: {
@@ -65,9 +56,13 @@ export function mapInstructionToEaPayload(
     takeProfit: Prisma.Decimal | null;
     expiresAt: Date;
     idempotencyKey: string;
+    magicNumber?: number | null;
+    accountLogin?: string | null;
+    accountServer?: string | null;
+    requiresProtectionConfirmation?: boolean;
   }
 ): EaInstructionPayload {
-  return {
+  const payload: EaInstructionPayload = {
     instruction_id: instruction.id,
     purpose: instruction.purpose,
     symbol: instruction.symbol,
@@ -79,6 +74,19 @@ export function mapInstructionToEaPayload(
     expires_at: instruction.expiresAt.toISOString(),
     idempotency_key: instruction.idempotencyKey,
   };
+  if (instruction.magicNumber != null) {
+    payload.magic_number = instruction.magicNumber;
+  }
+  if (instruction.accountLogin) {
+    payload.account_login = instruction.accountLogin;
+  }
+  if (instruction.accountServer) {
+    payload.account_server = instruction.accountServer;
+  }
+  if (instruction.requiresProtectionConfirmation) {
+    payload.requires_protection_confirmation = true;
+  }
+  return payload;
 }
 
 async function appendStatus(
@@ -134,6 +142,11 @@ type InstructionRow = {
   expiresAt: Date;
   idempotencyKey: string;
   currentStatus: OrderLogStatus;
+  magicNumber: number | null;
+  accountLogin: string | null;
+  accountServer: string | null;
+  requiresProtectionConfirmation: boolean;
+  protectionBlocked: boolean;
 };
 
 async function listDeliverableInstructionCandidates(
@@ -165,17 +178,104 @@ export async function evaluateEaRealTradingGuard(
 
 async function evaluateInstructionDeliverability(
   licenseId: string,
-  instruction: InstructionRow
-): Promise<{ deliver: true } | { deliver: false; reason: string; code?: string }> {
+  instruction: InstructionRow,
+  options?: { tradeMode?: TradeMode | null; userId?: string }
+): Promise<{
+  deliver: true;
+} | { deliver: false; reason: string; code?: string }> {
+  if (instruction.protectionBlocked) {
+    return {
+      deliver: false,
+      reason: "Stop/take não confirmados. Operação bloqueada.",
+      code: REAL_TRADING_REASONS.PROTECTION_NOT_CONFIRMED,
+    };
+  }
+
   try {
     await assertInstructionAllowed(licenseId, instruction.purpose);
-    return { deliver: true };
   } catch (e) {
     if (e instanceof LicensePolicyError) {
       return { deliver: false, reason: e.message, code: e.code };
     }
     throw e;
   }
+
+  const tradeMode = options?.tradeMode ?? null;
+  if (tradeMode !== TradeMode.REAL) {
+    return { deliver: true };
+  }
+
+  if (instruction.magicNumber == null) {
+    return {
+      deliver: false,
+      reason: "MagicNumber obrigatório para conta real.",
+      code: REAL_TRADING_REASONS.MAGIC_MISMATCH,
+    };
+  }
+
+  const login =
+    instruction.accountLogin ??
+    (
+      await prisma.license.findUnique({
+        where: { id: licenseId },
+        include: { mt5Account: true },
+      })
+    )?.mt5Account?.login;
+  const server =
+    instruction.accountServer ??
+    (
+      await prisma.license.findUnique({
+        where: { id: licenseId },
+        include: { mt5Account: true },
+      })
+    )?.mt5Account?.server;
+
+  if (!login || !server) {
+    return {
+      deliver: false,
+      reason: "Conta MT5 não vinculada para operação real.",
+      code: REAL_TRADING_REASONS.ACCOUNT_MISMATCH,
+    };
+  }
+
+  const userId =
+    options?.userId ??
+    (
+      await prisma.license.findUnique({
+        where: { id: licenseId },
+        select: { userId: true },
+      })
+    )?.userId;
+
+  if (!userId) {
+    return {
+      deliver: false,
+      reason: "Licença inválida.",
+      code: REAL_TRADING_REASONS.LICENSE_INVALID,
+    };
+  }
+
+  const preflight = await runRealTradePreflight({
+    userId,
+    licenseId,
+    instructionId: instruction.id,
+    accountLogin: login,
+    accountServer: server,
+    symbol: instruction.symbol,
+    magicNumber: instruction.magicNumber,
+    requestedContracts: Math.max(1, Math.ceil(Number(instruction.quantity))),
+    environment: TradeMode.REAL,
+  });
+
+  if (!preflight.passed) {
+    return {
+      deliver: false,
+      reason: preflight.reason ?? "Preflight de conta real falhou.",
+      code: (preflight.reasonCode ?? REAL_TRADING_REASONS.PREFLIGHT_FAILED) as string,
+    };
+  }
+
+  return { deliver: true };
 }
 
 export type EaDeliverableInstructionsAudit = {
@@ -192,9 +292,11 @@ export type EaDeliverableInstructionsAudit = {
 /** Mesma definição de entregável usada no pull e no heartbeat (sem efeitos colaterais). */
 export async function auditDeliverableInstructionsForEa(
   licenseId: string,
-  now = new Date()
+  now = new Date(),
+  userIdHint?: string
 ): Promise<EaDeliverableInstructionsAudit> {
   const realTradingGuard = await evaluateEaRealTradingGuard(licenseId);
+  const tradeMode = await loadLatestTradeMode(licenseId);
   if (!realTradingGuard.allowed) {
     return {
       candidateCount: 0,
@@ -203,12 +305,24 @@ export async function auditDeliverableInstructionsForEa(
     };
   }
 
+  const userId =
+    userIdHint ??
+    (
+      await prisma.license.findUnique({
+        where: { id: licenseId },
+        select: { userId: true },
+      })
+    )?.userId;
+
   const candidates = await listDeliverableInstructionCandidates(licenseId, now);
   const skipped: EaDeliverableInstructionsAudit["skipped"] = [];
   let deliverableCount = 0;
 
   for (const instruction of candidates) {
-    const check = await evaluateInstructionDeliverability(licenseId, instruction);
+    const check = await evaluateInstructionDeliverability(licenseId, instruction, {
+      tradeMode,
+      userId,
+    });
     if (check.deliver) {
       deliverableCount++;
     } else {
@@ -231,9 +345,10 @@ export async function auditDeliverableInstructionsForEa(
 /** Contagem alinhada com GET /api/v1/ea/instructions (política + fila entregável). */
 export async function countDeliverableInstructionsForEa(
   licenseId: string,
-  now = new Date()
+  now = new Date(),
+  userIdHint?: string
 ): Promise<number> {
-  const audit = await auditDeliverableInstructionsForEa(licenseId, now);
+  const audit = await auditDeliverableInstructionsForEa(licenseId, now, userIdHint);
   return audit.deliverableCount;
 }
 
@@ -262,6 +377,7 @@ export async function pullInstructionsForEa(
     return [];
   }
 
+  const tradeMode = await loadLatestTradeMode(ctx.license.id);
   const pending = await listDeliverableInstructionCandidates(ctx.license.id, now);
 
   const deliverable: EaInstructionPayload[] = [];
@@ -269,7 +385,8 @@ export async function pullInstructionsForEa(
   for (const instruction of pending) {
     const check = await evaluateInstructionDeliverability(
       ctx.license.id,
-      instruction
+      instruction,
+      { tradeMode, userId: ctx.license.userId }
     );
     if (!check.deliver) {
       await appendStatus(
@@ -340,6 +457,10 @@ export async function reportExecution(
     error_code?: string;
     error_message?: string;
     executed_at?: string;
+    magic_number?: number;
+    account_login?: string;
+    account_server?: string;
+    symbol?: string;
   }
 ) {
   const instruction = await prisma.instruction.findFirst({
@@ -387,6 +508,24 @@ export async function reportExecution(
     }
   }
 
+  const tradeMode = await loadLatestTradeMode(ctx.license.id);
+  const isReal = tradeMode === TradeMode.REAL;
+
+  if (isReal) {
+    if (!body.magic_number) {
+      return { ok: false as const, code: "MAGIC_NUMBER_REQUIRED" };
+    }
+    if (!body.account_login || !body.account_server) {
+      return { ok: false as const, code: "ACCOUNT_CONTEXT_REQUIRED" };
+    }
+    if (instruction.magicNumber != null && body.magic_number !== instruction.magicNumber) {
+      return { ok: false as const, code: "MAGIC_NUMBER_MISMATCH" };
+    }
+    if (instruction.protectionBlocked) {
+      return { ok: false as const, code: "PROTECTION_BLOCKED" };
+    }
+  }
+
   const orderStatus =
     body.status === "FILLED" || body.status === "PARTIAL"
       ? OrderLogStatus.EXECUTED
@@ -405,8 +544,24 @@ export async function reportExecution(
       errorCode: body.error_code,
       errorMessage: safeErrorMessage,
       executedAt: body.executed_at ? new Date(body.executed_at) : new Date(),
+      magicNumber: body.magic_number,
+      accountLogin: body.account_login,
+      accountServer: body.account_server,
+      symbol: body.symbol ?? instruction.symbol,
     },
   });
+
+  if (
+    isReal &&
+    (body.status === "FILLED" || body.status === "PARTIAL") &&
+    instruction.requiresProtectionConfirmation
+  ) {
+    await markProtectionPendingForRealExecution(
+      instruction.id,
+      ctx.license.id,
+      body.magic_number ?? instruction.magicNumber
+    );
+  }
 
   await appendStatus(
     instruction.id,

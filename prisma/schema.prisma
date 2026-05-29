@@ -157,6 +157,46 @@ enum TradeMode {
   REAL
 }
 
+enum RealTradingApprovalStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REVOKED
+  BLOCKED
+}
+
+enum AccountSnapshotType {
+  PRE_MARKET
+  PRE_TRADE
+  POST_MARKET
+  MANUAL
+}
+
+enum AccountSnapshotSource {
+  EA
+  ADMIN
+  SYSTEM
+}
+
+enum RealTradePreflightStatus {
+  PASSED
+  FAILED
+  BLOCKED
+}
+
+enum ProtectionMode {
+  ATTACHED_SL_TP
+  PENDING_PROTECTION_ORDERS
+  UNKNOWN
+}
+
+enum ProtectionStatus {
+  PROTECTION_CONFIRMED
+  PROTECTION_FAILED
+  PROTECTION_PENDING
+  NOT_REQUIRED_FOR_DEBUG
+}
+
 // ─── Auth (Auth.js adapter) + usuários ───────────────────────────────────────
 
 model User {
@@ -175,10 +215,13 @@ model User {
   subscriptions   Subscription[]
   licenses        License[]
   mt5Accounts     Mt5Account[]
-  auditLogs       AuditLog[]       @relation("AuditLogActor")
-  adminActions    AdminAction[]
-  riskEvents      RiskEvent[]
-  equitySnapshots EquitySnapshot[]
+  auditLogs              AuditLog[]              @relation("AuditLogActor")
+  adminActions           AdminAction[]
+  riskEvents             RiskEvent[]
+  equitySnapshots        EquitySnapshot[]
+  realTradingApprovals   RealTradingApproval[]
+  accountSnapshots       AccountSnapshot[]
+  realTradePreflights    RealTradePreflight[]
 
   @@index([role])
   @@map("users")
@@ -434,7 +477,11 @@ model License {
   eaErrorReports         EaErrorReport[]
   equitySnapshots        EquitySnapshot[]
   portfolioMetrics       PortfolioMetric[]
-  masterSignalDispatches MasterSignalDispatch[]
+  masterSignalDispatches   MasterSignalDispatch[]
+  realTradingApprovals     RealTradingApproval[]
+  accountSnapshots         AccountSnapshot[]
+  realTradePreflights      RealTradePreflight[]
+  executionProtectionReports ExecutionProtectionReport[]
 
   @@index([userId, status])
   @@index([mt5AccountId])
@@ -504,17 +551,25 @@ model Instruction {
   idempotencyKey String               @unique @map("idempotency_key")
   requestId      String?              @map("request_id")
   expiresAt      DateTime             @map("expires_at")
-  source         InstructionSource?   @map("source")
-  currentStatus  OrderLogStatus       @default(RECEIVED) @map("current_status")
-  createdAt      DateTime             @default(now()) @map("created_at")
-  updatedAt      DateTime             @updatedAt @map("updated_at")
+  source                         InstructionSource? @map("source")
+  currentStatus                  OrderLogStatus     @default(RECEIVED) @map("current_status")
+  magicNumber                    Int?               @map("magic_number")
+  accountLogin                   String?            @map("account_login")
+  accountServer                  String?            @map("account_server")
+  requiresProtectionConfirmation Boolean            @default(false) @map("requires_protection_confirmation")
+  protectionBlocked              Boolean            @default(false) @map("protection_blocked")
+  createdAt                      DateTime           @default(now()) @map("created_at")
+  updatedAt                      DateTime           @updatedAt @map("updated_at")
 
-  license              License                @relation(fields: [licenseId], references: [id], onDelete: Cascade)
-  statusLogs           InstructionStatusLog[]
-  executions           Execution[]
-  masterSignalDispatch MasterSignalDispatch?
+  license                      License                       @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  statusLogs                   InstructionStatusLog[]
+  executions                   Execution[]
+  masterSignalDispatch         MasterSignalDispatch?
+  realTradePreflights          RealTradePreflight[]
+  executionProtectionReports   ExecutionProtectionReport[]
 
   @@index([licenseId, currentStatus, createdAt])
+  @@index([licenseId, magicNumber])
   @@map("instructions")
 }
 
@@ -602,13 +657,19 @@ model Execution {
   errorCode     String?         @map("error_code")
   errorMessage  String?         @map("error_message") @db.Text
   executedAt    DateTime?       @map("executed_at")
+  magicNumber   Int?            @map("magic_number")
+  accountLogin  String?         @map("account_login")
+  accountServer String?         @map("account_server")
+  symbol        String?
   createdAt     DateTime        @default(now()) @map("created_at")
 
-  instruction Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
-  license     License     @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  instruction                  Instruction                   @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  license                      License                       @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  executionProtectionReports   ExecutionProtectionReport[]
 
   @@index([licenseId, createdAt])
   @@index([instructionId])
+  @@index([licenseId, magicNumber])
   @@map("executions")
 }
 
@@ -801,4 +862,137 @@ model AdminAction {
   @@index([action, createdAt])
   @@index([targetType, targetId])
   @@map("admin_actions")
+}
+
+// ─── Conta real controlada (piloto — gate admin + snapshots + preflight) ─────
+
+model RealTradingApproval {
+  id                  String                    @id @default(cuid())
+  userId              String                    @map("user_id")
+  licenseId           String                    @map("license_id")
+  robotInstanceId     String?                   @map("robot_instance_id")
+  accountLogin        String                    @map("account_login")
+  accountServer       String                    @map("account_server")
+  symbol              String
+  magicNumber         Int                       @map("magic_number")
+  maxContracts        Int                       @default(1) @map("max_contracts")
+  minFreeMargin       Decimal?                  @map("min_free_margin") @db.Decimal(18, 2)
+  marginBufferPercent Decimal                   @default(10) @map("margin_buffer_percent") @db.Decimal(5, 2)
+  allowReal           Boolean                   @default(false) @map("allow_real")
+  status              RealTradingApprovalStatus @default(PENDING)
+  approvedByAdminId   String?                   @map("approved_by_admin_id")
+  approvedAt          DateTime?                 @map("approved_at")
+  revokedAt           DateTime?                 @map("revoked_at")
+  notes               String?                   @db.Text
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, status])
+  @@index([userId, status])
+  @@unique([licenseId, accountLogin, accountServer, symbol, magicNumber])
+  @@map("real_trading_approvals")
+}
+
+model AccountSnapshot {
+  id                    String              @id @default(cuid())
+  userId                String              @map("user_id")
+  licenseId             String              @map("license_id")
+  robotInstanceId       String?             @map("robot_instance_id")
+  snapshotType          AccountSnapshotType @map("snapshot_type")
+  accountLogin          String              @map("account_login")
+  accountServer         String              @map("account_server")
+  environment           TradeMode
+  currency              String              @default("BRL")
+  balance               Decimal             @db.Decimal(18, 2)
+  equity                Decimal             @db.Decimal(18, 2)
+  margin                Decimal?            @db.Decimal(18, 2)
+  freeMargin            Decimal?            @map("free_margin") @db.Decimal(18, 2)
+  marginLevel           Decimal?            @map("margin_level") @db.Decimal(10, 4)
+  openPositionsJson     Json?               @map("open_positions_json")
+  pendingOrdersJson     Json?               @map("pending_orders_json")
+  activeMagicNumbersJson Json?              @map("active_magic_numbers_json")
+  capturedAt            DateTime            @map("captured_at")
+  source                AccountSnapshotSource @default(EA)
+  createdAt             DateTime            @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, snapshotType, capturedAt])
+  @@index([accountLogin, accountServer, capturedAt])
+  @@map("account_snapshots")
+}
+
+model RealTradePreflight {
+  id                    String                   @id @default(cuid())
+  userId                String                   @map("user_id")
+  licenseId             String                   @map("license_id")
+  instructionId         String?                  @map("instruction_id")
+  masterSignalId        String?                  @map("master_signal_id")
+  accountSnapshotId     String?                  @map("account_snapshot_id")
+  accountLogin          String                   @map("account_login")
+  accountServer         String                   @map("account_server")
+  symbol                String
+  magicNumber           Int                      @map("magic_number")
+  requestedContracts    Int                      @default(1) @map("requested_contracts")
+  requiredMargin        Decimal?                 @map("required_margin") @db.Decimal(18, 2)
+  freeMargin            Decimal?                 @map("free_margin") @db.Decimal(18, 2)
+  marginOk              Boolean                  @default(false) @map("margin_ok")
+  eaOnline              Boolean                  @default(false) @map("ea_online")
+  accountOk             Boolean                  @default(false) @map("account_ok")
+  symbolOk              Boolean                  @default(false) @map("symbol_ok")
+  magicNumberOk         Boolean                  @default(false) @map("magic_number_ok")
+  subscriptionOk        Boolean?                 @map("subscription_ok")
+  licenseOk             Boolean                  @default(false) @map("license_ok")
+  realApprovalOk        Boolean                  @default(false) @map("real_approval_ok")
+  snapshotOk            Boolean                  @default(false) @map("snapshot_ok")
+  existingExposureOk    Boolean                  @default(false) @map("existing_exposure_ok")
+  protectionPreviousOk  Boolean                  @default(false) @map("protection_previous_ok")
+  status                RealTradePreflightStatus
+  reason                String?                  @db.Text
+  createdAt             DateTime                 @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  license     License      @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  instruction Instruction? @relation(fields: [instructionId], references: [id], onDelete: SetNull)
+
+  @@index([licenseId, createdAt])
+  @@index([instructionId])
+  @@map("real_trade_preflights")
+}
+
+model ExecutionProtectionReport {
+  id                    String           @id @default(cuid())
+  instructionId         String           @map("instruction_id")
+  executionId           String?          @map("execution_id")
+  licenseId             String           @map("license_id")
+  accountLogin          String           @map("account_login")
+  accountServer         String           @map("account_server")
+  symbol                String
+  magicNumber           Int              @map("magic_number")
+  entryOrderTicket      String?          @map("entry_order_ticket")
+  entryDealTicket       String?          @map("entry_deal_ticket")
+  stopLossPresent       Boolean          @default(false) @map("stop_loss_present")
+  takeProfitPresent     Boolean          @default(false) @map("take_profit_present")
+  stopLossPrice         Decimal?         @map("stop_loss_price") @db.Decimal(18, 6)
+  takeProfitPrice       Decimal?         @map("take_profit_price") @db.Decimal(18, 6)
+  stopOrderTicket       String?          @map("stop_order_ticket")
+  takeOrderTicket       String?          @map("take_order_ticket")
+  protectionMode        ProtectionMode   @default(UNKNOWN) @map("protection_mode")
+  protectionStatus      ProtectionStatus @map("protection_status")
+  errorCode             String?          @map("error_code")
+  errorMessageRedacted  String?          @map("error_message_redacted") @db.Text
+  reportedAt            DateTime         @map("reported_at")
+  createdAt             DateTime         @default(now()) @map("created_at")
+
+  instruction Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  execution   Execution?  @relation(fields: [executionId], references: [id], onDelete: SetNull)
+  license     License     @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, magicNumber, createdAt])
+  @@index([instructionId])
+  @@map("execution_protection_reports")
 }

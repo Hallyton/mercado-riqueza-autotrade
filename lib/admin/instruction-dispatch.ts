@@ -38,6 +38,10 @@ export const createAdminInstructionSchema = z.object({
   take_profit: optionalPositiveNumber,
   expires_in_minutes: z.number().int().min(5).max(1440).default(60),
   note: z.string().max(500).optional(),
+  magic_number: z.number().int().positive().optional(),
+  account_login: z.string().min(1).max(64).optional(),
+  account_server: z.string().min(1).max(128).optional(),
+  requires_protection_confirmation: z.boolean().optional(),
 });
 
 export type CreateAdminInstructionInput = z.infer<
@@ -116,6 +120,11 @@ export async function createAdminDispatchedInstruction(
         expiresAt,
         source,
         currentStatus: OrderLogStatus.RECEIVED,
+        magicNumber: input.magic_number,
+        accountLogin: input.account_login?.trim(),
+        accountServer: input.account_server?.trim(),
+        requiresProtectionConfirmation:
+          input.requires_protection_confirmation ?? Boolean(input.magic_number),
       },
     });
 

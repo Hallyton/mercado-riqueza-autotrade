@@ -10,6 +10,14 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { canAcceptNewEntries } from "@/lib/licensing/flags";
 import { mapInstructionToEaPayload } from "@/lib/ea/instructions";
 
+vi.mock("@/lib/risk/real-trade-preflight", () => ({
+  runRealTradePreflight: vi.fn().mockResolvedValue({
+    passed: true,
+    status: "PASSED",
+  }),
+  hasPreMarketSnapshotToday: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   default: {
     instruction: {
@@ -18,6 +26,7 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
     },
     instructionStatusLog: { create: vi.fn() },
+    license: { findUnique: vi.fn() },
     eaHeartbeat: {
       findFirst: vi.fn().mockResolvedValue({ tradeMode: "DEMO" }),
     },
