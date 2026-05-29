@@ -2120,6 +2120,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa sugerida:** Fase 10.6 — Meeting Follow-up Template & Decision Log ou Institutional Deck Visual Draft.
 
+### Fase 10.6 — Meeting Follow-up Template & Decision Log
+
+**Status:** `MEETING_FOLLOW_UP_DECISION_LOG_READY`  
+**Documento:** [`docs/MEETING-FOLLOW-UP-DECISION-LOG.md`](MEETING-FOLLOW-UP-DECISION-LOG.md)  
+**Objetivo:** criar modelo padronizado para registrar reuniões, decisões, requisitos, riscos e próximos passos com corretoras, parceiros, jurídico, investidores ou stakeholders comerciais.
+
+| Item | Resultado |
+|------|-----------|
+| Template | Identificação, resumo, pontos, tabelas, follow-up |
+| Regra decisão | Não liberar real/produção/dispatch sem gate formal |
+| Status do log | DRAFT … BLOCKED (8 estados) |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 10.6:** template pronto para uso após reuniões do pacote 10.5. Não é contrato final.
+
+**Próxima etapa sugerida:** Fase 10.7 — Institutional Deck Visual Draft ou First Partner Meeting Record.
+
 ---
 
 ## 13. Riscos e cuidados

@@ -245,10 +245,27 @@ Ler ou incluir no convite/ata:
 
 ## 17. Próxima etapa sugerida
 
-- **Fase 10.6** — Meeting Follow-up Template & Decision Log, **ou**  
-- **Fase 10.6** — Institutional Deck Visual Draft  
+- **Fase 10.6** — Meeting Follow-up Template & Decision Log — **concluída** (ver §18)  
+- **Fase 10.7** — Institutional Deck Visual Draft **ou** First Partner Meeting Record  
 
 Ambas preservam bloqueios de conta real, produção real e dispatch automático.
+
+---
+
+## 18. Fase 10.6 — Meeting Follow-up Template & Decision Log
+
+**Documento:** [`docs/MEETING-FOLLOW-UP-DECISION-LOG.md`](MEETING-FOLLOW-UP-DECISION-LOG.md)  
+**Status:** `MEETING_FOLLOW_UP_DECISION_LOG_READY`
+
+| Item | Situação |
+|------|----------|
+| Template de reunião | OK — identificação, pauta, tabelas |
+| Decision log | OK — decisões, requisitos, riscos, pendências |
+| Follow-up e-mail | Modelo incluído |
+| Uso | Reuniões futuras (corretora, parceiro, jurídico, etc.) |
+| Conta real | **Continua bloqueada** |
+
+**Conclusão:** pós-reunião do pacote 10.5 passa a usar este template. Não libera conta real nem substitui ata formal assinada.
 
 ---
 
