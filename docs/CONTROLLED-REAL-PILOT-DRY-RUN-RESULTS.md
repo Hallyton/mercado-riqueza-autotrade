@@ -22,8 +22,9 @@ Validar em **staging/homologação** o fluxo de **conta real controlada** **sem 
 | Branch | `staging-vps-homologacao` |
 | URL homologação | https://autotrade-staging.mercadodariqueza.com.br |
 | Preview Vercel (último deploy 12.3) | https://mercado-riqueza-autotrade-staging-7ohhneudx-hallyton-s-projects.vercel.app |
-| Banco staging remoto | PostgreSQL Neon (via Vercel) — **migration remota pendente** (ver §3) |
-| Banco local `.env` | Usado apenas para verificação de schema/migrations em dev |
+| Banco staging remoto (Neon/Vercel) | **Não acessível** via `vercel env pull` neste ambiente — migration remota **pendente confirmação** (ver §3) |
+| Banco local `.env` | `localhost` — migrations OK; **não é** o mesmo banco do deploy staging |
+| Deploy produção staging | `dpl_7kNHzVcpUgHW4CxYEj1ASPDnSRRR` — alias `autotrade-staging.mercadodariqueza.com.br` |
 
 ---
 
@@ -33,6 +34,13 @@ Validar em **staging/homologação** o fluxo de **conta real controlada** **sem 
 
 - `vercel env pull` (preview + branch `staging-vps-homologacao`): variáveis `DATABASE_URL`, `POSTGRES_*` retornaram **vazias** (len=0) — não foi possível executar `npx prisma migrate deploy` no PostgreSQL **remoto** de staging a partir desta máquina sem copiar o secret manualmente para o shell.
 - **Nenhum** `DATABASE_URL` foi impresso; **nenhum** arquivo `.env` novo foi commitado.
+
+### `migrate deploy` local (2026-05-29)
+
+Com `APPLY_MIGRATE=1` e `DATABASE_URL` do `.env` local:
+
+- `npx prisma migrate deploy` → **No pending migrations to apply**
+- Migrations `20260529014145` e `20260529024342` registradas no banco local
 
 ### Verificação local (referência de migrations)
 
@@ -103,11 +111,25 @@ Ou: `APPLY_MIGRATE=1 node scripts/homologation/verify-staging-real-trading-schem
 - `tests/ea/schemas-snapshot-protection.test.ts` — payloads `PRE_MARKET`, `PRE_TRADE`, `POST_MARKET`.
 - `tests/ea/mql-contracts.test.ts` — endpoints e rotinas PRE_MARKET/POST_MARKET no EA.
 
-### Staging HTTP (sem Bearer — apenas proteção de rota)
+### Staging HTTP — rotas publicadas (pós-redeploy forçado)
 
-| Rota | Preview Vercel | Domínio custom staging |
-|------|----------------|-------------------------|
-| `POST /api/v1/ea/account-snapshots` | **401** (rota existe, exige auth) | **404** (alias pode estar em build anterior — redeploy recomendado) |
+| Rota | Sem Bearer | Com Bearer inválido |
+|------|------------|---------------------|
+| `POST /api/v1/ea/account-snapshots` | **401** `MISSING_TOKEN` | **401** (token inválido) |
+| `POST /api/v1/ea/execution-protection` | **401** `MISSING_TOKEN` | **401** (token inválido) |
+
+Headers: `X-Matched-Path` confirma handler Next.js no domínio custom. **404 resolvido** (causa: deploy de produção desatualizado; correção: `vercel deploy --prod --force`).
+
+### Staging HTTP — payload vazio **com Bearer válido** (pendente)
+
+Resultado esperado: **400** `VALIDATION_ERROR` (não 401/404).
+
+Tentativas:
+
+1. Ativação via código gerado no banco **local** + `POST /ea/activate` em staging → **401** `INVALID_ACTIVATION_CODE` (bancos diferentes).
+2. Login dashboard homolog (`HOMOLOG_CLIENT_*`) + `GET /api/me/subscription` → **200 text/html** (sessão não estabelecida ou usuário ausente no Neon staging).
+
+**Desbloqueio:** exportar no shell (sem logar) `STAGING_EA_BEARER_TOKEN` do EA já ativado na VPS **ou** `STAGING_DATABASE_URL` do Neon + rodar `npx tsx scripts/homologation/validate-staging-ea-routes.ts`.
 
 ### E2E com EA (pendente)
 
@@ -197,9 +219,11 @@ Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` vis
 
 | # | Incidente | Impacto | Mitigação |
 |---|-----------|---------|-----------|
-| 1 | `vercel env pull` sem `DATABASE_URL` | Migration remota não aplicada daqui | Operador exporta secret no shell e roda `migrate deploy` |
-| 2 | Domínio custom retorna **404** nas rotas novas | E2E via domínio oficial bloqueado | Redeploy staging; usar preview Vercel (401 = rota OK) até alias atualizar |
-| 3 | EA não compilado na VPS | Snapshots/protection E2E pendentes | Compilar no MetaEditor (§4) |
+| 1 | `vercel env pull` / `vercel env run` sem `DATABASE_URL` Neon | Migration remota não confirmada daqui | Operador copia URL do painel Neon/Vercel para o shell |
+| 2 | Domínio custom **404** nas rotas EA novas | E2E bloqueado | **Resolvido** — `vercel deploy --prod --force` (§6) |
+| 3 | Banco local ≠ banco staging | Token/código de ativação local não vale em staging | Usar token da VPS ou `STAGING_DATABASE_URL` |
+| 4 | Login homolog staging → HTML em `/api/me/subscription` | Script dashboard não obtém activation code | Criar cliente homolog no Neon staging ou usar token VPS |
+| 5 | EA não compilado na VPS | Snapshots/protection E2E pendentes | Compilar no MetaEditor (§4) |
 
 ---
 
@@ -210,7 +234,7 @@ Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` vis
 3. Criar `RealTradingApproval` de homologação no admin.
 4. E2E snapshots/protection com EA em DebugMode.
 5. Validar admin UI com dados reais.
-6. Redeploy para alinhar domínio custom às rotas `/api/v1/ea/account-snapshots` e `/execution-protection`.
+6. Validar payload vazio/valido com **Bearer válido** (`validate-staging-ea-routes.ts` ou EA DebugMode na VPS).
 
 ---
 
@@ -237,5 +261,9 @@ Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` vis
 ```bash
 npm test -- --run tests/risk/controlled-real-pilot-dry-run.test.ts
 node scripts/homologation/verify-staging-real-trading-schema.mjs
-# Com migrate: APPLY_MIGRATE=1 DATABASE_URL=... node scripts/homologation/verify-staging-real-trading-schema.mjs
+# Com migrate: APPLY_MIGRATE=1 node scripts/homologation/verify-staging-real-trading-schema.mjs
+
+# Validação autenticada staging (não imprime token):
+# STAGING_EA_BEARER_TOKEN=... STAGING_EA_DEVICE_ID=... npx tsx scripts/homologation/validate-staging-ea-routes.ts
+# Ou: STAGING_DATABASE_URL=... npx tsx scripts/homologation/validate-staging-ea-routes.ts
 ```

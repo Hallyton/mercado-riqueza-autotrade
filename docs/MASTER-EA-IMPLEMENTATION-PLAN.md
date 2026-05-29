@@ -2326,7 +2326,8 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Migration staging remota | **Pendente** (`vercel env pull` sem DATABASE_URL) |
 | Schema local / script verificação | OK (`verify-staging-real-trading-schema.mjs`) |
 | EA MQL5 compile VPS | **Pendente** (manual MetaEditor) |
-| Endpoints staging | Preview **401** (protegido); domínio custom **404** nas rotas novas — redeploy |
+| Endpoints staging | Domínio custom **401** `MISSING_TOKEN` pós-redeploy; validação **400** com Bearer válido **pendente** (token VPS/Neon) |
+| Rotas EA 404 | **Resolvido** — deploy `dpl_7kNHzVcpUgHW4CxYEj1ASPDnSRRR` |
 | Ordem real | **Nenhuma** enviada |
 | RealTradingApproval admin | **Pendente** (manual pós-migration) |
 | Dispatch automático | **Desativado** |
