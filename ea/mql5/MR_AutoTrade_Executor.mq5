@@ -21,6 +21,8 @@ input string InpDeviceId        = "";                                    // ID d
 input bool   InpShowPanel       = true;                                  // Painel mínimo no gráfico
 input int    InpLogLevel        = 1;                                     // 0=erro 1=info 2=debug
 input bool   InpDebugMode       = true;                                  // true = não envia ordens reais
+input bool   InpSendPreMarketOnInit = true;                              // REAL: enviar PRE_MARKET no OnInit
+input bool   InpSendPostMarketOnDeinit = false;                          // REAL: enviar POST_MARKET no OnDeinit
 
 //--- Includes modulares
 #include "includes/MR_AT_Constants.mqh"
@@ -36,6 +38,7 @@ input bool   InpDebugMode       = true;                                  // true
 #include "includes/MR_AT_Heartbeat.mqh"
 #include "includes/MR_AT_Execution.mqh"
 #include "includes/MR_AT_Signal.mqh"
+#include "includes/MR_AT_RealTrading.mqh"
 
 //--- Globais (compartilhadas com includes via extern)
 string g_api_base_url;
@@ -125,12 +128,18 @@ int OnInit()
    if(InpDebugMode)
       MR_AT_LogInfo("Init", "DEBUG_MODE ativo — nenhuma ordem real será enviada");
 
+   if(InpSendPreMarketOnInit && MR_AT_GetTradeMode() == "REAL")
+      MR_AT_EnsurePreMarketSnapshot();
+
    return INIT_SUCCEEDED;
   }
 
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   if(InpSendPostMarketOnDeinit && MR_AT_GetTradeMode() == "REAL")
+      MR_AT_SendAccountSnapshot("POST_MARKET");
+
    EventKillTimer();
    Comment("");
    MR_AT_LogInfo("Deinit", "EA finalizado motivo=" + IntegerToString(reason));
@@ -165,6 +174,9 @@ void OnTimer()
 
    MR_AT_FetchConfig();
    EventSetTimer(g_heartbeat_interval_sec);
+
+   if(MR_AT_GetTradeMode() == "REAL")
+      MR_AT_EnsurePreMarketSnapshot();
 
    MR_AT_FetchAndProcessSignals();
    MR_AT_UpdatePanel();

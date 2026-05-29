@@ -2296,6 +2296,25 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.3 — EA Executor MQL5 Snapshot & Protection Contract.
 
+### Fase 12.3 — EA Executor MQL5 Snapshot & Protection Contract
+
+**Status:** `EA_EXECUTOR_MQL5_UPDATED_PENDING_MT5_COMPILE` (`APPROVED_WITH_RESTRICTIONS`)  
+**Documento:** [`docs/EA-EXECUTOR-SNAPSHOT-PROTECTION-CONTRACT.md`](EA-EXECUTOR-SNAPSHOT-PROTECTION-CONTRACT.md)
+
+| Item | Resultado |
+|------|-----------|
+| `EA-API.md` | Contratos `account-snapshots` e `execution-protection` detalhados |
+| EA MQL5 | `MR_AT_RealTrading.mqh` — PRE_MARKET / PRE_TRADE / POST_MARKET, magic, proteção SL/TP |
+| Instrução REAL | `magic_number`, conta, `protection_required`, `source` |
+| Testes | `mql-contracts`, `schemas-snapshot-protection` |
+| Migration staging | **Pendente** — `DATABASE_URL` vazio no `vercel env pull`; aplicar `migrate deploy` manualmente |
+| Compilação MT5 | **Pendente** — validar no MetaEditor |
+| REAL global | **Não** |
+| Dispatch automático | **Desativado** |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fase 12.4 — Controlled Real Pilot Dry Run.
+
 ---
 
 ## 13. Riscos e cuidados

@@ -14,6 +14,10 @@ describe("contratos MQL5 — EA cliente", () => {
   const execution = readMql(path.join("includes", "MR_AT_Execution.mqh"));
   const signal = readMql(path.join("includes", "MR_AT_Signal.mqh"));
   const http = readMql(path.join("includes", "MR_AT_Http.mqh"));
+  const realTrading = readMql(path.join("includes", "MR_AT_RealTrading.mqh"));
+  const combinedClient = [executor, constants, execution, signal, realTrading, auth, license, http].join(
+    "\n"
+  );
 
   it("mantém apenas inputs operacionais permitidos, sem parâmetros de estratégia", () => {
     expect(executor).toContain("input string InpApiBaseUrl");
@@ -40,8 +44,38 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(constants).toContain("#define MR_AT_EA_MAGIC");
     expect(constants).toContain("instruction_id");
     expect(constants).toContain("idempotency_key");
+    expect(constants).toContain("magic_number");
     expect(constants).not.toContain("strategy");
     expect(constants).not.toContain("indicator");
+    expect(constants).not.toContain("InpStopLoss");
+    expect(constants).not.toContain("InpTakeProfit");
+  });
+
+  it("integra snapshots e proteção SL/TP para conta real", () => {
+    expect(realTrading).toContain("/api/v1/ea/account-snapshots");
+    expect(realTrading).toContain("/api/v1/ea/execution-protection");
+    expect(realTrading).toContain("PRE_MARKET");
+    expect(realTrading).toContain("PRE_TRADE");
+    expect(realTrading).toContain("PROTECTION_CONFIRMED");
+    expect(realTrading).toContain("PROTECTION_FAILED");
+    expect(execution).toContain("MR_AT_ResolveInstructionMagic");
+    expect(signal).toContain("account_login");
+    expect(signal).toContain("MR_AT_ValidateInstructionContext");
+    expect(executor).toContain("MR_AT_EnsurePreMarketSnapshot");
+    expect(executor).toContain('MR_AT_SendAccountSnapshot("POST_MARKET")');
+  });
+
+  it("não loga Authorization, Bearer ou tokens em mensagens operacionais", () => {
+    expect(combinedClient).not.toMatch(
+      /MR_AT_Log(?:Info|Debug|Error)\([^)]*Authorization:\s*Bearer/
+    );
+    expect(combinedClient).not.toMatch(
+      /MR_AT_Log(?:Info|Debug|Error)\([^)]*g_device_token/
+    );
+    expect(combinedClient).not.toMatch(
+      /MR_AT_Log(?:Info|Debug|Error)\([^)]*\+\s*InpActivationCode/
+    );
+    expect(execution).not.toContain("payload=" + "{");
   });
 
   it("não loga activation code nem device token bruto em mensagens operacionais", () => {

@@ -95,13 +95,60 @@ Payload de instrução (somente execução):
 }
 ```
 
-Campos `magic_number`, `account_login`, `account_server` e `requires_protection_confirmation` são usados no **piloto de conta real** (quando `trade_mode` REAL e gate aprovado). O EA Executor deve confirmar stop/take via `/execution-protection` antes de novas entradas no mesmo `magic_number`.
+Campos `magic_number`, `account_login`, `account_server`, `trade_mode`, `protection_required`, `requires_protection_confirmation`, `requested_contracts` e `source` são usados no **piloto de conta real** (gate condicional aprovado no servidor). O EA Executor **deve** enviar snapshots e confirmar stop/take via `/execution-protection` — sem isso o preflight REAL bloqueia novas entradas.
+
+Exemplo de instrução REAL (sem estratégia):
+
+```json
+{
+  "instruction_id": "uuid",
+  "purpose": "ENTRY",
+  "symbol": "WDOM26",
+  "side": "BUY",
+  "order_type": "MARKET",
+  "quantity": 1,
+  "stop_loss": 128000,
+  "take_profit": 129000,
+  "expires_at": "2026-05-27T18:00:00.000Z",
+  "idempotency_key": "uuid",
+  "magic_number": 910001,
+  "account_login": "12345",
+  "account_server": "Broker-Server",
+  "trade_mode": "REAL",
+  "requires_protection_confirmation": true,
+  "protection_required": true,
+  "requested_contracts": 1,
+  "controlled_real_gate": true,
+  "source": "MASTER_SIGNAL"
+}
+```
 
 ---
 
 ## POST `/account-snapshots`
 
-Registra snapshot de conta (PRE_MARKET obrigatório no dia antes de operação real).
+Registra snapshot operacional da conta MT5 (telemetria para preflight REAL — **não** expõe estratégia).
+
+### Payload
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `snapshot_type` | enum | `PRE_MARKET` \| `PRE_TRADE` \| `POST_MARKET` \| `MANUAL` |
+| `account_login` | string | Login MT5 |
+| `account_server` | string | Servidor MT5 |
+| `environment` | enum | `DEMO` \| `REAL` |
+| `currency` | string? | Moeda da conta |
+| `balance` | number | Saldo |
+| `equity` | number | Equity |
+| `margin` | number? | Margem usada |
+| `free_margin` | number? | Margem livre |
+| `margin_level` | number? | Nível de margem (%) |
+| `open_positions` | array? | Posições abertas (agregado) |
+| `pending_orders` | array? | Ordens pendentes |
+| `active_magic_numbers` | number[]? | Magics ativos na conta |
+| `captured_at` | datetime? | ISO 8601 UTC |
+
+### Exemplo
 
 ```json
 {
@@ -109,8 +156,10 @@ Registra snapshot de conta (PRE_MARKET obrigatório no dia antes de operação r
   "account_login": "12345",
   "account_server": "Broker-Server",
   "environment": "REAL",
+  "currency": "BRL",
   "balance": 100000,
   "equity": 100000,
+  "margin": 20000,
   "free_margin": 80000,
   "margin_level": 500,
   "open_positions": [],
@@ -120,11 +169,49 @@ Registra snapshot de conta (PRE_MARKET obrigatório no dia antes de operação r
 }
 ```
 
+### Regras
+
+| `snapshot_type` | Regra |
+|-----------------|--------|
+| `PRE_MARKET` | **Obrigatório** no dia (UTC) antes de qualquer operação REAL |
+| `PRE_TRADE` | **Recomendado** imediatamente antes de cada entrada REAL |
+| `POST_MARKET` | **Obrigatório** ao fim do pregão (rotina EA ou manual) |
+| `MANUAL` | Snapshot sob demanda (auditoria) |
+
+- Conta deve estar **autorizada** na licença (`assertMt5AccountAuthorized`).
+- **Não** registrar tokens, senhas ou `Authorization` em logs de aplicação.
+
 ---
 
 ## POST `/execution-protection`
 
-Confirma posicionamento de stop/take após execução (conta real exige `PROTECTION_CONFIRMED`).
+Confirma que stop e take foram posicionados após execução REAL.
+
+### Payload
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `instruction_id` | string | Instrução correlacionada |
+| `execution_id` | string? | Execução (se conhecida) |
+| `account_login` | string | Login MT5 |
+| `account_server` | string | Servidor |
+| `symbol` | string | Ativo |
+| `magic_number` | int | Magic da instância robô |
+| `entry_order_ticket` | string? | Ticket da entrada |
+| `entry_deal_ticket` | string? | Deal da entrada |
+| `stop_loss_present` | bool | SL confirmado |
+| `take_profit_present` | bool | TP confirmado |
+| `stop_loss_price` | number? | Preço SL |
+| `take_profit_price` | number? | Preço TP |
+| `stop_order_ticket` | string? | Ticket ordem SL pendente |
+| `take_order_ticket` | string? | Ticket ordem TP pendente |
+| `protection_mode` | enum | `ATTACHED_SL_TP` \| `PENDING_PROTECTION_ORDERS` \| `UNKNOWN` |
+| `protection_status` | enum | `PROTECTION_CONFIRMED` \| `PROTECTION_FAILED` \| `PROTECTION_PENDING` \| `NOT_REQUIRED_FOR_DEBUG` |
+| `error_code` | string? | Código broker/EA |
+| `error_message` | string? | Mensagem redigida no servidor |
+| `reported_at` | datetime? | ISO 8601 UTC |
+
+### Exemplo confirmado
 
 ```json
 {
@@ -135,11 +222,21 @@ Confirma posicionamento de stop/take após execução (conta real exige `PROTECT
   "magic_number": 910001,
   "stop_loss_present": true,
   "take_profit_present": true,
+  "stop_loss_price": 128000,
+  "take_profit_price": 129000,
   "protection_mode": "ATTACHED_SL_TP",
   "protection_status": "PROTECTION_CONFIRMED",
   "reported_at": "2026-05-27T10:05:00Z"
 }
 ```
+
+### Regras
+
+- Em **REAL**, `stop_loss_present=true` e `take_profit_present=true` são **obrigatórios** para `PROTECTION_CONFIRMED`.
+- Se SL/TP falharem: `protection_status=PROTECTION_FAILED` + `error_code` / `error_message`.
+- Em `PROTECTION_FAILED`, o EA **não** deve enviar novas ordens para o mesmo `magic_number`; a plataforma marca `protectionBlocked` e bloqueia preflight.
+- Modo `PENDING_PROTECTION_ORDERS`: informar `stop_order_ticket` e `take_order_ticket` quando SL/TP forem ordens separadas.
+- Debug homologação: `NOT_REQUIRED_FOR_DEBUG` apenas com `InpDebugMode=true` (sem ordem real).
 
 ---
 

@@ -39,6 +39,7 @@ export type EaInstructionPayload = {
   trade_mode?: "REAL" | "DEMO";
   requested_contracts?: number;
   controlled_real_gate?: boolean;
+  source?: string;
 };
 
 function toNumber(value: Prisma.Decimal | null | undefined): number | null {
@@ -64,6 +65,7 @@ export function mapInstructionToEaPayload(
     accountLogin?: string | null;
     accountServer?: string | null;
     requiresProtectionConfirmation?: boolean;
+    source?: string | null;
   }
 ): EaInstructionPayload {
   const payload: EaInstructionPayload = {
@@ -91,6 +93,9 @@ export function mapInstructionToEaPayload(
     payload.requires_protection_confirmation = true;
     payload.protection_required = true;
   }
+  if (instruction.source) {
+    payload.source = instruction.source;
+  }
   return payload;
 }
 
@@ -110,6 +115,7 @@ export function mapInstructionToEaPayloadForReal(
   payload.requires_protection_confirmation = true;
   payload.protection_required = true;
   payload.controlled_real_gate = true;
+  payload.source = instruction.source ?? "MASTER_SIGNAL";
   return payload;
 }
 
@@ -171,6 +177,7 @@ type InstructionRow = {
   accountServer: string | null;
   requiresProtectionConfirmation: boolean;
   protectionBlocked: boolean;
+  source: string | null;
 };
 
 async function listDeliverableInstructionCandidates(

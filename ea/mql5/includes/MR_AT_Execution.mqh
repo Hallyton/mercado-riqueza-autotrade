@@ -9,6 +9,8 @@
 #include "MR_AT_Http.mqh"
 #include "MR_AT_ApiAuth.mqh"
 #include "MR_AT_Error.mqh"
+#include "MR_AT_Equity.mqh"
+#include "MR_AT_RealTrading.mqh"
 
 extern bool g_debug_mode;
 extern bool g_halt_all_trading;
@@ -61,7 +63,9 @@ bool MR_AT_ReportExecution(
    const double fill_price = 0.0,
    const double fill_quantity = 0.0,
    const string error_code = "",
-   const string error_message = ""
+   const string error_message = "",
+   const int magic_number = 0,
+   const string symbol = ""
 )
   {
    string body = "{";
@@ -73,6 +77,12 @@ bool MR_AT_ReportExecution(
       body += "\"fill_price\":" + DoubleToString(fill_price, _Digits) + ",";
    if(fill_quantity > 0)
       body += "\"fill_quantity\":" + DoubleToString(fill_quantity, 2) + ",";
+   if(magic_number > 0)
+      body += "\"magic_number\":" + IntegerToString(magic_number) + ",";
+   if(StringLen(symbol) > 0)
+      body += "\"symbol\":" + MR_AT_JsonQuote(symbol) + ",";
+   body += "\"account_login\":" + MR_AT_JsonQuote(MR_AT_AccountLoginStr()) + ",";
+   body += "\"account_server\":" + MR_AT_JsonQuote(MR_AT_AccountServerStr()) + ",";
    if(StringLen(error_code) > 0)
       body += "\"error_code\":" + MR_AT_JsonQuote(error_code) + ",";
    if(StringLen(error_message) > 0)
@@ -82,7 +92,7 @@ bool MR_AT_ReportExecution(
 
    string response = "";
    int http = 0;
-   MR_AT_LogInfo("Execution", "POST /api/v1/ea/executions payload=" + body);
+   MR_AT_LogInfo("Execution", "POST /executions id=" + instruction_id + " status=" + status);
 
    bool sent = MR_AT_ApiPostAuth("/api/v1/ea/executions", body, response, http);
    if(!sent || http < 200 || http >= 300)
@@ -113,7 +123,13 @@ bool MR_AT_ReportIgnored(const string instruction_id, const string reason)
   }
 
 //+------------------------------------------------------------------+
-bool MR_AT_ClosePositionBySymbol(const string symbol, const double volume_req, ulong &ticket, string &err_msg)
+bool MR_AT_ClosePositionBySymbol(
+   const string symbol,
+   const double volume_req,
+   const int magic_filter,
+   ulong &ticket,
+   string &err_msg
+)
   {
    ticket = 0;
    for(int i = PositionsTotal() - 1; i >= 0; i--)
@@ -123,7 +139,7 @@ bool MR_AT_ClosePositionBySymbol(const string symbol, const double volume_req, u
          continue;
       if(PositionGetString(POSITION_SYMBOL) != symbol)
          continue;
-      if(PositionGetInteger(POSITION_MAGIC) != MR_AT_EA_MAGIC)
+      if((int)PositionGetInteger(POSITION_MAGIC) != magic_filter)
          continue;
 
       double vol = PositionGetDouble(POSITION_VOLUME);
@@ -144,7 +160,7 @@ bool MR_AT_ClosePositionBySymbol(const string symbol, const double volume_req, u
                          SymbolInfoDouble(symbol, SYMBOL_BID) :
                          SymbolInfoDouble(symbol, SYMBOL_ASK);
       request.deviation = 20;
-      request.magic    = MR_AT_EA_MAGIC;
+      request.magic    = magic_filter;
       request.comment  = "MR_AT:EXIT";
 
       if(g_debug_mode)
@@ -183,8 +199,10 @@ bool MR_AT_ExecuteMarketOrder(const MRInstruction &instr, ulong &ticket, string 
       return false;
      }
 
+   int order_magic = MR_AT_ResolveInstructionMagic(instr);
+
    if(instr.purpose == "EXIT")
-      return MR_AT_ClosePositionBySymbol(instr.symbol, instr.quantity, ticket, err_msg);
+      return MR_AT_ClosePositionBySymbol(instr.symbol, instr.quantity, order_magic, ticket, err_msg);
 
    double volume = MR_AT_NormalizeVolume(instr.symbol, instr.quantity);
    if(volume <= 0)
@@ -207,7 +225,7 @@ bool MR_AT_ExecuteMarketOrder(const MRInstruction &instr, ulong &ticket, string 
    request.type         = order_type;
    request.price        = price;
    request.deviation    = 20;
-   request.magic        = MR_AT_EA_MAGIC;
+   request.magic        = order_magic;
    request.comment      = "MR_AT:" + instr.instruction_id;
    request.type_filling = ORDER_FILLING_IOC;
 
@@ -265,12 +283,15 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
       if(MR_AT_IsVerboseLog())
          MR_AT_LogDebug("Execution",
             "DEBUG_MODE — POST /executions FILLED id=" + instr.instruction_id);
-      if(!MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG",
-                            sim_price, instr.quantity))
+      int magic_dbg = MR_AT_ResolveInstructionMagic(instr);
+   if(!MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG",
+                            sim_price, instr.quantity, "", "", magic_dbg, instr.symbol))
          MR_AT_LogError("Execution",
             "DEBUG_MODE — falha ao reportar FILLED id=" + instr.instruction_id);
       return;
      }
+
+   int magic = MR_AT_ResolveInstructionMagic(instr);
 
    if(ok && ticket > 0)
      {
@@ -278,13 +299,21 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
       if(PositionSelect(instr.symbol))
          fill_price = PositionGetDouble(POSITION_PRICE_OPEN);
       MR_AT_ReportExecution(instr.instruction_id, "FILLED", IntegerToString((long)ticket),
-                            fill_price, instr.quantity);
+                            fill_price, instr.quantity, "", "", magic, instr.symbol);
+
+      if(MR_AT_InstructionIsReal(instr) && instr.purpose == "ENTRY")
+        {
+         string prot_err = "";
+         if(!MR_AT_VerifyAndReportProtection(instr, ticket, prot_err))
+            MR_AT_LogError("Execution", prot_err);
+        }
+
       MR_AT_LogInfo("Execution", "Executada ticket=" + IntegerToString((long)ticket));
      }
    else
      {
       MR_AT_ReportExecution(instr.instruction_id, "REJECTED", "", 0, 0,
-                            "EXECUTION_FAILED", err);
+                            "EXECUTION_FAILED", err, magic, instr.symbol);
       MR_AT_ReportError("EXECUTION_FAILED", err);
       MR_AT_LogError("Execution", err);
      }

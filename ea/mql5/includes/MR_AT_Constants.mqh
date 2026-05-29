@@ -29,6 +29,14 @@ struct MRInstruction
    double            take_profit;
    string            expires_at;
    string            idempotency_key;
+   int               magic_number;  // obrigatório em trade_mode REAL
+   string            account_login;
+   string            account_server;
+   string            trade_mode;    // DEMO | REAL | vazio
+   bool              protection_required;
+   bool              requires_protection_confirmation;
+   double            requested_contracts;
+   string            source;        // ex.: MASTER_SIGNAL (sem lógica estratégica)
   };
 
 //+------------------------------------------------------------------+

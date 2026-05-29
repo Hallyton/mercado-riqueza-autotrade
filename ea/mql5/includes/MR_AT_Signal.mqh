@@ -16,6 +16,15 @@ extern bool g_subscription_active;
 //+------------------------------------------------------------------+
 bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
   {
+   instr.magic_number = 0;
+   instr.account_login = "";
+   instr.account_server = "";
+   instr.trade_mode = "";
+   instr.protection_required = false;
+   instr.requires_protection_confirmation = false;
+   instr.requested_contracts = 0;
+   instr.source = "";
+
    instr.instruction_id = MR_AT_JsonGetString(obj, "instruction_id");
    instr.purpose = MR_AT_JsonGetString(obj, "purpose");
    instr.symbol = MR_AT_JsonGetString(obj, "symbol");
@@ -26,6 +35,15 @@ bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
    instr.take_profit = MR_AT_JsonGetDouble(obj, "take_profit");
    instr.expires_at = MR_AT_JsonGetString(obj, "expires_at");
    instr.idempotency_key = MR_AT_JsonGetString(obj, "idempotency_key");
+   instr.magic_number = MR_AT_JsonGetInt(obj, "magic_number");
+   instr.account_login = MR_AT_JsonGetString(obj, "account_login");
+   instr.account_server = MR_AT_JsonGetString(obj, "account_server");
+   instr.trade_mode = MR_AT_JsonGetString(obj, "trade_mode");
+   instr.protection_required = MR_AT_JsonGetBool(obj, "protection_required");
+   instr.requires_protection_confirmation =
+      MR_AT_JsonGetBool(obj, "requires_protection_confirmation");
+   instr.requested_contracts = MR_AT_JsonGetDouble(obj, "requested_contracts");
+   instr.source = MR_AT_JsonGetString(obj, "source");
 
    if(StringLen(instr.instruction_id) == 0 || StringLen(instr.symbol) == 0)
       return false;
@@ -163,6 +181,15 @@ int MR_AT_FetchAndProcessSignals()
          string reason = "Gestão de posição bloqueada";
          MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
          MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+         continue;
+        }
+
+      string ctx_err = "";
+      if(!MR_AT_ValidateInstructionContext(instructions[i], ctx_err))
+        {
+         MR_AT_LogError("Signal", "Instrução rejeitada id=" + instructions[i].instruction_id +
+                        " — " + ctx_err);
+         MR_AT_ReportIgnored(instructions[i].instruction_id, ctx_err);
          continue;
         }
 
