@@ -2142,6 +2142,28 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 **Próxima etapa sugerida:** Fase 10.7 — Institutional Deck Visual Draft ou First Partner Meeting Record.
 
+### Fase 10.7 — Institutional Deck Visual Draft
+
+**Status:** `INSTITUTIONAL_DECK_VISUAL_DRAFT_READY`  
+**Documento:** [`docs/INSTITUTIONAL-DECK-VISUAL-DRAFT.md`](INSTITUTIONAL-DECK-VISUAL-DRAFT.md)  
+**Objetivo:** definir especificação visual e narrativa slide a slide para futura apresentação institucional do Mercado da Riqueza AutoTrade.
+
+| Item | Resultado |
+|------|-----------|
+| Slides especificados | 17 (visual + texto por slide) |
+| Paleta / tipografia / badges | Documentados |
+| PPTX | **Não** gerado nesta fase |
+| Código / EA / schema / env / deploy | Nenhuma alteração |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dinheiro real | **Bloqueado** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 10.7:** spec visual pronta para produção de PPTX após revisão jurídica (Fase 10.8 sugerida).
+
+**Próxima etapa sugerida:** Fase 10.8 — Institutional Deck PPTX Generation ou First Partner Meeting Record.
+
 ---
 
 ## 13. Riscos e cuidados
