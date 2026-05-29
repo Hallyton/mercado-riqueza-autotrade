@@ -2217,6 +2217,28 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 11.3 — Subscription & License Data Model.
 
+### Fase 11.3 — Subscription & License Data Model
+
+**Status:** `SUBSCRIPTION_LICENSE_DATA_MODEL_DEFINED`  
+**Documento:** [`docs/SUBSCRIPTION-LICENSE-DATA-MODEL.md`](SUBSCRIPTION-LICENSE-DATA-MODEL.md)  
+**Objetivo:** definir modelo conceitual de assinatura, licença, aceite de termos, eventos comerciais e vínculo plano/cliente/licença — sem schema ou migration.
+
+| Item | Resultado |
+|------|-----------|
+| Entidades | CommercialPlan, Subscription, License, TermsAcceptance, SubscriptionEvent, PaymentEvent |
+| Relação | User → Subscription → Plan; Subscription → License → Device |
+| Status assinatura | 7 estados comerciais (+ mapeamento Prisma existente) |
+| Status licença comercial | 6 estados conceituais sobre License |
+| Bloqueios | Termos, pagamento, admin, vencimento, real, auto-dispatch |
+| Schema / migration | **Não** nesta fase |
+| Conta real | **Não** automática |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED_AUTOMATICALLY` |
+
+**Resultado da Fase 11.3:** modelo documentado; referencia `Plan`/`Subscription`/`License`/`Invoice`/`Payment` existentes no Prisma.
+
+**Próxima etapa sugerida:** Fase 11.4 — RobotInstance & MagicNumber Data Model.
+
 ---
 
 ## 13. Riscos e cuidados
