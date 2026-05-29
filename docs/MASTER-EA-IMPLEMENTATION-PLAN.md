@@ -2239,6 +2239,28 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 11.4 — RobotInstance & MagicNumber Data Model.
 
+### Fase 11.4 — RobotInstance & MagicNumber Data Model
+
+**Status:** `ROBOT_INSTANCE_MAGIC_NUMBER_MODEL_DEFINED`  
+**Documento:** [`docs/ROBOT-INSTANCE-MAGIC-NUMBER-DATA-MODEL.md`](ROBOT-INSTANCE-MAGIC-NUMBER-DATA-MODEL.md)  
+**Objetivo:** definir modelo conceitual de `RobotProduct`, `RobotInstance` e `magicNumber` para múltiplos robôs por cliente, caixa preta e rastreabilidade futura por robô — sem schema ou migration.
+
+| Item | Resultado |
+|------|-----------|
+| Entidades | RobotProduct, RobotInstance, MagicNumberRegistry (opcional) |
+| magicNumber | Obrigatório; faixa 910001–910999; unicidade por conta/servidor/ambiente/símbolo |
+| Limite | 1 ativo inicial; até 4 futuro; `Subscription.robotQuantity` |
+| Status instância | 12 estados (incl. COLLISION, EXECUTOR_OFFLINE, REAL_NOT_ALLOWED) |
+| Instruction/Execution | Campos futuros `robotInstanceId` + `magicNumber` |
+| EA | **Não** alterado nesta fase |
+| Schema / migration | **Não** |
+| Conta real / dispatch auto | **Bloqueados** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED_AUTOMATICALLY` |
+
+**Resultado da Fase 11.4:** modelo documentado; alinhado a catálogo (11.2) e assinatura/licença (11.3).
+
+**Próxima etapa sugerida:** Fase 11.5 — Account Snapshot & Margin Control Architecture.
+
 ---
 
 ## 13. Riscos e cuidados
