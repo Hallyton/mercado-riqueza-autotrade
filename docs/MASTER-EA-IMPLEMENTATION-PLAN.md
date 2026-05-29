@@ -2166,6 +2166,36 @@ Testes automatizados (Fase 2.7) e checklist manual staging (Fase 2.10):
 
 ---
 
+## Fase 11 — Plataforma Comercial, Assinaturas e Multi-Robô
+
+Macrofase para comercialização no site: planos, assinatura/aluguel, liberação admin, portal do cliente, múltiplos robôs por cliente e controle por **número mágico** — inicialmente em **DEMO/STAGING**, sem conta real.
+
+**Decisão transversal:** `REAL_ACCOUNT_NOT_APPROVED` — pagamento de plano **não** libera Real Trading Guard nem dispatch automático.
+
+### Fase 11.1 — Commercial Plans, Subscriptions & Multi-Robot Control Architecture
+
+**Status:** `COMMERCIAL_SUBSCRIPTION_MULTI_ROBOT_ARCHITECTURE_DEFINED`  
+**Documento:** [`docs/COMMERCIAL-SUBSCRIPTION-MULTI-ROBOT-ARCHITECTURE.md`](COMMERCIAL-SUBSCRIPTION-MULTI-ROBOT-ARCHITECTURE.md)  
+**Objetivo:** definir arquitetura comercial inicial para planos, assinatura, liberação de cliente, múltiplos robôs e magic number, mantendo conta real bloqueada.
+
+| Item | Resultado |
+|------|-----------|
+| Fluxo comercial | Site → plano → cadastro → assinatura → admin → licença → RobotInstance → magicNumber → EA |
+| Entidades | User, Plan/CommercialPlan, Subscription, License, RobotProduct, RobotInstance, MagicNumber |
+| Magic number | Gerado/validado pelo backend; único por instância; colisão bloqueada |
+| Planos placeholder | DEMO, Starter, Professional, Institutional |
+| Schema / migration / EA / backend | **Não** alterados nesta fase |
+| Conta real | **Bloqueada** |
+| Produção real | **Bloqueada** |
+| Dispatch automático | **Desativado** |
+| Decisão | `REAL_ACCOUNT_NOT_APPROVED` |
+
+**Resultado da Fase 11.1:** arquitetura documentada. Modelos `Plan`/`Subscription`/`License` existentes referenciados; `RobotProduct`/`RobotInstance` propostos para fases 11.3–11.4.
+
+**Próxima etapa sugerida:** Fase 11.2 — Commercial Plan Catalog.
+
+---
+
 ## 13. Riscos e cuidados
 
 | Risco | Mitigação |
