@@ -4,8 +4,8 @@ import {
   evaluateRealTradingGuard,
   isLicenseAllowedForRealTrading,
   isRealTradingEnabled,
-  REAL_TRADING_DISABLED_CODE,
 } from "@/lib/risk/real-trading-guard";
+import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
 import {
   REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS,
   runRealTradingGuardDiagnostics,
@@ -19,7 +19,9 @@ describe("Real Trading Guard", () => {
     );
 
     expect(decision.allowed).toBe(false);
-    if (!decision.allowed) expect(decision.code).toBe(REAL_TRADING_DISABLED_CODE);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.ENV_NOT_ENABLED);
+    }
   });
 
   it("permite DEMO sem feature flag futura", () => {

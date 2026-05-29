@@ -87,10 +87,7 @@ import {
   resolveMasterSignalDispatchQuantity,
 } from "@/lib/master-signals/dispatch";
 import { mapInstructionToEaPayload } from "@/lib/ea/instructions";
-import {
-  REAL_TRADING_DISABLED_CODE,
-  REAL_TRADING_DISABLED_REASON,
-} from "@/lib/risk/real-trading-guard";
+import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
 
 function baseLicenseInput(
   overrides: Partial<LicenseEligibilityInput> = {}
@@ -296,8 +293,7 @@ describe("master signal eligibility", () => {
     );
     expect(decision.eligible).toBe(false);
     if (!decision.eligible) {
-      expect(decision.code).toBe(REAL_TRADING_DISABLED_CODE);
-      expect(decision.reason).toBe(REAL_TRADING_DISABLED_REASON);
+      expect(decision.code).toBe(REAL_TRADING_REASONS.ENV_NOT_ENABLED);
     }
   });
 
@@ -455,7 +451,7 @@ describe("dispatchValidatedMasterSignal", () => {
       expect.objectContaining({
         create: expect.objectContaining({
           status: MasterSignalDispatchStatus.SKIPPED,
-          reason: REAL_TRADING_DISABLED_CODE,
+          reason: REAL_TRADING_REASONS.ENV_NOT_ENABLED,
         }),
       })
     );

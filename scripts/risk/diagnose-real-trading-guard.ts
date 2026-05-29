@@ -1,10 +1,10 @@
 import { TradeMode } from "@prisma/client";
 import {
   evaluateRealTradingGuard,
-  REAL_TRADING_DISABLED_CODE,
   type RealTradingGuardDecision,
   type RealTradingGuardInput,
 } from "@/lib/risk/real-trading-guard";
+import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
 
 type DiagnosticEnv = Record<string, string | undefined>;
 
@@ -40,19 +40,19 @@ export const REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
     name: "B) REAL sem env",
     input: { tradeMode: TradeMode.REAL, licenseId: "diagnostic-license-real" },
     env: {},
-    expected: { allowed: false, code: REAL_TRADING_DISABLED_CODE },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.ENV_NOT_ENABLED },
   },
   {
     name: "C) REAL com ENABLE_REAL_TRADING=false",
     input: { tradeMode: TradeMode.REAL, licenseId: "diagnostic-license-real" },
     env: { ENABLE_REAL_TRADING: "false" },
-    expected: { allowed: false, code: REAL_TRADING_DISABLED_CODE },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.ENV_NOT_ENABLED },
   },
   {
     name: "D) REAL com ENABLE_REAL_TRADING=true sem allowlist",
     input: { tradeMode: TradeMode.REAL, licenseId: "diagnostic-license-real" },
     env: { ENABLE_REAL_TRADING: "true" },
-    expected: { allowed: false, code: REAL_TRADING_DISABLED_CODE },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED },
   },
   {
     name: "E) REAL com allowlist sem a licença",
@@ -61,7 +61,7 @@ export const REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
       ENABLE_REAL_TRADING: "true",
       REAL_TRADING_ALLOWED_LICENSE_IDS: "other-diagnostic-license",
     },
-    expected: { allowed: false, code: REAL_TRADING_DISABLED_CODE },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED },
   },
   {
     name: "F) REAL com allowlist contendo a licença",

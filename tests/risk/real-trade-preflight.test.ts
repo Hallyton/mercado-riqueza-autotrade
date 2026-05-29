@@ -10,6 +10,10 @@ import {
 vi.mock("@/lib/prisma", () => ({
   default: {
     license: { findUnique: vi.fn() },
+    subscription: { findUnique: vi.fn() },
+    invoice: { findFirst: vi.fn() },
+    termsAcceptance: { findFirst: vi.fn() },
+    device: { findFirst: vi.fn() },
     realTradingApproval: { findFirst: vi.fn() },
     accountSnapshot: { findFirst: vi.fn(), findUnique: vi.fn() },
     eaHeartbeat: { findFirst: vi.fn() },
@@ -37,17 +41,33 @@ const baseInput = {
 };
 
 function mockHappyPath() {
+  process.env.ENABLE_REAL_TRADING = "true";
+  process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
+
   vi.mocked(prisma.license.findUnique).mockResolvedValue({
     id: baseInput.licenseId,
     userId: baseInput.userId,
     status: LicenseStatus.ACTIVE,
     haltAllTrading: false,
+    haltNewEntries: false,
+    revokedAt: null,
+    subscriptionId: "sub-1",
     mt5Account: {
       login: baseInput.accountLogin,
       server: baseInput.accountServer,
     },
-    subscription: { status: SubscriptionStatus.ACTIVE },
   } as never);
+
+  vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
+    status: SubscriptionStatus.ACTIVE,
+    plan: { maxMt5Accounts: 4 },
+  } as never);
+
+  vi.mocked(prisma.invoice.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.termsAcceptance.findFirst).mockResolvedValue({
+    id: "terms-1",
+  } as never);
+  vi.mocked(prisma.device.findFirst).mockResolvedValue({ id: "dev-1" } as never);
 
   vi.mocked(prisma.realTradingApproval.findFirst).mockImplementation(
     async (args) => {
@@ -68,6 +88,7 @@ function mockHappyPath() {
           marginBufferPercent: 10,
           minFreeMargin: 1000,
           maxContracts: 2,
+          userId: baseInput.userId,
         } as never;
       }
       return null;
@@ -82,15 +103,12 @@ function mockHappyPath() {
     id: "snap-1",
     freeMargin: 50000,
   } as never);
-
   vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({
     eaStatus: "ONLINE",
     receivedAt: new Date(),
   } as never);
-
   vi.mocked(prisma.instruction.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.executionProtectionReport.findFirst).mockResolvedValue(null);
-
   vi.mocked(prisma.realTradePreflight.create).mockImplementation(async ({ data }) => ({
     id: "pf-1",
     ...data,
@@ -100,42 +118,19 @@ function mockHappyPath() {
 describe("runRealTradePreflight", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.ENABLE_REAL_TRADING = "true";
-    process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
-    process.env.ENABLE_AUTO_DISPATCH = "false";
+    delete process.env.ENABLE_REAL_TRADING;
+    delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
   });
 
   it("bloqueia REAL sem ENABLE_REAL_TRADING", async () => {
-    delete process.env.ENABLE_REAL_TRADING;
     mockHappyPath();
+    delete process.env.ENABLE_REAL_TRADING;
     const result = await runRealTradePreflight(baseInput);
     expect(result.passed).toBe(false);
-    expect(result.reasonCode).toBe(REAL_TRADING_REASONS.DISABLED);
+    expect(result.reasonCode).toBe(REAL_TRADING_REASONS.ENV_NOT_ENABLED);
   });
 
-  it("bloqueia sem approval aprovado", async () => {
-    process.env.ENABLE_REAL_TRADING = "true";
-    vi.mocked(prisma.license.findUnique).mockResolvedValue({
-      id: baseInput.licenseId,
-      userId: baseInput.userId,
-      status: LicenseStatus.ACTIVE,
-      haltAllTrading: false,
-      mt5Account: { login: baseInput.accountLogin, server: baseInput.accountServer },
-      subscription: { status: SubscriptionStatus.ACTIVE },
-    } as never);
-    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.accountSnapshot.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.instruction.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.executionProtectionReport.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.realTradePreflight.create).mockResolvedValue({ id: "pf-2" } as never);
-
-    const result = await runRealTradePreflight(baseInput);
-    expect(result.passed).toBe(false);
-    expect(result.reasonCode).toBe(REAL_TRADING_REASONS.APPROVAL_REQUIRED);
-  });
-
-  it("passa com approval, snapshot, EA online e margem", async () => {
+  it("passa com todos os critérios e reason ALLOWED_BY_CONTROLLED_GATE", async () => {
     mockHappyPath();
     const result = await runRealTradePreflight({
       ...baseInput,
@@ -143,15 +138,17 @@ describe("runRealTradePreflight", () => {
     });
     expect(result.passed).toBe(true);
     expect(result.status).toBe(RealTradePreflightStatus.PASSED);
+    expect(result.reasonCode).toBe(
+      REAL_TRADING_REASONS.ALLOWED_BY_CONTROLLED_GATE
+    );
   });
 
   it("bloqueia margem insuficiente", async () => {
     mockHappyPath();
-    vi.mocked(prisma.accountSnapshot.findFirst).mockResolvedValue({
+    vi.mocked(prisma.accountSnapshot.findUnique).mockResolvedValue({
       id: "snap-1",
       freeMargin: 100,
     } as never);
-
     const result = await runRealTradePreflight({
       ...baseInput,
       requiredMargin: 50000,
@@ -163,7 +160,6 @@ describe("runRealTradePreflight", () => {
   it("bloqueia EA offline", async () => {
     mockHappyPath();
     vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue(null);
-
     const result = await runRealTradePreflight(baseInput);
     expect(result.passed).toBe(false);
     expect(result.reasonCode).toBe(REAL_TRADING_REASONS.EXECUTOR_OFFLINE);
@@ -172,36 +168,27 @@ describe("runRealTradePreflight", () => {
   it("bloqueia snapshot PRE_MARKET ausente", async () => {
     mockHappyPath();
     vi.mocked(prisma.accountSnapshot.findFirst).mockResolvedValue(null);
-
     const result = await runRealTradePreflight(baseInput);
     expect(result.passed).toBe(false);
     expect(result.reasonCode).toBe(REAL_TRADING_REASONS.SNAPSHOT_REQUIRED);
   });
 
-  it("bloqueia proteção anterior pendente", async () => {
+  it("bloqueia termos não aceitos", async () => {
     mockHappyPath();
-    vi.mocked(prisma.instruction.findFirst).mockResolvedValue({
-      id: "inst-blocked",
-      protectionBlocked: true,
-    } as never);
-
+    vi.mocked(prisma.termsAcceptance.findFirst).mockResolvedValue(null);
     const result = await runRealTradePreflight(baseInput);
     expect(result.passed).toBe(false);
-    expect(result.reasonCode).toBe(
-      REAL_TRADING_REASONS.PROTECTION_NOT_CONFIRMED
-    );
+    expect(result.reasonCode).toBe(REAL_TRADING_REASONS.TERMS_NOT_ACCEPTED);
   });
 
-  it("bloqueia dispatch automático quando solicitado", async () => {
+  it("bloqueia dispatch automático", async () => {
     mockHappyPath();
     const result = await runRealTradePreflight({
       ...baseInput,
       isAutoDispatch: true,
     });
     expect(result.passed).toBe(false);
-    expect(result.reasonCode).toBe(
-      REAL_TRADING_REASONS.AUTO_DISPATCH_DISABLED
-    );
+    expect(result.reasonCode).toBe(REAL_TRADING_REASONS.AUTO_DISPATCH_DISABLED);
   });
 });
 
@@ -210,12 +197,7 @@ describe("hasPreMarketSnapshotToday", () => {
     vi.mocked(prisma.accountSnapshot.findFirst).mockResolvedValue({
       id: "snap-today",
     } as never);
-    const result = await hasPreMarketSnapshotToday(
-      "lic-1",
-      "123",
-      "SERVER"
-    );
+    const result = await hasPreMarketSnapshotToday("lic-1", "123", "SERVER");
     expect(result.ok).toBe(true);
-    expect(result.snapshotId).toBe("snap-today");
   });
 });

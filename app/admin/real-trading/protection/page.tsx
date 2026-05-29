@@ -11,8 +11,8 @@ export default async function AdminRealTradingProtectionPage() {
         <CardHeader className="p-0">
           <CardTitle>Relatórios de proteção (SL/TP)</CardTitle>
           <CardDescription className="mt-2">
-            PROTECTION_FAILED bloqueia novas ordens no magicNumber até revisão admin.
-            Stop/take ausentes em conta real falham validação.
+            Stop e take obrigatórios em conta real. PROTECTION_FAILED bloqueia novas
+            ordens (REAL_TRADING_PROTECTION_NOT_CONFIRMED). Erros são redigidos.
           </CardDescription>
         </CardHeader>
       </Card>

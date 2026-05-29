@@ -65,6 +65,8 @@ describe("execution protection", () => {
       magic_number: 910001,
       stop_loss_present: true,
       take_profit_present: true,
+      stop_loss_price: 100,
+      take_profit_price: 110,
       protection_mode: "ATTACHED_SL_TP",
       protection_status: "PROTECTION_CONFIRMED",
     });

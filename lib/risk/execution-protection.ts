@@ -41,6 +41,21 @@ const BLOCKING_STATUSES: ProtectionStatus[] = [
   ProtectionStatus.PROTECTION_PENDING,
 ];
 
+export async function hasPendingProtectionForMagic(
+  licenseId: string,
+  magicNumber: number
+): Promise<boolean> {
+  const pending = await prisma.executionProtectionReport.findFirst({
+    where: {
+      licenseId,
+      magicNumber,
+      protectionStatus: ProtectionStatus.PROTECTION_PENDING,
+    },
+    orderBy: { reportedAt: "desc" },
+  });
+  return Boolean(pending);
+}
+
 export async function hasUnresolvedProtectionBlock(
   licenseId: string,
   magicNumber: number
@@ -95,12 +110,32 @@ export async function reportExecutionProtection(
     if (!body.magic_number) {
       return { ok: false as const, code: "MAGIC_NUMBER_REQUIRED" };
     }
-    if (!body.stop_loss_present || !body.take_profit_present) {
+    const slMissing = !body.stop_loss_present;
+    const tpMissing = !body.take_profit_present;
+    if (slMissing || tpMissing) {
       if (protectionStatus !== ProtectionStatus.PROTECTION_FAILED) {
         return {
           ok: false as const,
           code: "PROTECTION_INCOMPLETE",
           message: "Conta real exige stop e take confirmados.",
+        };
+      }
+    }
+    if (
+      protectionStatus === ProtectionStatus.PROTECTION_CONFIRMED &&
+      body.protection_mode === "ATTACHED_SL_TP"
+    ) {
+      const slValid =
+        body.stop_loss_present &&
+        (body.stop_loss_price != null || Boolean(body.stop_order_ticket?.trim()));
+      const tpValid =
+        body.take_profit_present &&
+        (body.take_profit_price != null || Boolean(body.take_order_ticket?.trim()));
+      if (!slValid || !tpValid) {
+        return {
+          ok: false as const,
+          code: "PROTECTION_INCOMPLETE",
+          message: "Stop/take exigem preço ou ticket válido em conta real.",
         };
       }
     }

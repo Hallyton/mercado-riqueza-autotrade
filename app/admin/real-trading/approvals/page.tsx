@@ -11,8 +11,9 @@ export default async function AdminRealTradingApprovalsPage() {
         <CardHeader className="p-0">
           <CardTitle>Aprovações de conta real</CardTitle>
           <CardDescription className="mt-2">
-            Somente registros APPROVED com allowReal passam no gate. Pagamento não
-            libera conta real automaticamente.
+            REAL liberado somente por gate controlado. Pagamento em dia não libera
+            REAL sozinho. Todos os critérios (assinatura, termos, snapshot,
+            margem, EA online, approval) precisam estar OK.
           </CardDescription>
           <Link
             href="/admin/real-trading/approvals/new"

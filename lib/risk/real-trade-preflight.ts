@@ -1,9 +1,7 @@
 import {
   AccountSnapshotType,
-  LicenseStatus,
   RealTradePreflightStatus,
   RealTradingApprovalStatus,
-  SubscriptionStatus,
   TradeMode,
 } from "@prisma/client";
 import prisma from "@/lib/prisma";
@@ -11,18 +9,30 @@ import {
   evaluateRealTradingGuard,
   isLicenseAllowedForRealTrading,
   isRealTradingEnabled,
+  toPreflightGuardFlags,
 } from "@/lib/risk/real-trading-guard";
+import {
+  hasRequiredTermsAcceptance,
+  isCommercialPaymentOk,
+  isDeviceAuthorizedForLicense,
+  isLicenseCommerciallyEligible,
+  isRobotQuantityWithinPlan,
+  isSubscriptionCommerciallyActive,
+} from "@/lib/risk/real-trading-commercial";
 import {
   eaOnlineThresholdMs,
   isAutoDispatchEnabled,
   magicNumberRange,
 } from "@/lib/risk/real-trading-config";
 import {
+  hasPendingProtectionForMagic,
+  hasUnresolvedProtectionBlock,
+} from "@/lib/risk/execution-protection";
+import {
   REAL_TRADING_REASONS,
   REAL_TRADING_REASON_MESSAGES,
   type RealTradingReasonCode,
 } from "@/lib/risk/real-trading-reasons";
-import { hasUnresolvedProtectionBlock } from "@/lib/risk/execution-protection";
 
 export type RealTradePreflightInput = {
   userId: string;
@@ -71,6 +81,7 @@ function normalizeSymbol(value: string): string {
 
 export async function findActiveRealTradingApproval(
   licenseId: string,
+  userId: string,
   accountLogin: string,
   accountServer: string,
   symbol: string,
@@ -79,6 +90,7 @@ export async function findActiveRealTradingApproval(
   return prisma.realTradingApproval.findFirst({
     where: {
       licenseId,
+      userId,
       accountLogin: normalizeAccount(accountLogin),
       accountServer: normalizeAccount(accountServer),
       symbol: normalizeSymbol(symbol),
@@ -123,14 +135,13 @@ export async function isEaExecutorOnline(licenseId: string): Promise<boolean> {
   return Boolean(heartbeat);
 }
 
-async function loadLicenseContext(licenseId: string) {
-  return prisma.license.findUnique({
-    where: { id: licenseId },
-    include: {
-      mt5Account: true,
-      subscription: true,
-    },
-  });
+function pushCheck(
+  checks: PreflightCheck[],
+  key: string,
+  ok: boolean,
+  detail?: RealTradingReasonCode
+) {
+  checks.push({ key, ok, detail: ok ? undefined : detail });
 }
 
 export async function runRealTradePreflight(
@@ -144,152 +155,214 @@ export async function runRealTradePreflight(
   const symbol = normalizeSymbol(input.symbol);
   const magicNumber = input.magicNumber;
 
+  const envEnabledOk = isRealTradingEnabled();
+  pushCheck(
+    checks,
+    "env_enabled",
+    environment !== TradeMode.REAL || envEnabledOk,
+    REAL_TRADING_REASONS.ENV_NOT_ENABLED
+  );
+
+  const allowlistOk =
+    environment !== TradeMode.REAL ||
+    isLicenseAllowedForRealTrading(input.licenseId);
+  pushCheck(
+    checks,
+    "allowlist",
+    allowlistOk,
+    REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED
+  );
+
   const guardDecision = evaluateRealTradingGuard({
     tradeMode: environment,
     licenseId: input.licenseId,
   });
-  const guardOk =
-    environment !== TradeMode.REAL ||
-    (guardDecision.allowed &&
-      isRealTradingEnabled() &&
-      isLicenseAllowedForRealTrading(input.licenseId));
-  checks.push({
-    key: "real_trading_guard",
-    ok: guardOk,
-    detail: guardOk ? undefined : REAL_TRADING_REASONS.DISABLED,
-  });
+  const guardSyncOk = guardDecision.allowed;
+  pushCheck(
+    checks,
+    "real_trading_guard_sync",
+    guardSyncOk,
+    guardDecision.allowed
+      ? undefined
+      : guardDecision.code
+  );
 
-  if (input.isAutoDispatch && !isAutoDispatchEnabled()) {
-    checks.push({
-      key: "auto_dispatch",
-      ok: false,
-      detail: REAL_TRADING_REASONS.AUTO_DISPATCH_DISABLED,
-    });
-  } else {
-    checks.push({ key: "auto_dispatch", ok: true });
-  }
+  const autoDispatchOk = !(input.isAutoDispatch && !isAutoDispatchEnabled());
+  pushCheck(
+    checks,
+    "auto_dispatch",
+    autoDispatchOk,
+    REAL_TRADING_REASONS.AUTO_DISPATCH_DISABLED
+  );
 
   const range = magicNumberRange();
   const magicInRange =
     Number.isInteger(magicNumber) &&
     magicNumber >= range.min &&
     magicNumber <= range.max;
-  checks.push({
-    key: "magic_number_range",
-    ok: magicInRange,
-    detail: magicInRange ? undefined : REAL_TRADING_REASONS.MAGIC_MISMATCH,
-  });
+  pushCheck(
+    checks,
+    "magic_number_range",
+    magicInRange,
+    REAL_TRADING_REASONS.MAGIC_MISMATCH
+  );
 
-  const license = await loadLicenseContext(input.licenseId);
+  const commercial = await isLicenseCommerciallyEligible(input.licenseId);
   const licenseOk =
-    Boolean(license) &&
-    license!.status === LicenseStatus.ACTIVE &&
-    !license!.haltAllTrading;
-  checks.push({
-    key: "license",
-    ok: licenseOk,
-    detail: licenseOk ? undefined : REAL_TRADING_REASONS.LICENSE_INVALID,
-  });
+    commercial.licenseOk && commercial.userId === input.userId;
+  pushCheck(
+    checks,
+    "license",
+    licenseOk,
+    REAL_TRADING_REASONS.LICENSE_NOT_ACTIVE
+  );
 
-  let subscriptionOk: boolean | null = null;
-  if (license?.subscription) {
-    subscriptionOk = license.subscription.status === SubscriptionStatus.ACTIVE;
-    checks.push({
-      key: "subscription",
-      ok: subscriptionOk,
-      detail: subscriptionOk ? undefined : REAL_TRADING_REASONS.SUBSCRIPTION_INACTIVE,
-    });
+  const subscriptionId = commercial.subscriptionId;
+  let subscriptionOk = true;
+  if (subscriptionId) {
+    subscriptionOk = await isSubscriptionCommerciallyActive(subscriptionId);
+    pushCheck(
+      checks,
+      "subscription",
+      subscriptionOk,
+      REAL_TRADING_REASONS.SUBSCRIPTION_NOT_ACTIVE
+    );
   } else {
-    checks.push({ key: "subscription", ok: true, detail: "no_subscription_linked" });
+    pushCheck(checks, "subscription", false, REAL_TRADING_REASONS.SUBSCRIPTION_NOT_ACTIVE);
+    subscriptionOk = false;
   }
+
+  const paymentOk = await isCommercialPaymentOk(subscriptionId);
+  pushCheck(
+    checks,
+    "payment",
+    paymentOk,
+    REAL_TRADING_REASONS.PAYMENT_NOT_ACTIVE
+  );
+
+  const termsOk = await hasRequiredTermsAcceptance(input.userId);
+  pushCheck(
+    checks,
+    "terms",
+    termsOk,
+    REAL_TRADING_REASONS.TERMS_NOT_ACCEPTED
+  );
+
+  const deviceOk = await isDeviceAuthorizedForLicense(input.licenseId);
+  pushCheck(
+    checks,
+    "device",
+    deviceOk,
+    REAL_TRADING_REASONS.DEVICE_OFFLINE
+  );
+
+  const planRobotOk = await isRobotQuantityWithinPlan(subscriptionId, 1);
+  pushCheck(checks, "plan_robot", planRobotOk, REAL_TRADING_REASONS.SUBSCRIPTION_NOT_ACTIVE);
 
   const approval = licenseOk
     ? await findActiveRealTradingApproval(
         input.licenseId,
+        input.userId,
         login,
         server,
         symbol,
         magicNumber
       )
     : null;
-  const realApprovalOk = Boolean(approval);
-  checks.push({
-    key: "real_approval",
-    ok: realApprovalOk,
-    detail: realApprovalOk ? undefined : REAL_TRADING_REASONS.APPROVAL_REQUIRED,
-  });
 
+  if (!approval) {
+    const anyApproval = await prisma.realTradingApproval.findFirst({
+      where: { licenseId: input.licenseId, magicNumber },
+    });
+    pushCheck(
+      checks,
+      "real_approval",
+      false,
+      anyApproval
+        ? REAL_TRADING_REASONS.APPROVAL_NOT_ACTIVE
+        : REAL_TRADING_REASONS.APPROVAL_REQUIRED
+    );
+  } else {
+    pushCheck(checks, "real_approval", true);
+  }
+
+  const license = await prisma.license.findUnique({
+    where: { id: input.licenseId },
+    include: { mt5Account: true },
+  });
   const linked = license?.mt5Account;
   const accountOk =
-    !linked ||
-    (normalizeAccount(linked.login) === login &&
-      normalizeAccount(linked.server) === server);
-  checks.push({
-    key: "account",
-    ok: accountOk,
-    detail: accountOk ? undefined : REAL_TRADING_REASONS.ACCOUNT_MISMATCH,
-  });
+    Boolean(linked) &&
+    normalizeAccount(linked!.login) === login &&
+    normalizeAccount(linked!.server) === server;
+  pushCheck(
+    checks,
+    "account",
+    accountOk,
+    REAL_TRADING_REASONS.ACCOUNT_MISMATCH
+  );
 
   const symbolOk = !approval || normalizeSymbol(approval.symbol) === symbol;
-  checks.push({
-    key: "symbol",
-    ok: symbolOk,
-    detail: symbolOk ? undefined : REAL_TRADING_REASONS.SYMBOL_MISMATCH,
-  });
+  pushCheck(
+    checks,
+    "symbol",
+    symbolOk,
+    REAL_TRADING_REASONS.SYMBOL_MISMATCH
+  );
 
   const magicNumberOk = !approval || approval.magicNumber === magicNumber;
-  checks.push({
-    key: "magic_number",
-    ok: magicNumberOk,
-    detail: magicNumberOk ? undefined : REAL_TRADING_REASONS.MAGIC_MISMATCH,
-  });
+  pushCheck(
+    checks,
+    "magic_number",
+    magicNumberOk,
+    REAL_TRADING_REASONS.MAGIC_MISMATCH
+  );
 
   const snapshotResult = await hasPreMarketSnapshotToday(
     input.licenseId,
     login,
     server
   );
-  checks.push({
-    key: "pre_market_snapshot",
-    ok: snapshotResult.ok,
-    detail: snapshotResult.ok ? undefined : REAL_TRADING_REASONS.SNAPSHOT_REQUIRED,
-  });
+  pushCheck(
+    checks,
+    "pre_market_snapshot",
+    snapshotResult.ok,
+    REAL_TRADING_REASONS.SNAPSHOT_REQUIRED
+  );
 
   const eaOnline = await isEaExecutorOnline(input.licenseId);
-  checks.push({
-    key: "ea_online",
-    ok: eaOnline,
-    detail: eaOnline ? undefined : REAL_TRADING_REASONS.EXECUTOR_OFFLINE,
-  });
+  pushCheck(
+    checks,
+    "ea_online",
+    eaOnline,
+    REAL_TRADING_REASONS.EXECUTOR_OFFLINE
+  );
 
-  const protectionPreviousOk = !(await hasUnresolvedProtectionBlock(
+  const protectionFailed = await hasUnresolvedProtectionBlock(
     input.licenseId,
     magicNumber
-  ));
-  checks.push({
-    key: "protection_previous",
-    ok: protectionPreviousOk,
-    detail: protectionPreviousOk
-      ? undefined
-      : REAL_TRADING_REASONS.PROTECTION_NOT_CONFIRMED,
-  });
+  );
+  const protectionPending = await hasPendingProtectionForMagic(
+    input.licenseId,
+    magicNumber
+  );
+  const protectionPreviousOk = !protectionFailed && !protectionPending;
+  pushCheck(
+    checks,
+    "protection_previous",
+    protectionPreviousOk,
+    protectionFailed
+      ? REAL_TRADING_REASONS.PREVIOUS_PROTECTION_FAILED
+      : REAL_TRADING_REASONS.PROTECTION_PENDING
+  );
 
   let freeMargin: number | null = null;
-  const latestHb = await prisma.eaHeartbeat.findFirst({
-    where: { licenseId: input.licenseId },
-    orderBy: { receivedAt: "desc" },
-    select: { margin: true, balance: true, equity: true, reportPayload: true },
-  });
   if (snapshotResult.snapshotId) {
     const snap = await prisma.accountSnapshot.findUnique({
       where: { id: snapshotResult.snapshotId },
-      select: { freeMargin: true },
+      select: { freeMargin: true, equity: true, balance: true },
     });
     if (snap?.freeMargin != null) freeMargin = Number(snap.freeMargin);
-  }
-  if (freeMargin == null && latestHb?.reportPayload) {
-    const payload = latestHb.reportPayload as { free_margin?: number };
-    if (typeof payload.free_margin === "number") freeMargin = payload.free_margin;
   }
 
   const requiredMargin = input.requiredMargin ?? 0;
@@ -303,11 +376,12 @@ export async function runRealTradePreflight(
       : minFree;
   const marginOk =
     freeMargin == null ? requiredMargin === 0 : freeMargin >= marginRequired;
-  checks.push({
-    key: "margin",
-    ok: marginOk,
-    detail: marginOk ? undefined : REAL_TRADING_REASONS.MARGIN_INSUFFICIENT,
-  });
+  pushCheck(
+    checks,
+    "margin",
+    marginOk,
+    REAL_TRADING_REASONS.MARGIN_INSUFFICIENT
+  );
 
   const collision = await prisma.realTradingApproval.findFirst({
     where: {
@@ -319,32 +393,35 @@ export async function runRealTradePreflight(
       licenseId: { not: input.licenseId },
     },
   });
-  const existingExposureOk = !collision;
-  checks.push({
-    key: "existing_exposure",
-    ok: existingExposureOk,
-    detail: existingExposureOk ? undefined : REAL_TRADING_REASONS.MAGIC_MISMATCH,
-  });
+  pushCheck(
+    checks,
+    "existing_exposure",
+    !collision,
+    REAL_TRADING_REASONS.MAGIC_MISMATCH
+  );
 
-  if (approval && requestedContracts > approval.maxContracts) {
-    checks.push({
-      key: "max_contracts",
-      ok: false,
-      detail: REAL_TRADING_REASONS.MARGIN_INSUFFICIENT,
-    });
-  } else {
-    checks.push({ key: "max_contracts", ok: true });
-  }
+  const maxContractsOk = !approval || requestedContracts <= approval.maxContracts;
+  pushCheck(
+    checks,
+    "max_contracts",
+    maxContractsOk,
+    REAL_TRADING_REASONS.CONTRACT_LIMIT_EXCEEDED
+  );
 
   const failed = checks.find((c) => !c.ok);
   const status: RealTradePreflightStatus = failed
-    ? failed.key === "auto_dispatch" || failed.key === "real_trading_guard"
+    ? failed.key === "auto_dispatch" ||
+      failed.key === "env_enabled" ||
+      failed.key === "allowlist"
       ? RealTradePreflightStatus.BLOCKED
       : RealTradePreflightStatus.FAILED
     : RealTradePreflightStatus.PASSED;
 
-  const reasonCode = (failed?.detail as RealTradingReasonCode | undefined) ??
-    (failed ? REAL_TRADING_REASONS.PREFLIGHT_FAILED : undefined);
+  const reasonCode: RealTradingReasonCode | undefined = failed
+    ? (failed.detail as RealTradingReasonCode | undefined) ??
+      REAL_TRADING_REASONS.PREFLIGHT_FAILED
+    : REAL_TRADING_REASONS.ALLOWED_BY_CONTROLLED_GATE;
+
   const reason = reasonCode
     ? REAL_TRADING_REASON_MESSAGES[reasonCode]
     : undefined;
@@ -370,10 +447,19 @@ export async function runRealTradePreflight(
       magicNumberOk,
       subscriptionOk,
       licenseOk,
-      realApprovalOk,
+      realApprovalOk: Boolean(approval),
       snapshotOk: snapshotResult.ok,
-      existingExposureOk,
+      existingExposureOk: !collision,
       protectionPreviousOk,
+      paymentOk,
+      termsOk,
+      deviceOk,
+      allowlistOk,
+      envEnabledOk,
+      maxContractsOk,
+      autoDispatchOk,
+      planRobotOk,
+      reasonCode,
       status,
       reason,
     },

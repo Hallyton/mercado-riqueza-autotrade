@@ -35,6 +35,10 @@ export type EaInstructionPayload = {
   account_login?: string;
   account_server?: string;
   requires_protection_confirmation?: boolean;
+  protection_required?: boolean;
+  trade_mode?: "REAL" | "DEMO";
+  requested_contracts?: number;
+  controlled_real_gate?: boolean;
 };
 
 function toNumber(value: Prisma.Decimal | null | undefined): number | null {
@@ -85,7 +89,27 @@ export function mapInstructionToEaPayload(
   }
   if (instruction.requiresProtectionConfirmation) {
     payload.requires_protection_confirmation = true;
+    payload.protection_required = true;
   }
+  return payload;
+}
+
+export function mapInstructionToEaPayloadForReal(
+  instruction: Parameters<typeof mapInstructionToEaPayload>[0],
+  options: {
+    accountLogin: string;
+    accountServer: string;
+    requestedContracts: number;
+  }
+): EaInstructionPayload {
+  const payload = mapInstructionToEaPayload(instruction);
+  payload.trade_mode = "REAL";
+  payload.account_login = options.accountLogin;
+  payload.account_server = options.accountServer;
+  payload.requested_contracts = options.requestedContracts;
+  payload.requires_protection_confirmation = true;
+  payload.protection_required = true;
+  payload.controlled_real_gate = true;
   return payload;
 }
 
@@ -180,9 +204,10 @@ async function evaluateInstructionDeliverability(
   licenseId: string,
   instruction: InstructionRow,
   options?: { tradeMode?: TradeMode | null; userId?: string }
-): Promise<{
-  deliver: true;
-} | { deliver: false; reason: string; code?: string }> {
+): Promise<
+  | { deliver: true; gateCode?: string; preflightId?: string }
+  | { deliver: false; reason: string; code?: string }
+> {
   if (instruction.protectionBlocked) {
     return {
       deliver: false,
@@ -251,7 +276,7 @@ async function evaluateInstructionDeliverability(
     return {
       deliver: false,
       reason: "Licença inválida.",
-      code: REAL_TRADING_REASONS.LICENSE_INVALID,
+      code: REAL_TRADING_REASONS.LICENSE_NOT_ACTIVE,
     };
   }
 
@@ -271,11 +296,15 @@ async function evaluateInstructionDeliverability(
     return {
       deliver: false,
       reason: preflight.reason ?? "Preflight de conta real falhou.",
-      code: (preflight.reasonCode ?? REAL_TRADING_REASONS.PREFLIGHT_FAILED) as string,
+      code: preflight.reasonCode ?? REAL_TRADING_REASONS.PREFLIGHT_FAILED,
     };
   }
 
-  return { deliver: true };
+  return {
+    deliver: true,
+    gateCode: REAL_TRADING_REASONS.ALLOWED_BY_CONTROLLED_GATE,
+    preflightId: preflight.preflightId,
+  };
 }
 
 export type EaDeliverableInstructionsAudit = {
@@ -411,7 +440,35 @@ export async function pullInstructionsForEa(
       await appendStatus(instruction.id, OrderLogStatus.SENT, "Despachada ao EA");
     }
 
-    deliverable.push(mapInstructionToEaPayload(instruction));
+    const login =
+      instruction.accountLogin ?? ctx.license.mt5Account?.login ?? "";
+    const server =
+      instruction.accountServer ?? ctx.license.mt5Account?.server ?? "";
+
+    if (tradeMode === TradeMode.REAL && check.deliver && "gateCode" in check) {
+      deliverable.push(
+        mapInstructionToEaPayloadForReal(instruction, {
+          accountLogin: login,
+          accountServer: server,
+          requestedContracts: Math.max(1, Math.ceil(Number(instruction.quantity))),
+        })
+      );
+      await createAuditLog({
+        actorType: AuditActorType.EA,
+        actorId: ctx.license.userId,
+        action: "ea.instructions_real_controlled_gate_allowed",
+        entityType: "instruction",
+        entityId: instruction.id,
+        requestId: ctx.requestId,
+        metadata: {
+          gateCode: check.gateCode,
+          preflightId: check.preflightId,
+          magicNumber: instruction.magicNumber,
+        },
+      });
+    } else {
+      deliverable.push(mapInstructionToEaPayload(instruction));
+    }
   }
 
   if (deliverable.length > 0) {

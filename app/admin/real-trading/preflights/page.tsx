@@ -10,8 +10,8 @@ export default async function AdminRealTradingPreflightsPage() {
         <CardHeader className="p-0">
           <CardTitle>Preflights de conta real</CardTitle>
           <CardDescription className="mt-2">
-            Checagens antes do envio da ordem: margem, EA online, snapshot, approval,
-            proteção anterior.
+            PASSED com reason REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE indica liberação
+            condicional. FAILED/BLOCKED: nenhuma instruction REAL é entregue ao EA.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -27,6 +27,7 @@ export default async function AdminRealTradingPreflightsPage() {
               <th className="px-4 py-3">Snapshot</th>
               <th className="px-4 py-3">Approval</th>
               <th className="px-4 py-3">Proteção ant.</th>
+              <th className="px-4 py-3">Reason code</th>
               <th className="px-4 py-3">Motivo</th>
             </tr>
           </thead>
@@ -43,6 +44,9 @@ export default async function AdminRealTradingPreflightsPage() {
                 <td className="px-4 py-3">
                   {row.protectionPreviousOk ? "OK" : "Bloqueado"}
                 </td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  {row.reasonCode ?? "—"}
+                </td>
                 <td className="max-w-xs truncate px-4 py-3 text-muted-foreground">
                   {row.reason ?? "—"}
                 </td>
@@ -50,7 +54,7 @@ export default async function AdminRealTradingPreflightsPage() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-muted-foreground">
+                <td colSpan={10} className="px-4 py-8 text-muted-foreground">
                   Nenhum preflight registrado.
                 </td>
               </tr>

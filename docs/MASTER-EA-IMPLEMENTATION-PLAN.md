@@ -2278,6 +2278,24 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** validação operacional do piloto em staging + evolução EA Executor.
 
+### Fase 12.2 — Conditional Real Trading Gate Validation
+
+**Status:** `REAL_TRADING_CONDITIONAL_GATE_VALIDATED_STAGING`  
+**Restrição:** `APPROVED_WITH_RESTRICTIONS` (EA MQL5 snapshot/protection pendente — Fase 12.3)  
+**Documento:** [`docs/REAL-TRADING-CONTROLLED-PILOT-STAGING-VALIDATION.md`](REAL-TRADING-CONTROLLED-PILOT-STAGING-VALIDATION.md)
+
+| Item | Resultado |
+|------|-----------|
+| Gate condicional | Todos os critérios comerciais + técnicos + operacionais no preflight |
+| Sucesso | `REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE` |
+| TermsAcceptance | Modelo + checagem obrigatória |
+| Pagamento | Subscription ACTIVE + sem invoice vencida |
+| REAL global | **Não** |
+| Dispatch automático | **Desativado** |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fase 12.3 — EA Executor MQL5 Snapshot & Protection Contract.
+
 ---
 
 ## 13. Riscos e cuidados

@@ -222,6 +222,7 @@ model User {
   realTradingApprovals   RealTradingApproval[]
   accountSnapshots       AccountSnapshot[]
   realTradePreflights    RealTradePreflight[]
+  termsAcceptances       TermsAcceptance[]
 
   @@index([role])
   @@map("users")
@@ -951,6 +952,15 @@ model RealTradePreflight {
   snapshotOk            Boolean                  @default(false) @map("snapshot_ok")
   existingExposureOk    Boolean                  @default(false) @map("existing_exposure_ok")
   protectionPreviousOk  Boolean                  @default(false) @map("protection_previous_ok")
+  paymentOk             Boolean                  @default(false) @map("payment_ok")
+  termsOk               Boolean                  @default(false) @map("terms_ok")
+  deviceOk              Boolean                  @default(false) @map("device_ok")
+  allowlistOk           Boolean                  @default(false) @map("allowlist_ok")
+  envEnabledOk          Boolean                  @default(false) @map("env_enabled_ok")
+  maxContractsOk        Boolean                  @default(false) @map("max_contracts_ok")
+  autoDispatchOk        Boolean                  @default(false) @map("auto_dispatch_ok")
+  planRobotOk           Boolean                  @default(true) @map("plan_robot_ok")
+  reasonCode            String?                  @map("reason_code")
   status                RealTradePreflightStatus
   reason                String?                  @db.Text
   createdAt             DateTime                 @default(now()) @map("created_at")
@@ -995,4 +1005,22 @@ model ExecutionProtectionReport {
   @@index([licenseId, magicNumber, createdAt])
   @@index([instructionId])
   @@map("execution_protection_reports")
+}
+
+model TermsAcceptance {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  subscriptionId  String?  @map("subscription_id")
+  licenseId       String?  @map("license_id")
+  documentType    String   @map("document_type")
+  documentVersion String   @map("document_version")
+  acceptedAt      DateTime @map("accepted_at")
+  source          String   @default("web")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, documentType])
+  @@index([subscriptionId])
+  @@map("terms_acceptances")
 }
