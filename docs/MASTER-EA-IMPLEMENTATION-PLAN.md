@@ -2335,6 +2335,19 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.5 — First Ultra-Controlled Real Order Gate.
 
+### EA device_token — localização (investigação)
+
+**Status:** `EA_DEVICE_TOKEN_LOCATION_IDENTIFIED`  
+**Documento:** [`docs/EA-DEVICE-TOKEN-LOCATION-GUIDE.md`](EA-DEVICE-TOKEN-LOCATION-GUIDE.md)
+
+| Item | Resultado |
+|------|-----------|
+| Geração | `POST /api/v1/ea/activate` → `activateEaDevice()` |
+| Banco | `Device.tokenHash` (SHA-256) — token puro **não** recuperável |
+| EA local | `mr_at_<login>.dat` em `%APPDATA%\MetaQuotes\Terminal\Common\Files\` |
+| Auth | `Authorization: Bearer` via `MR_AT_BuildHeaders()` |
+| Admin | **Não** exibe token após ativação |
+
 ---
 
 ## 13. Riscos e cuidados
