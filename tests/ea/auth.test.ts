@@ -81,6 +81,25 @@ describe("LicenseToken", () => {
     );
   });
 
+  it("aceita token válido sem X-Device-Id (header opcional)", async () => {
+    vi.mocked(prisma.device.findFirst).mockResolvedValue({
+      id: "d1",
+      deviceId: "mt5-12345-Broker",
+      licenseId: "lic1",
+      tokenHash: "hash-good",
+      revokedAt: null,
+      license: baseLicense,
+    } as never);
+
+    const req = new Request("http://x", {
+      headers: { Authorization: "Bearer good" },
+    });
+
+    const ctx = await authenticateEaRequest(req);
+    expect(ctx.license.id).toBe("lic1");
+    expect(ctx.deviceIdHeader).toBeNull();
+  });
+
   it("aceita licença ativa com token válido", async () => {
     vi.mocked(prisma.device.findFirst).mockResolvedValue({
       id: "d1",

@@ -178,9 +178,82 @@ npx tsx scripts/homologation/validate-staging-ea-routes.ts
 Remove-Item Env:STAGING_EA_BEARER_TOKEN
 ```
 
+### `device_id` (header `X-Device-Id`)
+
+| Item | Detalhe |
+|------|---------|
+| Input MQL5 | `InpDeviceId` — **não** aparece como “EA_DEVICE_ID”; rótulo: *ID do dispositivo/VPS* |
+| Se vazio | EA gera: `mt5-<ACCOUNT_LOGIN>-<ACCOUNT_SERVER>` (`MR_AT_ResolveDeviceId()`) |
+| Enviado na ativação | Campo JSON `device_id` em `POST /api/v1/ea/activate` |
+| Resposta ativação | Backend retorna `device_id` — EA **não** persiste no `.dat` (só `g_device_id` em memória) |
+| Obrigatório nas rotas? | **Não** — header **opcional**; se ausente, auth usa só `tokenHash` |
+| Se enviado errado | HTTP **403** `DEVICE_MISMATCH` (não `MISSING_DEVICE_ID`) |
+| Banco | `Device.deviceId` (string operacional) ≠ `Device.id` (cuid interno) |
+
 ---
 
-## 7. Cuidados de segurança
+## 8. Quando o `EA_DEVICE_ID` não aparece nos parâmetros
+
+O operador pode procurar “EA_DEVICE_ID” e não encontrar — no MetaTrader o input chama-se **`InpDeviceId`**.
+
+### O que é o `deviceId`?
+
+- Identificador **operacional** escolhido pelo EA ou operador (ex.: `mt5-52609973-XPMT5-DEMO` ou `vps-homolog-001`).
+- Gravado no PostgreSQL em `devices.device_id` junto com `token_hash`.
+- **Não** é secret — pode ser exibido após resolver pelo script (sem expor token).
+
+### Bearer sozinho autentica?
+
+**Sim.** Em `lib/ea/auth.ts`, `authenticateEaRequest()`:
+
+1. Exige `Authorization: Bearer <device_token>`.
+2. Localiza `Device` por `tokenHash`.
+3. Só valida `X-Device-Id` **se o header estiver presente** — mismatch → `403 DEVICE_MISMATCH`.
+4. **Não existe** código `MISSING_DEVICE_ID`.
+
+Teste rápido (sem imprimir token):
+
+```powershell
+curl.exe -s -o NUL -w "HTTP=%{http_code}\n" `
+  -X POST "https://autotrade-staging.mercadodariqueza.com.br/api/v1/ea/account-snapshots" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $env:STAGING_EA_BEARER_TOKEN" `
+  -d "{}"
+```
+
+- **400** `VALIDATION_ERROR` → token OK, body inválido (esperado).
+- **401** `INVALID_TOKEN` → token não existe no banco **deste** deploy ou revogado.
+- **401** `MISSING_TOKEN` → Bearer ausente.
+
+### Como descobrir o `deviceId` sem expor o token
+
+Script: `scripts/homologation/resolve-ea-device-id-from-token.ts`
+
+```powershell
+$env:STAGING_EA_BEARER_TOKEN = (Get-Content $tokenFile -First 1).Trim()
+$env:DATABASE_URL = "..."   # mesmo Neon do staging — não colar no chat
+npx tsx scripts/homologation/resolve-ea-device-id-from-token.ts
+Remove-Item Env:STAGING_EA_BEARER_TOKEN, Env:DATABASE_URL
+```
+
+Saída JSON (sem token completo): `deviceId`, `licenseId`, `userId`, `accountLogin`, `accountServer`, `lastHeartbeatAt`, `tokenMasked`.
+
+Se não encontrar: `DEVICE_NOT_FOUND_FOR_TOKEN_HASH` (token de outro ambiente ou revogado).
+
+### EA salva `device_id` no `.dat`?
+
+**Não hoje.** Arquivo `mr_at_<login>.dat`:
+
+| Linha | Conteúdo |
+|-------|----------|
+| 1 | `device_token` |
+| 2 | `license_id` |
+
+O `device_id` fica em `g_device_id` (input ou auto) até reiniciar o EA. **Recomendação futura (não implementada):** linha 3 = `device_id` retornado na ativação — facilita homologação sem script de banco.
+
+---
+
+## 9. Cuidados de segurança
 
 - **Nunca** colar `device_token`, `activation_code` ou Bearer completo em chat, ticket ou commit.
 - **Não** commitar `.env` ou arquivos `.dat` do MT5.
@@ -200,4 +273,5 @@ Remove-Item Env:STAGING_EA_BEARER_TOKEN
 | Credenciais MQL5 | `ea/mql5/includes/MR_AT_Auth.mqh` |
 | Ativação MQL5 | `ea/mql5/includes/MR_AT_License.mqh` |
 | Headers HTTP | `ea/mql5/includes/MR_AT_Http.mqh` |
+| Resolver deviceId | `scripts/homologation/resolve-ea-device-id-from-token.ts` |
 | Contrato API | `docs/EA-API.md` |

@@ -11,6 +11,7 @@
 import "./load-env";
 import { execSync } from "child_process";
 import { createActivationCodeForLicense } from "@/lib/ea/activate";
+import { resolveEaDeviceFromBearerToken } from "./resolve-ea-device-from-token";
 import prisma from "@/lib/prisma";
 
 const API_BASE =
@@ -34,17 +35,21 @@ async function httpPost(
   path: string,
   bearer: string,
   body: unknown,
-  deviceId: string
+  deviceId?: string | null
 ): Promise<HttpResult> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${bearer}`,
+    "X-EA-Version": "1.0.0",
+    "X-Request-Id": `dry-run-${Date.now()}`,
+  };
+  if (deviceId) {
+    headers["X-Device-Id"] = deviceId;
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${bearer}`,
-      "X-Device-Id": deviceId,
-      "X-EA-Version": "1.0.0",
-      "X-Request-Id": `dry-run-${Date.now()}`,
-    },
+    headers,
     body: JSON.stringify(body),
   });
   const text = await res.text();
@@ -211,6 +216,32 @@ async function resolveBearerViaStagingDashboard(): Promise<{
   };
 }
 
+async function resolveDeviceIdForToken(
+  bearer: string,
+  presetDeviceId?: string
+): Promise<string | undefined> {
+  if (presetDeviceId) return presetDeviceId;
+
+  const resolved = await resolveEaDeviceFromBearerToken(bearer);
+  if (resolved) {
+    console.log(
+      `[device] Resolvido via tokenHash: deviceId=${resolved.deviceId} licenseId=${resolved.licenseId}`
+    );
+    return resolved.deviceId;
+  }
+
+  console.log(
+    "[device] STAGING_EA_DEVICE_ID ausente e Device não encontrado no banco apontado por DATABASE_URL."
+  );
+  console.log(
+    "[device] Rode: npx tsx scripts/homologation/resolve-ea-device-id-from-token.ts (mesmo DATABASE_URL do staging)"
+  );
+  console.log(
+    "[device] Nota: X-Device-Id é opcional — Bearer sozinho deve autenticar se o token for válido."
+  );
+  return undefined;
+}
+
 async function resolveBearer(): Promise<{
   bearer: string;
   deviceId: string;
@@ -219,30 +250,42 @@ async function resolveBearer(): Promise<{
   server: string;
 }> {
   const preset = process.env.STAGING_EA_BEARER_TOKEN?.trim();
-  const presetDevice = process.env.STAGING_EA_DEVICE_ID?.trim() ?? "dry-run-vps-001";
+  const presetDevice = process.env.STAGING_EA_DEVICE_ID?.trim();
 
   if (preset) {
+    const resolved = await resolveEaDeviceFromBearerToken(preset);
+    if (resolved) {
+      return {
+        bearer: preset,
+        deviceId: presetDevice ?? resolved.deviceId,
+        licenseId: resolved.licenseId,
+        login: resolved.accountLogin ?? "",
+        server: resolved.accountServer ?? "",
+      };
+    }
+
     const license = await prisma.license.findFirst({
       where: { status: "ACTIVE", mt5Account: { isNot: null } },
       include: { mt5Account: true },
       orderBy: { updatedAt: "desc" },
     });
-    if (!license?.mt5Account) {
-      const ctx = await resolveBearerViaStagingDashboard();
+    if (license?.mt5Account) {
       return {
         bearer: preset,
-        deviceId: presetDevice,
-        licenseId: ctx.licenseId,
-        login: ctx.login,
-        server: ctx.server,
+        deviceId: presetDevice ?? "unknown-device-id",
+        licenseId: license.id,
+        login: license.mt5Account.login,
+        server: license.mt5Account.server,
       };
     }
+
+    const ctx = await resolveBearerViaStagingDashboard();
     return {
       bearer: preset,
-      deviceId: presetDevice,
-      licenseId: license.id,
-      login: license.mt5Account.login,
-      server: license.mt5Account.server,
+      deviceId: presetDevice ?? ctx.deviceId,
+      licenseId: ctx.licenseId,
+      login: ctx.login,
+      server: ctx.server,
     };
   }
 
@@ -327,15 +370,37 @@ async function main() {
   console.log(`[api] Base: ${API_BASE}`);
 
   const ctx = await resolveBearer();
-  console.log(
-    `[auth] Bearer obtido (não exibido). licenseId=${ctx.licenseId} deviceId=${ctx.deviceId} login=${ctx.login}`
+  const deviceIdForHeaders = await resolveDeviceIdForToken(
+    ctx.bearer,
+    process.env.STAGING_EA_DEVICE_ID?.trim() || ctx.deviceId
   );
+
+  console.log(
+    `[auth] Bearer obtido (não exibido). licenseId=${ctx.licenseId} login=${ctx.login}`
+  );
+
+  const bearerOnlySnap = await httpPost(
+    "/api/v1/ea/account-snapshots",
+    ctx.bearer,
+    {},
+    null
+  );
+  console.log(
+    `[bearer-only] account-snapshots HTTP=${bearerOnlySnap.status} code=${bearerOnlySnap.code ?? "—"}`
+  );
+  if (bearerOnlySnap.status === 401 && bearerOnlySnap.code === "INVALID_TOKEN") {
+    console.error(
+      "[bearer-only] Token inválido para staging (banco errado ou device revogado)."
+    );
+  } else if (bearerOnlySnap.status === 400) {
+    console.log("[bearer-only] Bearer autenticou — X-Device-Id não é obrigatório.");
+  }
 
   const emptySnap = await httpPost(
     "/api/v1/ea/account-snapshots",
     ctx.bearer,
     {},
-    ctx.deviceId
+    deviceIdForHeaders
   );
   console.log(
     `[empty] account-snapshots HTTP=${emptySnap.status} code=${emptySnap.code ?? "—"}`
@@ -345,7 +410,7 @@ async function main() {
     "/api/v1/ea/execution-protection",
     ctx.bearer,
     {},
-    ctx.deviceId
+    deviceIdForHeaders
   );
   console.log(
     `[empty] execution-protection HTTP=${emptyProt.status} code=${emptyProt.code ?? "—"}`
@@ -370,7 +435,7 @@ async function main() {
       active_magic_numbers: [910001],
       captured_at: new Date().toISOString(),
     },
-    ctx.deviceId
+    deviceIdForHeaders
   );
   console.log(
     `[pre_market] account-snapshots HTTP=${preMarket.status} code=${preMarket.code ?? "—"} preview=${preMarket.bodyPreview}`
@@ -412,7 +477,7 @@ async function main() {
       protection_status: "PROTECTION_CONFIRMED",
       reported_at: new Date().toISOString(),
     },
-    ctx.deviceId
+    deviceIdForHeaders
   );
   console.log(
     `[protection] instruction inexistente HTTP=${protInvalid.status} code=${protInvalid.code ?? "—"}`
@@ -422,6 +487,9 @@ async function main() {
   console.log(
     JSON.stringify(
       {
+        bearer_only_snap_http: bearerOnlySnap.status,
+        bearer_only_snap_code: bearerOnlySnap.code,
+        bearer_only_authenticated: bearerOnlySnap.status === 400,
         empty_snap_ok: emptySnap.status === 400,
         empty_prot_ok: emptyProt.status === 400,
         pre_market_ok: preMarket.status >= 200 && preMarket.status < 300,
