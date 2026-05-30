@@ -16,6 +16,7 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "homolog:create-client": "tsx scripts/homologation/create-test-client.ts",
+    "homolog:reset-staging-client-password": "tsx scripts/homologation/reset-staging-client-password.ts",
     "homolog:create-subscription": "tsx scripts/homologation/create-active-subscription.ts",
     "homolog:enable-demo": "tsx scripts/homologation/enable-demo-for-local-plan.ts",
     "homolog:disable-demo": "tsx scripts/homologation/disable-demo-for-local-plan.ts",
