@@ -22,6 +22,14 @@ export default function LandingPage() {
       >
         Acessar plataforma
       </Link>
+      <div className="mt-4 flex flex-wrap justify-center gap-4">
+        <Link href="/planos" className="text-sm text-[#c9a227] hover:underline">
+          Ver planos
+        </Link>
+        <Link href="/cadastro" className="text-sm text-zinc-400 hover:text-white">
+          Cadastrar-se
+        </Link>
+      </div>
     </main>
   );
 }

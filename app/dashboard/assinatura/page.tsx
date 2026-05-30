@@ -63,8 +63,11 @@ export default async function AssinaturaPage() {
           </dl>
         ) : (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
-            Você ainda não possui assinatura. Após o pagamento confirmado, sua
-            licença será liberada automaticamente.
+            Você ainda não possui assinatura.{" "}
+            <a href="/dashboard/comercial" className="text-gold hover:underline">
+              Solicite o plano comercial
+            </a>{" "}
+            — a licença será provisionada após confirmação administrativa do pagamento.
           </p>
         )}
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -90,6 +91,15 @@ export function LoginForm() {
         <Button type="submit" className="w-full" isLoading={isLoading}>
           Entrar
         </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href="/planos" className="text-gold hover:underline">
+            Ver planos
+          </Link>
+          {" · "}
+          <Link href="/cadastro" className="text-gold hover:underline">
+            Criar conta
+          </Link>
+        </p>
       </form>
     </Card>
   );

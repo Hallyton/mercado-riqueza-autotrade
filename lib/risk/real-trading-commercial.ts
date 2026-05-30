@@ -34,9 +34,16 @@ export async function isCommercialPaymentOk(
 
   const sub = await prisma.subscription.findUnique({
     where: { id: subscriptionId },
-    select: { status: true },
+    select: { status: true, adminPaymentStatus: true },
   });
   if (!sub) return false;
+
+  if (
+    sub.adminPaymentStatus === "PENDING" ||
+    sub.adminPaymentStatus === "OVERDUE"
+  ) {
+    return false;
+  }
 
   if (
     sub.status === SubscriptionStatus.PAST_DUE ||
@@ -130,8 +137,9 @@ export async function isRobotQuantityWithinPlan(
   if (!subscriptionId) return activeRobotCount <= 1;
   const sub = await prisma.subscription.findUnique({
     where: { id: subscriptionId },
-    include: { plan: { select: { maxMt5Accounts: true } } },
+    include: { plan: { select: { maxRobots: true, maxMt5Accounts: true } } },
   });
   if (!sub?.plan) return false;
-  return activeRobotCount <= sub.plan.maxMt5Accounts;
+  const limit = sub.plan.maxRobots || sub.plan.maxMt5Accounts;
+  return activeRobotCount <= limit;
 }

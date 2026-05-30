@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminUserActions } from "@/components/admin/admin-user-actions";
+import { AdminCommercialActions } from "@/components/admin/admin-commercial-actions";
 import { getAdminUserDetail } from "@/lib/admin/users";
+import { getAdminCommercialOverview } from "@/lib/commercial/admin-subscription";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseStatusBadge } from "@/components/subscription/status-badge";
 
@@ -20,6 +22,8 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
   const { userId } = await params;
   const detail = await getAdminUserDetail(userId);
   if (!detail) notFound();
+
+  const commercial = await getAdminCommercialOverview(userId);
 
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -100,6 +104,10 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           </ul>
         )}
       </Card>
+
+      {commercial && commercial.subscriptions.length > 0 && (
+        <AdminCommercialActions subscriptions={commercial.subscriptions} />
+      )}
 
       <Card className="p-6">
         <CardHeader className="p-0 pb-4">

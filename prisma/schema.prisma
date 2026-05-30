@@ -177,6 +177,28 @@ enum DeviceStatus {
   BLOCKED
 }
 
+enum AdminPaymentStatus {
+  PENDING
+  CONFIRMED
+  OVERDUE
+}
+
+enum RobotProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum RobotInstanceStatus {
+  AWAITING_PAYMENT
+  AWAITING_APPROVAL
+  AWAITING_EA_ACTIVATION
+  EA_ONLINE
+  REAL_PENDING_VALIDATION
+  OPERATIONAL_CONTROLLED
+  SUSPENDED
+  BLOCKED
+}
+
 enum AccountSnapshotType {
   PRE_MARKET
   PRE_TRADE
@@ -216,6 +238,7 @@ model User {
   email         String     @unique
   emailVerified DateTime?
   name          String?
+  phone         String?
   image         String?
   passwordHash  String?
   role          UserRole   @default(CLIENT)
@@ -242,6 +265,7 @@ model User {
   accountSnapshots       AccountSnapshot[]
   realTradePreflights    RealTradePreflight[]
   termsAcceptances       TermsAcceptance[]
+  robotInstances         RobotInstance[]
 
   @@index([role])
   @@index([status])
@@ -298,6 +322,7 @@ model Plan {
   name           String
   description    String?  @db.Text
   maxMt5Accounts Int      @default(1) @map("max_mt5_accounts")
+  maxRobots      Int      @default(1) @map("max_robots")
   maxDevices     Int      @default(1) @map("max_devices")
   allowDemo      Boolean  @default(false) @map("allow_demo")
   sortOrder      Int      @default(0) @map("sort_order")
@@ -354,13 +379,16 @@ model Subscription {
   currentPeriodEnd      DateTime?          @map("current_period_end")
   cancelAtPeriodEnd     Boolean            @default(false) @map("cancel_at_period_end")
   cancelledAt           DateTime?          @map("cancelled_at")
+  adminPaymentStatus    AdminPaymentStatus @default(PENDING) @map("admin_payment_status")
+  robotCount            Int                @default(1) @map("robot_count")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan     Plan      @relation(fields: [planId], references: [id])
-  invoices Invoice[]
-  licenses License[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan           Plan            @relation(fields: [planId], references: [id])
+  invoices       Invoice[]
+  licenses       License[]
+  robotInstances RobotInstance[]
 
   @@index([userId, status])
   @@index([planId])
@@ -508,11 +536,56 @@ model License {
   accountSnapshots         AccountSnapshot[]
   realTradePreflights      RealTradePreflight[]
   executionProtectionReports ExecutionProtectionReport[]
+  robotInstances           RobotInstance[]
 
   @@index([userId, status])
   @@index([mt5AccountId])
   @@index([subscriptionId])
   @@map("licenses")
+}
+
+model RobotProduct {
+  id                  String             @id @default(cuid())
+  slug                String             @unique
+  name                String
+  description         String?            @db.Text
+  status              RobotProductStatus @default(ACTIVE)
+  monthlyPriceCents   Int                @map("monthly_price_cents")
+  maxInstancesPerUser Int                @default(1) @map("max_instances_per_user")
+  isBlackBox          Boolean            @default(true) @map("is_black_box")
+  sortOrder           Int                @default(0) @map("sort_order")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+
+  instances RobotInstance[]
+
+  @@map("robot_products")
+}
+
+model RobotInstance {
+  id              String              @id @default(cuid())
+  userId          String              @map("user_id")
+  licenseId       String?             @map("license_id")
+  subscriptionId  String              @map("subscription_id")
+  robotProductId  String              @map("robot_product_id")
+  magicNumber     Int?                @map("magic_number")
+  symbol          String?
+  status          RobotInstanceStatus @default(AWAITING_PAYMENT)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  activatedAt     DateTime?           @map("activated_at")
+  suspendedAt     DateTime?           @map("suspended_at")
+  blockedAt       DateTime?           @map("blocked_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  license      License?     @relation(fields: [licenseId], references: [id], onDelete: SetNull)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  robotProduct RobotProduct @relation(fields: [robotProductId], references: [id])
+
+  @@unique([magicNumber])
+  @@index([userId, status])
+  @@index([subscriptionId])
+  @@index([licenseId])
+  @@map("robot_instances")
 }
 
 model LicenseExposureProfile {

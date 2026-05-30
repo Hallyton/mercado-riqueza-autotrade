@@ -34,10 +34,29 @@ const EXPOSURE_PROFILES = [
 
 const PLANS = [
   {
+    slug: "autotrade-single-robot",
+    name: "AutoTrade Single Robot",
+    description:
+      "Assinatura mensal de 1 robô operacional em modelo caixa preta — R$ 300,00 por robô.",
+    maxMt5Accounts: 1,
+    maxRobots: 1,
+    maxDevices: 1,
+    allowDemo: false,
+    sortOrder: 0,
+    priceMonthlyCents: 30000,
+    profileSlugs: ["conservador"] as const,
+    features: [
+      { key: "robot_model", value: "black_box" },
+      { key: "max_robots_future", value: "4" },
+      { key: "support_channel", value: "email" },
+    ],
+  },
+  {
     slug: "start",
     name: "Start",
     description: "Entrada no AutoTrade — 1 conta MT5, perfil conservador.",
     maxMt5Accounts: 1,
+    maxRobots: 1,
     maxDevices: 1,
     allowDemo: false,
     sortOrder: 1,
@@ -53,6 +72,7 @@ const PLANS = [
     name: "Pro",
     description: "Operação ampliada — até 2 contas, perfis conservador e moderado.",
     maxMt5Accounts: 2,
+    maxRobots: 2,
     maxDevices: 2,
     allowDemo: false,
     sortOrder: 2,
@@ -68,6 +88,7 @@ const PLANS = [
     name: "Black",
     description: "Máximo do produto — até 3 contas, todos os perfis de exposição.",
     maxMt5Accounts: 3,
+    maxRobots: 4,
     maxDevices: 2,
     allowDemo: false,
     sortOrder: 3,
@@ -113,6 +134,7 @@ async function seedPlans(
         name: planDef.name,
         description: planDef.description,
         maxMt5Accounts: planDef.maxMt5Accounts,
+        maxRobots: planDef.maxRobots,
         maxDevices: planDef.maxDevices,
         allowDemo: planDef.allowDemo,
         sortOrder: planDef.sortOrder,
@@ -122,6 +144,7 @@ async function seedPlans(
         name: planDef.name,
         description: planDef.description,
         maxMt5Accounts: planDef.maxMt5Accounts,
+        maxRobots: planDef.maxRobots,
         maxDevices: planDef.maxDevices,
         allowDemo: planDef.allowDemo,
         sortOrder: planDef.sortOrder,
@@ -246,11 +269,36 @@ async function seedIbovBenchmark(): Promise<void> {
   }
 }
 
+async function seedRobotProducts(): Promise<void> {
+  await prisma.robotProduct.upsert({
+    where: { slug: "autotrade-single-robot" },
+    create: {
+      slug: "autotrade-single-robot",
+      name: "AutoTrade Single Robot",
+      description:
+        "Robô operacional em modelo caixa preta — assinatura mensal por instância.",
+      monthlyPriceCents: 30000,
+      maxInstancesPerUser: 1,
+      isBlackBox: true,
+      sortOrder: 0,
+      status: "ACTIVE",
+    },
+    update: {
+      name: "AutoTrade Single Robot",
+      monthlyPriceCents: 30000,
+      maxInstancesPerUser: 1,
+      isBlackBox: true,
+      status: "ACTIVE",
+    },
+  });
+}
+
 async function main(): Promise<void> {
   console.log("Seed Mercado da Riqueza AutoTrade…");
 
   const profilesBySlug = await seedExposureProfiles();
   const plans = await seedPlans(profilesBySlug);
+  await seedRobotProducts();
   await seedIbovBenchmark();
   await seedAdminUser();
 

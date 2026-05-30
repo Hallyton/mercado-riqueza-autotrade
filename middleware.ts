@@ -5,11 +5,12 @@ import { isInternalRoute } from "@/lib/auth/roles";
 
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_PATHS = new Set(["/", "/login"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/planos", "/cadastro"]);
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
   if (pathname.startsWith("/api/auth")) return true;
+  if (pathname === "/api/commercial/signup") return true;
   if (pathname === "/api/webhooks/billing") return true;
   if (pathname === "/api/v1/ea/activate") return true;
   if (pathname.startsWith("/api/v1/ea")) return true;

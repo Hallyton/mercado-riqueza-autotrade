@@ -2432,6 +2432,24 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 13.1 — Commercial Client Portal & Subscription Flow
 
+### Fase 13.1 — Commercial Client Portal & Subscription Flow
+
+**Status:** `COMMERCIAL_CLIENT_PORTAL_SUBSCRIPTION_FLOW_IMPLEMENTED`  
+**Documento:** [`docs/COMMERCIAL-CLIENT-PORTAL-SUBSCRIPTION-FLOW.md`](COMMERCIAL-CLIENT-PORTAL-SUBSCRIPTION-FLOW.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Portal comercial inicial — plano R$ 300/robô, cadastro, assinatura manual, portal cliente, admin comercial |
+| Plano | `autotrade-single-robot` · 1 robô (estrutura até 4) |
+| Pagamento | Manual/administrativo — sem gateway externo nesta fase |
+| RobotInstance | Schema + magicNumber 910001–910999 (admin) |
+| Conta real | **Não** liberada por pagamento — approval/preflight/protection mantidos |
+| Ordem real | **Nenhuma** enviada · `LIVE_ORDER_VALIDATION_DEFERRED` mantido |
+| Dispatch automático | **Desativado** |
+| Caixa preta | Preservada |
+
+**Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation **ou** Fase 13.2 — RobotInstance & Multi-Robot Scaling
+
 ### Fase 12.6.3 — Real TradeMode Activation Flow
 
 **Status:** `REAL_TRADEMODE_ACTIVATION_FLOW_IMPLEMENTED`  

@@ -4,6 +4,7 @@ import { SectionNav } from "@/components/layout/section-nav";
 
 const NAV = [
   { href: "/dashboard", label: "Visão geral" },
+  { href: "/dashboard/comercial", label: "Portal comercial" },
   { href: "/dashboard/assinatura", label: "Assinatura e licença" },
 ];
 
