@@ -1,9 +1,9 @@
 # Fase 12.4 — Controlled Real Pilot Dry Run — Resultados
 
-**Status:** `APPROVED_WITH_RESTRICTIONS`  
-**Data:** 2026-05-27  
+**Status:** `APPROVED` (dry run staging concluído)  
+**Data conclusão dry run:** 2026-05-30  
 **Branch:** `staging-vps-homologacao`  
-**Commit de referência:** `149d3a7` (código EA/API); este relatório em commit `docs: record controlled real pilot dry run`.
+**Commit de referência:** `e8e19e1` (validação staging execution protection dry run).
 
 ---
 
@@ -154,12 +154,12 @@ Remove-Item Env:STAGING_DATABASE_URL
 
 | Cenário | Status |
 |---------|--------|
-| `PROTECTION_CONFIRMED` (200 + report salvo) | **Pendente** — exige fixture no Neon staging (`STAGING_DATABASE_URL`) |
-| `PROTECTION_FAILED` (report + redaction) | **Pendente** — idem |
-| Bloqueio `protectionBlocked` em FAILED | **Esperado só em `tradeMode=REAL`**; staging DEMO grava report sem bloquear instruction |
-| Admin `/admin/real-trading/protection` | **Pendente** pós-reports E2E |
+| `PROTECTION_CONFIRMED` (200 + report salvo) | **OK** — staging DEMO |
+| `PROTECTION_FAILED` (report + redaction) | **OK** — staging DEMO |
+| Admin `/admin/real-trading/protection` | **OK** — reports visíveis |
+| Bloqueio `protectionBlocked` em FAILED | **Esperado em REAL**; DEMO grava report sem bloquear instruction |
 
-**Nota:** `vercel env pull` / `vercel env run` neste projeto retorna `DATABASE_URL` vazio (integração Neon); copiar URL do painel Neon/Vercel manualmente.
+**Sem ordem real.** Dispatch automático off.
 
 ### E2E com EA (pendente)
 
@@ -243,9 +243,9 @@ Matriz validada em **`tests/risk/controlled-real-pilot-dry-run.test.ts`** (288 t
 | Página | Validação |
 |--------|-----------|
 | `/admin/real-trading/approvals` | **Pendente** pós-migration remota + login admin |
-| `/admin/real-trading/snapshots` | **Parcial** — PRE_MARKET E2E salvo (`cmprt2tuy003cky04jk39xfbl`) |
-| `/admin/real-trading/preflights` | **Pendente** |
-| `/admin/real-trading/protection` | **Pendente** pós E2E `PROTECTION_CONFIRMED`/`FAILED` |
+| `/admin/real-trading/snapshots` | **OK** — PRE_MARKET E2E salvo |
+| `/admin/real-trading/preflights` | **Pendente** — sessão REAL (12.5/12.6) |
+| `/admin/real-trading/protection` | **OK** — `PROTECTION_CONFIRMED`/`PROTECTION_FAILED` visíveis |
 
 Após reports E2E: confirmar `PROTECTION_FAILED` visível, mensagens redigidas, sem secrets em HTML/API.
 
@@ -263,31 +263,44 @@ Após reports E2E: confirmar `PROTECTION_FAILED` visível, mensagens redigidas, 
 
 ---
 
-## 13. Pendências
+## 13. Pendências (pós 12.4)
 
-1. Exportar `STAGING_DATABASE_URL` (Neon) e rodar E2E protection (`homolog:staging-protection-fixture` + `homolog:validate-staging-protection`).
-2. Compilar e instalar EA `.ex5` na VPS/MT5.
-3. Criar `RealTradingApproval` de homologação no admin.
-4. Validar admin UI protection/preflights com dados reais.
-5. E2E snapshots/protection com EA em DebugMode (opcional além dos scripts HTTP).
+Concluído na 12.4:
+
+- PRE_MARKET validado e salvo no staging.
+- Bearer token do EA validado.
+- Rotas `account-snapshots` e `execution-protection` autenticadas.
+- `PROTECTION_CONFIRMED` e `PROTECTION_FAILED` validados em staging (DEMO).
+- Admin protection exibindo reports.
+
+**Próximo passo:** Fase 12.5 — [`docs/FIRST-REAL-ORDER-GATE-CHECKLIST.md`](FIRST-REAL-ORDER-GATE-CHECKLIST.md) (preparação do gate; **sem ordem real**).
+
+Pendências para 12.5/12.6 (conta REAL):
+
+1. Preencher checklist 12.5 (comercial, guard, margem REAL, supervisão).
+2. RealTradingApproval para conta real correta.
+3. `ENABLE_REAL_TRADING` + allowlist por licença (ambiente operacional).
+4. Preflight PASSED em sessão REAL.
+5. EA compilado/instalado na VPS com `tradeMode=REAL` monitorado.
 
 ---
 
 ## 14. Decisão final
 
-**`APPROVED_WITH_RESTRICTIONS`**
+**`APPROVED`** (dry run staging)
 
 | Critério | OK? |
 |----------|-----|
 | Gate / preflight / protection (testes) | Sim |
-| Migrations (remoto staging) | **Não** |
-| EA MQL5 compilado na VPS | **Não** |
-| E2E staging snapshots/protection | **Parcial** — PRE_MARKET + auth OK; protection reports pendentes Neon fixture |
-| Nenhuma ordem real | **Sim** (por desenho + DebugMode obrigatório) |
+| PRE_MARKET staging E2E | Sim |
+| Protection CONFIRMED/FAILED staging E2E | Sim |
+| Admin protection | Sim |
+| E2E staging snapshots/protection | Sim (DEMO) |
+| Nenhuma ordem real | **Sim** |
 | Dispatch automático desativado | **Sim** |
 | Caixa preta | **Sim** |
 
-**Próxima etapa:** **Fase 12.5 — First Ultra-Controlled Real Order Gate** (somente com migration remota OK, EA compilado, E2E dry run completo e **autorização explícita** para uma ordem real ultra-controlada).
+**Próxima etapa:** **Fase 12.5 — First Ultra-Controlled Real Order Gate Checklist** ([`FIRST-REAL-ORDER-GATE-CHECKLIST.md`](FIRST-REAL-ORDER-GATE-CHECKLIST.md)). Execução da primeira ordem real somente na **Fase 12.6**, após gate aprovado.
 
 ---
 

@@ -2326,15 +2326,35 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Migration staging remota | **Pendente** (`vercel env pull` sem DATABASE_URL) |
 | Schema local / script verificação | OK (`verify-staging-real-trading-schema.mjs`) |
 | EA MQL5 compile VPS | **Pendente** (manual MetaEditor) |
-| Endpoints staging | Domínio custom autenticado — PRE_MARKET **200**, protection `{}` → **400**; E2E reports **pendente** Neon fixture |
+| Endpoints staging | PRE_MARKET **200**, protection `{}` → **400**; `PROTECTION_CONFIRMED`/`PROTECTION_FAILED` E2E OK |
 | Rotas EA 404 | **Resolvido** — deploy `dpl_7kNHzVcpUgHW4CxYEj1ASPDnSRRR`; redeploy scripts `dpl_218fepCDE6Qe46cgTCu3Bs5vQCDt` |
 | Scripts homologação protection | `create-staging-protection-fixture.ts`, `validate-staging-execution-protection.ts` |
+| Admin `/admin/real-trading/protection` | **OK** — reports visíveis |
 | Ordem real | **Nenhuma** enviada |
-| RealTradingApproval admin | **Pendente** (manual pós-migration) |
+| RealTradingApproval admin | **Pendente** para sessão REAL (12.5/12.6) |
 | Dispatch automático | **Desativado** |
 | Caixa preta | Preservada |
 
-**Próxima etapa sugerida:** Fase 12.5 — First Ultra-Controlled Real Order Gate.
+**Status:** `APPROVED` (dry run staging concluído)  
+**Próxima etapa sugerida:** Fase 12.5 — First Ultra-Controlled Real Order Gate Checklist.
+
+### Fase 12.5 — First Ultra-Controlled Real Order Gate Checklist
+
+**Status:** `REAL_ORDER_GATE_PENDING_APPROVAL`  
+**Documento:** [`docs/FIRST-REAL-ORDER-GATE-CHECKLIST.md`](FIRST-REAL-ORDER-GATE-CHECKLIST.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Checklist final antes da primeira ordem real ultra-controlada — **sem executar ordem real** |
+| Gate inicial | `BLOCKED_FOR_FIRST_REAL_ORDER` |
+| Decisão | `FIRST_REAL_ORDER_NOT_EXECUTED` |
+| Blocos | Comercial, licença/device, Real Trading Guard, margem, instruction, EA Executor, SL/TP, supervisão, rollback |
+| Ordem real | **Nenhuma** nesta fase |
+| Dispatch automático | **Desativado** |
+| Real Trading Guard | **Inalterado** |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fase 12.6 — First Ultra-Controlled Real Order Execution.
 
 ### EA device_token — localização (investigação)
 
