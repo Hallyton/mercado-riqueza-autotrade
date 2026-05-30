@@ -4,8 +4,8 @@ import { getPublicCommercialPlan } from "@/lib/commercial/subscription-request";
 import {
   MAX_ROBOTS_FUTURE,
   ROBOT_MONTHLY_PRICE_CENTS,
-  AUTOTRADE_SINGLE_ROBOT_PLAN_SLUG,
 } from "@/lib/commercial/constants";
+import { PUBLIC_PLANOS_COPY } from "@/lib/commercial/public-terms";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +38,9 @@ export default async function PlanosPage() {
         <h1 className="mt-4 text-3xl font-bold text-foreground sm:text-4xl">
           {plan?.name ?? "AutoTrade Single Robot"}
         </h1>
-        <p className="mt-4 max-w-2xl text-muted-foreground">
-          Robô operacional em modelo <strong className="text-foreground">caixa preta</strong>.
-          Assinatura mensal por instância — você acompanha status e resultados, sem acesso à
-          lógica interna, setup, filtros, horários ou parâmetros operacionais.
+        <p className="mt-4 max-w-2xl text-muted-foreground">{PUBLIC_PLANOS_COPY.subtitle}</p>
+        <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
+          {PUBLIC_PLANOS_COPY.complement}
         </p>
 
         <div className="mt-10 rounded-xl border border-gold/30 bg-gold/5 p-8">
@@ -75,15 +74,17 @@ export default async function PlanosPage() {
 
         <section className="mt-12 space-y-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-6">
           <h2 className="text-lg font-semibold text-amber-200">Avisos de risco</h2>
+          <p className="text-sm text-muted-foreground">{PUBLIC_PLANOS_COPY.riskBlock}</p>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>Operações em bolsa envolvem risco de perda parcial ou total do capital.</li>
             <li>Rentabilidade passada não garante resultados futuros.</li>
-            <li>Não há promessa de lucro, retorno fixo ou rentabilidade garantida.</li>
-            <li>Ferramenta tecnológica de execução automatizada — sujeita a falhas de conexão, broker ou mercado.</li>
-            <li>O cliente não terá acesso à estratégia, regras de entrada/saída ou parâmetros internos.</li>
             <li>
-              Liberação para conta real exige validação operacional, snapshots, preflight e
-              aprovação específica da equipe Mercado da Riqueza.
+              Ferramenta tecnológica de execução automatizada — sujeita a falhas de conexão,
+              broker ou mercado.
+            </li>
+            <li>
+              O cliente não terá acesso à estratégia, regras de entrada/saída ou parâmetros
+              internos — lógica interna protegida como propriedade intelectual do Mercado da
+              Riqueza.
             </li>
           </ul>
         </section>

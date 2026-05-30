@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mercado da Riqueza AutoTrade",
-  description: "Automação MT5 em modelo gerenciado — caixa preta.",
+  description:
+    "Automação operacional MT5 com tecnologia proprietária do Mercado da Riqueza.",
 };
 
 export default function RootLayout({

@@ -1,6 +1,7 @@
 import { requireAppRole } from "@/lib/auth/session";
 import { getCommercialPortalOverview } from "@/lib/commercial/portal-overview";
 import { SubscriptionRequestForm } from "@/components/commercial/subscription-request-form";
+import { PUBLIC_PORTAL_ROBOT_COPY } from "@/lib/commercial/public-terms";
 import { SubscriptionStatusBadge } from "@/components/subscription/status-badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -185,8 +186,8 @@ export default async function ComercialPortalPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Rentabilidade passada não garante resultados futuros. Parâmetros operacionais não
-        são exibidos — modelo caixa preta.
+        Rentabilidade passada não garante resultados futuros. Parâmetros operacionais
+        permanecem protegidos — tecnologia proprietária do Mercado da Riqueza.
       </p>
     </div>
   );

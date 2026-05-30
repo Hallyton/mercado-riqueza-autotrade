@@ -22,14 +22,14 @@ Implementar o fluxo comercial inicial para o cliente contratar o plano **AutoTra
 | Preço | R$ 300,00 / robô / mês (`30000` centavos) |
 | Robôs (fase atual) | **1** por cliente |
 | Estrutura futura | Até **4** robôs (R$ 300 × quantidade) |
-| Modelo | Caixa preta |
+| Modelo | Tecnologia proprietária (lógica interna protegida) |
 
 ---
 
 ## 3. Fluxo do cliente
 
-1. Acessa `/planos` — preço, riscos, CTAs.  
-2. Cadastro em `/cadastro` — nome, e-mail, senha, aceites.  
+1. Acessa `/planos` — preço, riscos, CTAs (copy institucional — tecnologia proprietária).  
+2. Cadastro em `/cadastro` — nome, e-mail, senha, aceites com link para `/termos/autotrade`.  
 3. Login → `/dashboard/comercial` — status assinatura, pagamento, robô, licença, EA.  
 4. Solicita assinatura (se necessário) — status `INCOMPLETE` + `adminPaymentStatus: PENDING`.  
 5. Aguarda confirmação administrativa do pagamento.  
@@ -45,6 +45,7 @@ Implementar o fluxo comercial inicial para o cliente contratar o plano **AutoTra
 |------|---------|-----------|
 | `/planos` | Sim | Página comercial |
 | `/cadastro` | Sim | Cadastro + aceites |
+| `/termos/autotrade` | Sim | Termos comerciais/beta (versão beta, não contrato final) |
 | `/dashboard/comercial` | Cliente | Portal comercial |
 | `/dashboard/assinatura` | Cliente | Licença / MT5 / activation |
 | `POST /api/commercial/signup` | Sim | Cadastro |
@@ -80,13 +81,20 @@ Implementar o fluxo comercial inicial para o cliente contratar o plano **AutoTra
 
 ## 7. Termos aceitos (cadastro)
 
+Página pública: **`/termos/autotrade`** — Termos de Uso Comercial/Beta com avisos de risco, ausência de promessa de rentabilidade e dependência de aprovação para conta real.
+
+No cadastro e na solicitação de assinatura, o aceite **“Termos de Uso Comercial/Beta”** é obrigatório e aponta para `/termos/autotrade` (nova aba).
+
+Copy pública substitui **“caixa preta”** por **“tecnologia proprietária”** / **“lógica interna protegida”** — mantendo proteção da estratégia.
+
+Tipos registrados em `terms_acceptances`:
 - `COMMERCIAL_SUBSCRIPTION_TERMS`  
 - `RISK_DISCLAIMER`  
 - `NO_RETURN_GUARANTEE`  
 - `REAL_REQUIRES_ADMIN_APPROVAL`  
 - `BLACK_BOX_ACKNOWLEDGMENT`  
 
-Versão: `2026-05-27` · registrados em `terms_acceptances`.
+Versão: `2026-05-27`.
 
 ---
 
@@ -108,7 +116,7 @@ Em `/admin/users/[userId]` — card **Gestão comercial**:
 - Dispatch automático **desativado**.  
 - Nenhuma ordem real enviada nesta fase.  
 - Real Trading Guard **preservado**.  
-- Caixa preta — sem estratégia/parâmetros ao cliente.
+- Caixa preta — sem estratégia/parâmetros ao cliente (documentação interna; UI pública usa “tecnologia proprietária”).
 
 ---
 

@@ -161,7 +161,7 @@ export default async function AssinaturaPage() {
 
       <p className="text-xs text-muted-foreground">
         Rentabilidade passada não garante resultados futuros. Parâmetros
-        operacionais não são exibidos — modelo caixa preta.
+        operacionais permanecem protegidos — lógica interna protegida.
       </p>
     </div>
   );

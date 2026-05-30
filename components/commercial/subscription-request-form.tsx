@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CommercialAcceptanceFieldset } from "@/components/commercial/commercial-acceptance-fieldset";
 
 export function SubscriptionRequestForm({
   hasSubscription,
@@ -64,41 +65,7 @@ export function SubscriptionRequestForm({
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit} className="space-y-4 px-6 pb-6">
-        <fieldset className="space-y-2 rounded-lg border border-white/10 p-4 text-sm">
-          <legend className="px-1 text-xs font-medium text-muted-foreground">
-            Aceites obrigatórios
-          </legend>
-          <label className="flex gap-2">
-            <input type="checkbox" name="acceptTerms" required className="mt-1" />
-            <span>Aceito os termos comerciais.</span>
-          </label>
-          <label className="flex gap-2">
-            <input type="checkbox" name="acceptRisk" required className="mt-1" />
-            <span>Ciência de risco de mercado.</span>
-          </label>
-          <label className="flex gap-2">
-            <input
-              type="checkbox"
-              name="acceptNoReturnGuarantee"
-              required
-              className="mt-1"
-            />
-            <span>Sem promessa de rentabilidade.</span>
-          </label>
-          <label className="flex gap-2">
-            <input
-              type="checkbox"
-              name="acceptRealRequiresApproval"
-              required
-              className="mt-1"
-            />
-            <span>Conta real depende de aprovação admin.</span>
-          </label>
-          <label className="flex gap-2">
-            <input type="checkbox" name="acceptBlackBox" required className="mt-1" />
-            <span>Modelo caixa preta — sem lógica exposta.</span>
-          </label>
-        </fieldset>
+        <CommercialAcceptanceFieldset />
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 

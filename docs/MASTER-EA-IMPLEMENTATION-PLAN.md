@@ -2448,7 +2448,23 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Dispatch automático | **Desativado** |
 | Caixa preta | Preservada |
 
-**Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation **ou** Fase 13.2 — RobotInstance & Multi-Robot Scaling
+**Próxima fase:** Fase 13.1.2 — Commercial Terms Page & Public Copy Refinement **ou** Fase 13.2 — Payment Gateway & Billing Automation
+
+### Fase 13.1.2 — Commercial Terms Page & Public Copy Refinement
+
+**Status:** `COMMERCIAL_TERMS_AND_COPY_REFINED`  
+**Documento:** [`docs/COMMERCIAL-CLIENT-PORTAL-SUBSCRIPTION-FLOW.md`](COMMERCIAL-CLIENT-PORTAL-SUBSCRIPTION-FLOW.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Página `/termos/autotrade`, link no aceite do cadastro, copy institucional em `/planos` |
+| Termos | Versão comercial/beta — riscos, sem promessa de rentabilidade, conta real com aprovação |
+| Copy pública | “Tecnologia proprietária” / “lógica protegida” — sem “caixa preta” na UI pública |
+| Aceite | Obrigatório com link clicável para termos |
+| Estratégia | **Protegida** — sem exposição de setup, filtros, horários ou parâmetros |
+| Ordem real | **Nenhuma** enviada · dispatch automático **desativado** |
+
+**Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation
 
 ### Fase 13.1.1 — Staging Commercial Smoke Test & Catalog Seed
 

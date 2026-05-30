@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CommercialAcceptanceFieldset } from "@/components/commercial/commercial-acceptance-fieldset";
 
 export function SignupForm() {
   const router = useRouter();
@@ -86,46 +87,7 @@ export function SignupForm() {
           />
         </div>
 
-        <fieldset className="space-y-3 rounded-lg border border-white/10 p-4 text-sm">
-          <legend className="px-1 text-xs font-medium text-muted-foreground">
-            Aceites obrigatórios
-          </legend>
-          <label className="flex gap-2">
-            <input type="checkbox" name="acceptTerms" required className="mt-1" />
-            <span>Li e aceito os termos de uso comercial/beta.</span>
-          </label>
-          <label className="flex gap-2">
-            <input type="checkbox" name="acceptRisk" required className="mt-1" />
-            <span>Estou ciente dos riscos de mercado e possível perda de capital.</span>
-          </label>
-          <label className="flex gap-2">
-            <input
-              type="checkbox"
-              name="acceptNoReturnGuarantee"
-              required
-              className="mt-1"
-            />
-            <span>Não há promessa de rentabilidade ou lucro garantido.</span>
-          </label>
-          <label className="flex gap-2">
-            <input
-              type="checkbox"
-              name="acceptRealRequiresApproval"
-              required
-              className="mt-1"
-            />
-            <span>
-              Operação em conta real depende de aprovação administrativa — pagamento não
-              libera conta real.
-            </span>
-          </label>
-          <label className="flex gap-2">
-            <input type="checkbox" name="acceptBlackBox" required className="mt-1" />
-            <span>
-              Aceito o modelo caixa preta — sem acesso à lógica interna do robô.
-            </span>
-          </label>
-        </fieldset>
+        <CommercialAcceptanceFieldset />
 
         {error && (
           <p className="text-sm text-red-400" role="alert">
