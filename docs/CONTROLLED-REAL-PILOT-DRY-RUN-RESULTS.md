@@ -120,16 +120,46 @@ Ou: `APPLY_MIGRATE=1 node scripts/homologation/verify-staging-real-trading-schem
 
 Headers: `X-Matched-Path` confirma handler Next.js no domínio custom. **404 resolvido** (causa: deploy de produção desatualizado; correção: `vercel deploy --prod --force`).
 
-### Staging HTTP — payload vazio **com Bearer válido** (pendente)
+### Staging HTTP — autenticado (2026-05-30)
 
-Resultado esperado: **400** `VALIDATION_ERROR` (não 401/404).
+| Rota / cenário | Resultado |
+|----------------|-----------|
+| `POST /api/v1/ea/account-snapshots` `{}` + Bearer válido | **400** `VALIDATION_ERROR` |
+| `POST /api/v1/ea/account-snapshots` `PRE_MARKET` + Bearer válido | **200 OK** |
+| Snapshot salvo (staging Neon) | `snapshot_id = cmprt2tuy003cky04jk39xfbl` |
+| `POST /api/v1/ea/execution-protection` `{}` + Bearer válido | **400** `VALIDATION_ERROR` — *Verifique instruction_id, magic_number e protection_status.* |
+| `X-Matched-Path` | Correto no domínio custom |
+| `X-Device-Id` | **Opcional** (Bearer sozinho autentica) |
 
-Tentativas:
+**Bearer:** token da VPS (`mr_at_52609973.dat`); **não** logar. **Dispatch automático:** desativado. **Ordem real:** nenhuma.
 
-1. Ativação via código gerado no banco **local** + `POST /ea/activate` em staging → **401** `INVALID_ACTIVATION_CODE` (bancos diferentes).
-2. Login dashboard homolog (`HOMOLOG_CLIENT_*`) + `GET /api/me/subscription` → **200 text/html** (sessão não estabelecida ou usuário ausente no Neon staging).
+### E2E execution-protection dry-run (scripts)
 
-**Desbloqueio:** exportar no shell (sem logar) `STAGING_EA_BEARER_TOKEN` do EA já ativado na VPS **ou** `STAGING_DATABASE_URL` do Neon + rodar `npx tsx scripts/homologation/validate-staging-ea-routes.ts`.
+Scripts (não imprimem secrets):
+
+| Script | Função |
+|--------|--------|
+| `scripts/homologation/create-staging-protection-fixture.ts` | Instruction `HOMOLOGATION` dry-run (`magicNumber=910001`, `requiresProtectionConfirmation=true`) |
+| `scripts/homologation/validate-staging-execution-protection.ts` | POST `PROTECTION_CONFIRMED` + `PROTECTION_FAILED` |
+| `scripts/homologation/resolve-staging-ea-bearer.ts` | Bearer opcional via `mr_at_<login>.dat` (UTF-16) |
+
+```powershell
+# Shell do operador — exportar Neon staging (não commitar):
+$env:STAGING_DATABASE_URL="<postgresql://...neon...>"
+# Opcional: $env:STAGING_EA_BEARER_TOKEN="..."  # senão usa mr_at_*.dat local
+npm run homolog:staging-protection-fixture
+npm run homolog:validate-staging-protection
+Remove-Item Env:STAGING_DATABASE_URL
+```
+
+| Cenário | Status |
+|---------|--------|
+| `PROTECTION_CONFIRMED` (200 + report salvo) | **Pendente** — exige fixture no Neon staging (`STAGING_DATABASE_URL`) |
+| `PROTECTION_FAILED` (report + redaction) | **Pendente** — idem |
+| Bloqueio `protectionBlocked` em FAILED | **Esperado só em `tradeMode=REAL`**; staging DEMO grava report sem bloquear instruction |
+| Admin `/admin/real-trading/protection` | **Pendente** pós-reports E2E |
+
+**Nota:** `vercel env pull` / `vercel env run` neste projeto retorna `DATABASE_URL` vazio (integração Neon); copiar URL do painel Neon/Vercel manualmente.
 
 ### E2E com EA (pendente)
 
@@ -146,11 +176,17 @@ Com EA compilado + token + `InpDebugMode=true`:
 ### Automatizada
 
 - `tests/risk/execution-protection.test.ts` — `PROTECTION_CONFIRMED`, `PROTECTION_FAILED`, redaction de `errorMessage`, bloqueio `protectionBlocked`.
-- Preview: `POST /api/v1/ea/execution-protection` → **401** sem token.
+- Staging: rota autenticada; payload `{}` → **400** `VALIDATION_ERROR` (2026-05-30).
 
-### E2E (pendente)
+### E2E staging (pendente — fixture Neon)
 
-Com device token e instruction de teste (sem ordem real): POST controlado com `PROTECTION_CONFIRMED` / `PROTECTION_FAILED` e verificar admin `/admin/real-trading/protection`.
+Com `STAGING_DATABASE_URL` + Bearer (VPS/`mr_at_*.dat`):
+
+1. `npm run homolog:staging-protection-fixture` — cria 2 instructions `HOMOLOGATION` (confirmed/failed).
+2. `npm run homolog:validate-staging-protection` — POST `PROTECTION_CONFIRMED` e `PROTECTION_FAILED`.
+3. Conferir `/admin/real-trading/protection`, `/admin/real-trading/snapshots`, `/admin/real-trading/preflights`.
+
+**Sem ordem real.** Dispatch automático off.
 
 ---
 
@@ -207,11 +243,11 @@ Matriz validada em **`tests/risk/controlled-real-pilot-dry-run.test.ts`** (288 t
 | Página | Validação |
 |--------|-----------|
 | `/admin/real-trading/approvals` | **Pendente** pós-migration remota + login admin |
-| `/admin/real-trading/snapshots` | **Pendente** |
+| `/admin/real-trading/snapshots` | **Parcial** — PRE_MARKET E2E salvo (`cmprt2tuy003cky04jk39xfbl`) |
 | `/admin/real-trading/preflights` | **Pendente** |
-| `/admin/real-trading/protection` | **Pendente** |
+| `/admin/real-trading/protection` | **Pendente** pós E2E `PROTECTION_CONFIRMED`/`FAILED` |
 
-Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` visível, sem secrets em HTML/API.
+Após reports E2E: confirmar `PROTECTION_FAILED` visível, mensagens redigidas, sem secrets em HTML/API.
 
 ---
 
@@ -229,12 +265,11 @@ Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` vis
 
 ## 13. Pendências
 
-1. Aplicar migrations no PostgreSQL **remoto** de staging.
+1. Exportar `STAGING_DATABASE_URL` (Neon) e rodar E2E protection (`homolog:staging-protection-fixture` + `homolog:validate-staging-protection`).
 2. Compilar e instalar EA `.ex5` na VPS/MT5.
 3. Criar `RealTradingApproval` de homologação no admin.
-4. E2E snapshots/protection com EA em DebugMode.
-5. Validar admin UI com dados reais.
-6. Validar payload vazio/valido com **Bearer válido** (`validate-staging-ea-routes.ts` ou EA DebugMode na VPS).
+4. Validar admin UI protection/preflights com dados reais.
+5. E2E snapshots/protection com EA em DebugMode (opcional além dos scripts HTTP).
 
 ---
 
@@ -247,7 +282,7 @@ Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` vis
 | Gate / preflight / protection (testes) | Sim |
 | Migrations (remoto staging) | **Não** |
 | EA MQL5 compilado na VPS | **Não** |
-| E2E staging snapshots/protection | **Não** |
+| E2E staging snapshots/protection | **Parcial** — PRE_MARKET + auth OK; protection reports pendentes Neon fixture |
 | Nenhuma ordem real | **Sim** (por desenho + DebugMode obrigatório) |
 | Dispatch automático desativado | **Sim** |
 | Caixa preta | **Sim** |
@@ -261,9 +296,9 @@ Após migration remota: confirmar reasons PASSED/FAILED, `PROTECTION_FAILED` vis
 ```bash
 npm test -- --run tests/risk/controlled-real-pilot-dry-run.test.ts
 node scripts/homologation/verify-staging-real-trading-schema.mjs
-# Com migrate: APPLY_MIGRATE=1 node scripts/homologation/verify-staging-real-trading-schema.mjs
 
-# Validação autenticada staging (não imprime token):
-# STAGING_EA_BEARER_TOKEN=... STAGING_EA_DEVICE_ID=... npx tsx scripts/homologation/validate-staging-ea-routes.ts
-# Ou: STAGING_DATABASE_URL=... npx tsx scripts/homologation/validate-staging-ea-routes.ts
+# Staging — Bearer via mr_at_*.dat ou STAGING_EA_BEARER_TOKEN (não logar):
+# STAGING_DATABASE_URL=... npm run homolog:staging-protection-fixture
+# npm run homolog:validate-staging-protection
+# npm run homolog:validate-staging-ea-routes
 ```
