@@ -2375,6 +2375,24 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.6 — First Ultra-Controlled Real Order Execution.
 
+### Fase 12.5.2 — T-0 Real Order Gate Revalidation
+
+**Status:** `T0_REVALIDATION_COMPLETE` — gate **`BLOCKED_FOR_FIRST_REAL_ORDER`**  
+**Documento:** [`docs/FIRST-REAL-ORDER-GATE-T0-REVALIDATION.md`](FIRST-REAL-ORDER-GATE-T0-REVALIDATION.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Revalidar critérios T-0 antes da primeira ordem real — **sem executar ordem** |
+| Decisão | `FIRST_REAL_ORDER_NOT_EXECUTED` |
+| Gate T-0 | `BLOCKED_FOR_FIRST_REAL_ORDER` |
+| Bloqueio crítico segurança | `DATABASE_URL` exposta — **rotacionar Neon/Vercel antes da 12.6** |
+| Preflight ao vivo | Não executado nesta fase — `PREFLIGHT_BLOCKED` |
+| Ordem real | **Nenhuma** |
+| Dispatch automático | **Desativado** |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fechar pendências T-0 (credencial, approvalId, heartbeat REAL, PRE_MARKET do dia, preflight PASSED, supervisão) → **Fase 12.6**.
+
 ### EA device_token — localização (investigação)
 
 **Status:** `EA_DEVICE_TOKEN_LOCATION_IDENTIFIED`  

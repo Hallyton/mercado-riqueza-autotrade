@@ -268,4 +268,30 @@
 
 ---
 
-*Mercado da Riqueza AutoTrade — Session 001 gate fill. Próxima etapa: Fase 12.6 — First Ultra-Controlled Real Order Execution.*
+## 13. Fase 12.5.2 — T-0 Revalidation
+
+**Documento:** [`docs/FIRST-REAL-ORDER-GATE-T0-REVALIDATION.md`](FIRST-REAL-ORDER-GATE-T0-REVALIDATION.md)  
+**Data:** 2026-05-30  
+**Status T-0:** `T0_REVALIDATION_COMPLETE`
+
+| Bloco T-0 | Resultado |
+|-----------|-----------|
+| SECURITY | `SECURITY_BLOCKED` — **DATABASE_URL** exposta anteriormente; rotação Neon/Vercel **pendente** |
+| LICENSE_DEVICE | `LICENSE_DEVICE_BLOCKED` |
+| REAL_GUARD | `REAL_GUARD_BLOCKED` |
+| MARGIN | `MARGIN_BLOCKED` |
+| PREFLIGHT | `PREFLIGHT_BLOCKED` |
+| EXECUTOR | `EXECUTOR_BLOCKED` (trilha REAL T-0) |
+| SUPERVISION_ROLLBACK | `SUPERVISION_ROLLBACK_BLOCKED` |
+
+### Decisão atualizada da Session 001
+
+**`BLOCKED_FOR_FIRST_REAL_ORDER`** · **`FIRST_REAL_ORDER_NOT_EXECUTED`**
+
+Permanece bloqueada para Fase 12.6 até: (1) rotação de credencial Neon/Vercel; (2) revalidação T-0 **ao vivo** com todos os blocos OK; (3) autorização explícita HALLYTON.
+
+**Status sessão:** `GATE_SESSION_T0_BLOCKED` (substitui `GATE_SESSION_PENDING_REVIEW` para fins operacionais)
+
+---
+
+*Mercado da Riqueza AutoTrade — Session 001. T-0 revalidado (12.5.2); execução real somente na 12.6 após gate aprovado.*
