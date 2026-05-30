@@ -2450,6 +2450,22 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation **ou** Fase 13.2 — RobotInstance & Multi-Robot Scaling
 
+### Fase 13.1.1 — Staging Commercial Smoke Test & Catalog Seed
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/COMMERCIAL-STAGING-SMOKE-TEST-RESULTS.md`](COMMERCIAL-STAGING-SMOKE-TEST-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Seed catálogo Neon | **Aplicado** (`autotrade-single-robot`, R$ 300, RobotProduct) |
+| `/planos`, `/cadastro` | **OK** |
+| Signup API | **OK** (HTTP 201) |
+| Portal comercial | **Parcial** (login browser — validação manual operador) |
+| Admin confirm-payment + RobotInstance | **OK** (magicNumber 910001, audit) |
+| Conta real / ordem real | **Não** liberada · **nenhuma** ordem enviada |
+
+**Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation
+
 ### Fase 12.6.3 — Real TradeMode Activation Flow
 
 **Status:** `REAL_TRADEMODE_ACTIVATION_FLOW_IMPLEMENTED`  
