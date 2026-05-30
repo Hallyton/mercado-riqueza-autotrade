@@ -15,7 +15,7 @@ import { redactSensitiveMessage } from "@/lib/risk/redact-message";
 import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
 import { runRealTradePreflight } from "@/lib/risk/real-trade-preflight";
 import {
-  evaluateRealTradingGuard,
+  evaluateRealTradingGuardAsync,
   type RealTradingGuardDecision,
 } from "@/lib/risk/real-trading-guard";
 import type { EaAuthContext } from "./auth";
@@ -204,7 +204,15 @@ export async function evaluateEaRealTradingGuard(
   licenseId: string
 ): Promise<RealTradingGuardDecision> {
   const tradeMode = await loadLatestTradeMode(licenseId);
-  return evaluateRealTradingGuard({ tradeMode, licenseId });
+  const license = await prisma.license.findUnique({
+    where: { id: licenseId },
+    select: { userId: true },
+  });
+  return evaluateRealTradingGuardAsync({
+    tradeMode,
+    licenseId,
+    userId: license?.userId,
+  });
 }
 
 async function evaluateInstructionDeliverability(

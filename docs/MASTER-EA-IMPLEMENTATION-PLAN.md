@@ -2411,6 +2411,22 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.7 — Post-Real-Order Review & Incident/Success Report *(após execução ao vivo ou aborto formal documentado com IDs)*.
 
+### Fluxo de aprovação manual REAL (admin)
+
+**Status:** `REAL_TRADING_MANUAL_APPROVAL_FLOW_IMPLEMENTED`  
+**Documento:** [`docs/REAL-TRADING-MANUAL-APPROVAL-FLOW.md`](REAL-TRADING-MANUAL-APPROVAL-FLOW.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Liberação manual por licença/conta/símbolo/magic — sem REAL global na UI |
+| Master switch | `ENABLE_REAL_TRADING` continua obrigatório |
+| Allowlist env | Opcional; **não** substitui `RealTradingApproval` APPROVED |
+| UI guard | Links para aprovações; **sem** botão “liberar REAL global” |
+| Confirmação criação | `AUTORIZO REAL CONTROLADO` |
+| Ações approval | Suspender / Revogar / Bloquear com frases textuais + audit |
+| Preflight | Inalterado na política — obrigatório antes da ordem |
+| Dispatch automático | **Desativado** |
+
 ### EA device_token — localização (investigação)
 
 **Status:** `EA_DEVICE_TOKEN_LOCATION_IDENTIFIED`  

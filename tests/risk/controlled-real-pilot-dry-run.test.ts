@@ -13,6 +13,7 @@ import {
 import { evaluateRealTradingGuard } from "@/lib/risk/real-trading-guard";
 import { runRealTradePreflight } from "@/lib/risk/real-trade-preflight";
 import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
+import { buildMockApprovedRealTradingApproval } from "@/tests/risk/_real-trading-mocks";
 import { isAutoDispatchEnabled } from "@/lib/risk/real-trading-config";
 import prisma from "@/lib/prisma";
 
@@ -44,7 +45,7 @@ const baseInput = {
 
 function mockAllCriteriaPassing() {
   process.env.ENABLE_REAL_TRADING = "true";
-  process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
+  delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
 
   vi.mocked(prisma.license.findUnique).mockResolvedValue({
     id: baseInput.licenseId,
@@ -80,16 +81,14 @@ function mockAllCriteriaPassing() {
       return null;
     }
     if (where?.status === RealTradingApprovalStatus.APPROVED) {
-      return {
-        id: "appr-dry-run",
+      return buildMockApprovedRealTradingApproval({
+        accountLogin: baseInput.accountLogin,
+        accountServer: baseInput.accountServer,
         symbol: baseInput.symbol,
         magicNumber: baseInput.magicNumber,
-        marginBufferPercent: 15,
-        minFreeMargin: 5000,
         maxContracts: 1,
         userId: baseInput.userId,
-        allowReal: true,
-      } as never;
+      }) as never;
     }
     return null;
   });
@@ -132,7 +131,7 @@ describe("Fase 12.4 — Controlled Real Pilot Dry Run (sem ordem real)", () => {
     if (!d.allowed) expect(d.code).toBe(REAL_TRADING_REASONS.ENV_NOT_ENABLED);
   });
 
-  it("B) sem allowlist → BLOCKED", () => {
+  it("B) sem approval manual → BLOCKED (sync)", () => {
     process.env.ENABLE_REAL_TRADING = "true";
     const d = evaluateRealTradingGuard({
       tradeMode: TradeMode.REAL,
@@ -140,7 +139,7 @@ describe("Fase 12.4 — Controlled Real Pilot Dry Run (sem ordem real)", () => {
     });
     expect(d.allowed).toBe(false);
     if (!d.allowed) {
-      expect(d.code).toBe(REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED);
+      expect(d.code).toBe(REAL_TRADING_REASONS.APPROVAL_REQUIRED);
     }
   });
 

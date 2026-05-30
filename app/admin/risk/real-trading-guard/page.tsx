@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getRealTradingGuardAdminStatus } from "@/lib/risk/real-trading-guard-status";
 
@@ -32,8 +33,9 @@ function InfoCard({
 }
 
 export default async function AdminRealTradingGuardPage() {
-  const status = getRealTradingGuardAdminStatus();
-  const allowlistConfigured = status.allowedLicenseCount > 0;
+  const status = await getRealTradingGuardAdminStatus();
+  const manualOrEnvAllowlist =
+    status.manualAllowlistConfigured || status.envAllowlistLicenseCount > 0;
 
   return (
     <div className="space-y-8">
@@ -45,32 +47,63 @@ export default async function AdminRealTradingGuardPage() {
           </div>
           <CardTitle>Real Trading Guard</CardTitle>
           <CardDescription className="mt-2">
-            Visualização operacional somente leitura. Esta tela não altera envs, não
-            libera conta real e não cria controles de ativação.
+            Visualização operacional somente leitura para envs. Esta tela não altera
+            ENABLE_REAL_TRADING, não libera REAL globalmente e não envia ordens.
           </CardDescription>
         </CardHeader>
+      </Card>
+
+      <Card className="border-gold/30 bg-gold/5 p-6">
+        <CardHeader className="p-0 pb-4">
+          <CardTitle>Liberação manual controlada</CardTitle>
+          <CardDescription>
+            Conta real permanece bloqueada por padrão. Para autorizar uma operação
+            real, crie uma aprovação específica por licença, conta, símbolo e
+            magicNumber. A aprovação não envia ordem, não ativa dispatch automático
+            e não substitui o preflight.
+          </CardDescription>
+        </CardHeader>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/real-trading/approvals"
+            className="rounded-md border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-medium text-gold hover:bg-gold/20"
+          >
+            Ver aprovações reais
+          </Link>
+          <Link
+            href="/admin/real-trading/approvals/new"
+            className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-black hover:opacity-90"
+          >
+            Criar aprovação controlada
+          </Link>
+        </div>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <InfoCard
           label="ENABLE_REAL_TRADING configurado"
           value={yesNo(status.enableRealTradingConfigured)}
-          hint="Valor bruto nunca é exibido."
+          hint="Master switch — valor bruto nunca é exibido."
         />
         <InfoCard
-          label="Allowlist configurada"
-          value={yesNo(allowlistConfigured)}
-          hint="IDs completos nunca são exibidos."
+          label="Allowlist manual ativa"
+          value={yesNo(status.manualAllowlistConfigured)}
+          hint="Aprovações APPROVED + allowReal no banco."
         />
         <InfoCard
-          label="Licenças permitidas"
-          value={status.allowedLicenseCount}
-          hint="Contagem de IDs mascarados."
+          label="Licenças permitidas (aprovações ativas)"
+          value={status.activeManualApprovalCount}
+          hint="Contagem de aprovações manuais APPROVED."
+        />
+        <InfoCard
+          label="Allowlist env (opcional)"
+          value={status.envAllowlistLicenseCount}
+          hint="REAL_TRADING_ALLOWED_LICENSE_IDS — extra, não substitui approval."
         />
         <InfoCard
           label="Política padrão"
           value="Bloquear REAL"
-          hint="Default deny para conta real."
+          hint="Default deny fora do gate completo."
         />
       </section>
 
@@ -81,10 +114,11 @@ export default async function AdminRealTradingGuardPage() {
         </CardHeader>
         <ul className="space-y-2 text-sm">
           <li>Conta real bloqueada por padrão.</li>
-          <li>Produção real não liberada.</li>
+          <li>REAL exige master switch + RealTradingApproval APPROVED.</li>
+          <li>Allowlist env é opcional; aprovação manual é o caminho operacional.</li>
+          <li>Produção real global não liberada por esta tela.</li>
           <li>Dispatch automático desativado.</li>
-          <li>DEMO permitido conforme regras operacionais existentes.</li>
-          <li>REAL exige flag futura e allowlist por licença.</li>
+          <li>DEMO permitido conforme regras existentes.</li>
         </ul>
       </Card>
 
@@ -106,13 +140,17 @@ export default async function AdminRealTradingGuardPage() {
             </thead>
             <tbody>
               {[
-                ["DEMO", "Permitido", "Segue regras atuais de licença, assinatura e plano."],
-                ["REAL sem flag", "Bloqueado", "Política default deny."],
-                ["REAL com flag sem allowlist", "Bloqueado", "Flag isolada não libera."],
+                ["DEMO", "Permitido", "Segue regras atuais de licença e plano."],
+                ["REAL sem master switch", "Bloqueado", "ENABLE_REAL_TRADING off."],
                 [
-                  "REAL com flag + allowlist",
-                  "Tecnicamente permitido",
-                  "Não é liberação operacional; exige gate formal.",
+                  "REAL com master switch sem approval",
+                  "Bloqueado",
+                  "Exige RealTradingApproval APPROVED.",
+                ],
+                [
+                  "REAL com approval APPROVED",
+                  "Pode seguir para preflight",
+                  "Ainda exige snapshot, margem, EA online, SL/TP.",
                 ],
               ].map(([scenario, result, note]) => (
                 <tr key={scenario} className="border-b border-white/5">
@@ -128,19 +166,21 @@ export default async function AdminRealTradingGuardPage() {
 
       <Card className="p-6">
         <CardHeader className="p-0 pb-4">
-          <CardTitle>Allowlist mascarada</CardTitle>
+          <CardTitle>Referências mascaradas</CardTitle>
           <CardDescription>
-            Exibe apenas contagem e IDs parcialmente mascarados, sem valores brutos.
+            Aprovações manuais ativas e allowlist env opcional (IDs parciais).
           </CardDescription>
         </CardHeader>
-        {status.allowedLicenseIdsMasked.length > 0 ? (
+        {manualOrEnvAllowlist ? (
           <ul className="space-y-1 font-mono text-xs text-muted-foreground">
-            {status.allowedLicenseIdsMasked.map((licenseId) => (
-              <li key={licenseId}>{licenseId}</li>
+            {status.allowedLicenseIdsMasked.map((entry, index) => (
+              <li key={`${entry}-${index}`}>{entry}</li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Nenhuma licença em allowlist.</p>
+          <p className="text-sm text-muted-foreground">
+            Nenhuma aprovação manual ativa nem allowlist env configurada.
+          </p>
         )}
       </Card>
 

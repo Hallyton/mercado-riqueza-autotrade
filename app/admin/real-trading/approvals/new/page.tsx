@@ -30,7 +30,8 @@ export default async function AdminNewRealTradingApprovalPage() {
           <CardTitle>Nova aprovação de conta real</CardTitle>
           <CardDescription className="mt-2">
             Gate administrativo obrigatório. Cliente não pode criar aprovação via API
-            pública.
+            pública. Exige confirmação textual &quot;AUTORIZO REAL CONTROLADO&quot;.
+            maxContracts padrão: 1.
           </CardDescription>
         </CardHeader>
       </Card>

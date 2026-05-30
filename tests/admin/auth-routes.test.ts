@@ -101,6 +101,7 @@ describe("auditoria admin auth e rotas protegidas", () => {
       "app/api/admin/instructions/route.ts",
       "app/api/admin/licenses/[licenseId]/pause-entries/route.ts",
       "app/api/admin/master-signals/[masterSignalId]/dispatch/route.ts",
+      "app/api/admin/real-trading/approvals/[approvalId]/route.ts",
       "app/api/admin/real-trading/approvals/route.ts",
       "app/api/admin/users/[userId]/block/route.ts",
     ]);

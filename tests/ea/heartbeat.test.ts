@@ -14,6 +14,8 @@ vi.mock("@/lib/prisma", () => ({
       createMany: vi.fn(),
     },
     instruction: { findMany: vi.fn().mockResolvedValue([]) },
+    license: { findUnique: vi.fn().mockResolvedValue({ userId: "user1" }) },
+    realTradingApproval: { findFirst: vi.fn().mockResolvedValue(null) },
   },
 }));
 

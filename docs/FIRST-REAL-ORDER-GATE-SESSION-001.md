@@ -79,8 +79,9 @@
 
 | Critério | Avaliação | Evidência / nota |
 |----------|-----------|------------------|
-| `ENABLE_REAL_TRADING=true/1` | OK | Declarado configurado no ambiente operacional (valor **não** registrado neste doc) |
-| LicenseId em `REAL_TRADING_ALLOWED_LICENSE_IDS` | OK | Declarado operador — allowlist **por licença**, não ampla |
+| `ENABLE_REAL_TRADING=true/1` | OK | Master switch no ambiente (valor **não** registrado neste doc) |
+| RealTradingApproval manual APPROVED | OK | Criar em `/admin/real-trading/approvals/new` — ver [`REAL-TRADING-MANUAL-APPROVAL-FLOW.md`](REAL-TRADING-MANUAL-APPROVAL-FLOW.md) |
+| LicenseId em `REAL_TRADING_ALLOWED_LICENSE_IDS` | N/A | Opcional; **não** substitui approval manual |
 | RealTradingApproval APPROVED | OK | Declarado criado para conta real correta |
 | `allowReal=true` | OK | Declarado operador |
 | userId confere | OK | Declarado alinhado ao Cliente Staging |

@@ -6,11 +6,11 @@ import {
 } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
-  evaluateRealTradingGuard,
+  evaluateRealTradingGuardAsync,
   isLicenseAllowedForRealTrading,
   isRealTradingEnabled,
-  toPreflightGuardFlags,
 } from "@/lib/risk/real-trading-guard";
+import { findActiveRealTradingApproval } from "@/lib/risk/real-trading-approval-query";
 import {
   hasRequiredTermsAcceptance,
   isCommercialPaymentOk,
@@ -79,28 +79,7 @@ function normalizeSymbol(value: string): string {
   return value.trim().toUpperCase();
 }
 
-export async function findActiveRealTradingApproval(
-  licenseId: string,
-  userId: string,
-  accountLogin: string,
-  accountServer: string,
-  symbol: string,
-  magicNumber: number
-) {
-  return prisma.realTradingApproval.findFirst({
-    where: {
-      licenseId,
-      userId,
-      accountLogin: normalizeAccount(accountLogin),
-      accountServer: normalizeAccount(accountServer),
-      symbol: normalizeSymbol(symbol),
-      magicNumber,
-      status: RealTradingApprovalStatus.APPROVED,
-      allowReal: true,
-      revokedAt: null,
-    },
-  });
-}
+export { findActiveRealTradingApproval } from "@/lib/risk/real-trading-approval-query";
 
 export async function hasPreMarketSnapshotToday(
   licenseId: string,
@@ -163,19 +142,15 @@ export async function runRealTradePreflight(
     REAL_TRADING_REASONS.ENV_NOT_ENABLED
   );
 
-  const allowlistOk =
-    environment !== TradeMode.REAL ||
-    isLicenseAllowedForRealTrading(input.licenseId);
-  pushCheck(
-    checks,
-    "allowlist",
-    allowlistOk,
-    REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED
-  );
-
-  const guardDecision = evaluateRealTradingGuard({
+  const guardDecision = await evaluateRealTradingGuardAsync({
     tradeMode: environment,
     licenseId: input.licenseId,
+    userId: input.userId,
+    accountLogin: login,
+    accountServer: server,
+    symbol,
+    magicNumber,
+    requestedContracts,
   });
   const guardSyncOk = guardDecision.allowed;
   pushCheck(
@@ -259,16 +234,28 @@ export async function runRealTradePreflight(
   const planRobotOk = await isRobotQuantityWithinPlan(subscriptionId, 1);
   pushCheck(checks, "plan_robot", planRobotOk, REAL_TRADING_REASONS.SUBSCRIPTION_NOT_ACTIVE);
 
-  const approval = licenseOk
-    ? await findActiveRealTradingApproval(
-        input.licenseId,
-        input.userId,
-        login,
-        server,
-        symbol,
-        magicNumber
-      )
-    : null;
+  const approval =
+    licenseOk && guardSyncOk
+      ? await findActiveRealTradingApproval(
+          input.licenseId,
+          input.userId,
+          login,
+          server,
+          symbol,
+          magicNumber
+        )
+      : null;
+
+  const allowlistOk =
+    environment !== TradeMode.REAL ||
+    isLicenseAllowedForRealTrading(input.licenseId) ||
+    Boolean(approval);
+  pushCheck(
+    checks,
+    "allowlist",
+    allowlistOk,
+    REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED
+  );
 
   if (!approval) {
     const anyApproval = await prisma.realTradingApproval.findFirst({

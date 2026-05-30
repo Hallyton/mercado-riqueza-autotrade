@@ -113,8 +113,9 @@ Preencher **antes** da Fase 12.6 (execução autorizada):
 | # | Critério | OK |
 |---|----------|-----|
 | 1 | `ENABLE_REAL_TRADING=true` ou `1` no ambiente correto | [ ] |
-| 2 | LicenseId está em `REAL_TRADING_ALLOWED_LICENSE_IDS` | [ ] |
-| 3 | RealTradingApproval está APPROVED | [ ] |
+| 2 | `ENABLE_REAL_TRADING` master switch ativo no ambiente | [ ] |
+| 3 | RealTradingApproval manual APPROVED (`/admin/real-trading/approvals`) | [ ] |
+| 3b | (Opcional) LicenseId em `REAL_TRADING_ALLOWED_LICENSE_IDS` — **não** substitui item 3 | [ ] |
 | 4 | RealTradingApproval.allowReal=true | [ ] |
 | 5 | Approval confere userId | [ ] |
 | 6 | Approval confere licenseId | [ ] |

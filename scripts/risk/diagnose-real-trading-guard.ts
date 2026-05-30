@@ -49,30 +49,32 @@ export const REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
     expected: { allowed: false, code: REAL_TRADING_REASONS.ENV_NOT_ENABLED },
   },
   {
-    name: "D) REAL com ENABLE_REAL_TRADING=true sem allowlist",
+    name: "D) REAL com ENABLE_REAL_TRADING=true sem approval (sync)",
     input: { tradeMode: TradeMode.REAL, licenseId: "diagnostic-license-real" },
     env: { ENABLE_REAL_TRADING: "true" },
-    expected: { allowed: false, code: REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.APPROVAL_REQUIRED },
+    note: "Camada sync: master switch on não libera sem RealTradingApproval.",
   },
   {
-    name: "E) REAL com allowlist sem a licença",
+    name: "E) REAL com allowlist env sem approval (sync)",
     input: { tradeMode: TradeMode.REAL, licenseId: "diagnostic-license-real" },
     env: {
       ENABLE_REAL_TRADING: "true",
       REAL_TRADING_ALLOWED_LICENSE_IDS: "other-diagnostic-license",
     },
-    expected: { allowed: false, code: REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.APPROVAL_REQUIRED },
+    note: "Allowlist env sozinha não substitui approval manual.",
   },
   {
-    name: "F) REAL com allowlist contendo a licença",
+    name: "F) REAL com allowlist contendo a licença (sync)",
     input: { tradeMode: TradeMode.REAL, licenseId: "diagnostic-license-real" },
     env: {
       ENABLE_REAL_TRADING: "true",
       REAL_TRADING_ALLOWED_LICENSE_IDS: "diagnostic-license-real",
     },
-    expected: { allowed: true },
+    expected: { allowed: false, code: REAL_TRADING_REASONS.APPROVAL_REQUIRED },
     note:
-      "Somente diagnóstico unitário do guard; não representa liberação operacional de conta real.",
+      "Allowlist env + master switch ainda exige approval no banco (camada async/preflight).",
   },
   {
     name: "G) tradeMode ausente",

@@ -26,7 +26,8 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
     },
     instructionStatusLog: { create: vi.fn() },
-    license: { findUnique: vi.fn() },
+    license: { findUnique: vi.fn().mockResolvedValue({ userId: "user1" }) },
+    realTradingApproval: { findFirst: vi.fn().mockResolvedValue(null) },
     eaHeartbeat: {
       findFirst: vi.fn().mockResolvedValue({ tradeMode: "DEMO" }),
     },
@@ -150,17 +151,16 @@ describe("Sinal recebido", () => {
     );
   });
 
-  it("feature flag futura não libera REAL sem allowlist no pull do EA", async () => {
+  it("master switch on não libera REAL sem aprovação manual no pull do EA", async () => {
     process.env.ENABLE_REAL_TRADING = "true";
-    process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = "other-license";
     vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({ tradeMode: TradeMode.REAL } as never);
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue(null);
 
     const result = await pullInstructionsForEa(ctx as never);
 
     expect(result).toEqual([]);
     expect(prisma.instruction.findMany).not.toHaveBeenCalled();
     delete process.env.ENABLE_REAL_TRADING;
-    delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
   });
 });
 

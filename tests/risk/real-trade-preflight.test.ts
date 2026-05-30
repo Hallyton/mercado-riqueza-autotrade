@@ -29,6 +29,7 @@ import {
   runRealTradePreflight,
 } from "@/lib/risk/real-trade-preflight";
 import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
+import { buildMockApprovedRealTradingApproval } from "@/tests/risk/_real-trading-mocks";
 
 const baseInput = {
   userId: "user-1",
@@ -42,7 +43,7 @@ const baseInput = {
 
 function mockHappyPath() {
   process.env.ENABLE_REAL_TRADING = "true";
-  process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
+  delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
 
   vi.mocked(prisma.license.findUnique).mockResolvedValue({
     id: baseInput.licenseId,
@@ -81,15 +82,11 @@ function mockHappyPath() {
         return null;
       }
       if (where?.status === RealTradingApprovalStatus.APPROVED) {
-        return {
-          id: "appr-1",
-          symbol: "WDOM26",
-          magicNumber: 910001,
-          marginBufferPercent: 10,
-          minFreeMargin: 1000,
-          maxContracts: 2,
+        return buildMockApprovedRealTradingApproval({
+          accountLogin: baseInput.accountLogin,
+          accountServer: baseInput.accountServer,
           userId: baseInput.userId,
-        } as never;
+        }) as never;
       }
       return null;
     }

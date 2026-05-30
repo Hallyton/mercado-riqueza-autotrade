@@ -1,4 +1,5 @@
 import {
+  countActiveManualRealApprovals,
   isRealTradingEnabled,
 } from "@/lib/risk/real-trading-guard";
 
@@ -6,21 +7,26 @@ type EnvSource = Record<string, string | undefined>;
 
 export type RealTradingGuardOperationalStatus =
   | "REAL_TRADING_BLOCKED"
-  | "REAL_TRADING_PARTIALLY_ALLOWED_BY_ALLOWLIST";
+  | "REAL_TRADING_MASTER_SWITCH_OPEN"
+  | "REAL_TRADING_PARTIALLY_ALLOWED_BY_MANUAL_APPROVAL";
 
 export type RealTradingGuardAdminStatus = {
   realTradingEnabled: boolean;
   defaultPolicy: "BLOCK_REAL_BY_DEFAULT";
   enableRealTradingConfigured: boolean;
+  envAllowlistLicenseCount: number;
+  envAllowlistLicenseIdsMasked: string[];
+  activeManualApprovalCount: number;
+  manualAllowlistConfigured: boolean;
   allowedLicenseCount: number;
   allowedLicenseIdsMasked: string[];
   demoAllowed: true;
-  realRequiresFlagAndAllowlist: true;
+  realRequiresMasterSwitchAndApproval: true;
   currentOperationalStatus: RealTradingGuardOperationalStatus;
   warningMessages: string[];
 };
 
-function parseAllowedLicenseIds(env: EnvSource): string[] {
+function parseEnvAllowlistLicenseIds(env: EnvSource): string[] {
   return (
     env.REAL_TRADING_ALLOWED_LICENSE_IDS?.split(/[,\s;]+/)
       .map((value) => value.trim())
@@ -37,30 +43,53 @@ export function maskLicenseId(licenseId: string): string {
   return `${normalized.slice(0, 6)}...${normalized.slice(-4)}`;
 }
 
-export function getRealTradingGuardAdminStatus(
+export function maskAccountLogin(login: string): string {
+  const normalized = login.trim();
+  if (normalized.length <= 4) return "***";
+  return `***${normalized.slice(-4)}`;
+}
+
+export async function getRealTradingGuardAdminStatus(
   env: EnvSource = process.env
-): RealTradingGuardAdminStatus {
+): Promise<RealTradingGuardAdminStatus> {
   const realTradingEnabled = isRealTradingEnabled(env);
   const enableRealTradingConfigured =
     env.ENABLE_REAL_TRADING != null && env.ENABLE_REAL_TRADING.trim().length > 0;
-  const allowedLicenseIds = parseAllowedLicenseIds(env);
-  const hasAllowlist = allowedLicenseIds.length > 0;
-  const currentOperationalStatus =
-    realTradingEnabled && hasAllowlist
-      ? "REAL_TRADING_PARTIALLY_ALLOWED_BY_ALLOWLIST"
-      : "REAL_TRADING_BLOCKED";
+  const envAllowlistLicenseIds = parseEnvAllowlistLicenseIds(env);
+  const activeManualApprovalCount = await countActiveManualRealApprovals();
+  const manualAllowlistConfigured = activeManualApprovalCount > 0;
+  const envAllowlistConfigured = envAllowlistLicenseIds.length > 0;
+
+  const allowedLicenseCount =
+    activeManualApprovalCount + envAllowlistLicenseIds.length;
+
+  const currentOperationalStatus: RealTradingGuardOperationalStatus =
+    !realTradingEnabled
+      ? "REAL_TRADING_BLOCKED"
+      : manualAllowlistConfigured
+        ? "REAL_TRADING_PARTIALLY_ALLOWED_BY_MANUAL_APPROVAL"
+        : envAllowlistConfigured
+          ? "REAL_TRADING_PARTIALLY_ALLOWED_BY_MANUAL_APPROVAL"
+          : realTradingEnabled
+            ? "REAL_TRADING_MASTER_SWITCH_OPEN"
+            : "REAL_TRADING_BLOCKED";
 
   const warningMessages = [
-    "Esta tela é somente leitura.",
-    "Conta real não está liberada por esta tela.",
-    "Produção real continua bloqueada.",
+    "Esta tela é somente leitura para envs — não altera o master switch pela UI.",
+    "Conta real permanece bloqueada por padrão até aprovação manual APPROVED.",
+    "Pagamento ou assinatura não libera REAL sozinho.",
+    "A aprovação manual não envia ordem.",
+    "A execução ainda depende de PRE_MARKET, margem, EA online, preflight PASSED e protection report.",
     "Dispatch automático continua desativado.",
-    "Qualquer avanço exige gate jurídico, operacional e técnico específico.",
+    "Produção real global não está liberada por esta tela.",
   ];
 
-  if (currentOperationalStatus === "REAL_TRADING_PARTIALLY_ALLOWED_BY_ALLOWLIST") {
+  if (
+    currentOperationalStatus ===
+    "REAL_TRADING_PARTIALLY_ALLOWED_BY_MANUAL_APPROVAL"
+  ) {
     warningMessages.push(
-      "Há configuração técnica futura detectada, mas isso não representa liberação operacional."
+      "Há aprovação(ões) manual(is) ativa(s) — isso não substitui preflight nem dispatch manual."
     );
   }
 
@@ -68,10 +97,17 @@ export function getRealTradingGuardAdminStatus(
     realTradingEnabled,
     defaultPolicy: "BLOCK_REAL_BY_DEFAULT",
     enableRealTradingConfigured,
-    allowedLicenseCount: allowedLicenseIds.length,
-    allowedLicenseIdsMasked: allowedLicenseIds.map(maskLicenseId),
+    envAllowlistLicenseCount: envAllowlistLicenseIds.length,
+    envAllowlistLicenseIdsMasked: envAllowlistLicenseIds.map(maskLicenseId),
+    activeManualApprovalCount,
+    manualAllowlistConfigured,
+    allowedLicenseCount,
+    allowedLicenseIdsMasked: [
+      ...Array.from({ length: activeManualApprovalCount }, () => "(aprovação manual)"),
+      ...envAllowlistLicenseIds.map(maskLicenseId),
+    ],
     demoAllowed: true,
-    realRequiresFlagAndAllowlist: true,
+    realRequiresMasterSwitchAndApproval: true,
     currentOperationalStatus,
     warningMessages,
   };

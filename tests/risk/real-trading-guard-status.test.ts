@@ -1,61 +1,68 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/prisma", () => ({
+  default: {
+    realTradingApproval: { count: vi.fn() },
+  },
+}));
+
+import prisma from "@/lib/prisma";
 import {
   getRealTradingGuardAdminStatus,
+  maskAccountLogin,
   maskLicenseId,
 } from "@/lib/risk/real-trading-guard-status";
 
 describe("Real Trading Guard admin status", () => {
-  it("retorna status bloqueado com env vazio", () => {
-    const status = getRealTradingGuardAdminStatus({});
+  beforeEach(() => {
+    vi.mocked(prisma.realTradingApproval.count).mockResolvedValue(0);
+  });
+
+  it("retorna status bloqueado com env vazio", async () => {
+    const status = await getRealTradingGuardAdminStatus({});
 
     expect(status.realTradingEnabled).toBe(false);
     expect(status.enableRealTradingConfigured).toBe(false);
-    expect(status.allowedLicenseCount).toBe(0);
-    expect(status.allowedLicenseIdsMasked).toEqual([]);
+    expect(status.activeManualApprovalCount).toBe(0);
+    expect(status.manualAllowlistConfigured).toBe(false);
     expect(status.defaultPolicy).toBe("BLOCK_REAL_BY_DEFAULT");
-    expect(status.demoAllowed).toBe(true);
-    expect(status.realRequiresFlagAndAllowlist).toBe(true);
     expect(status.currentOperationalStatus).toBe("REAL_TRADING_BLOCKED");
   });
 
-  it("mantém bloqueado com ENABLE_REAL_TRADING=true sem allowlist", () => {
-    const status = getRealTradingGuardAdminStatus({
+  it("master switch on sem approval manual mantém bloqueio operacional", async () => {
+    const status = await getRealTradingGuardAdminStatus({
       ENABLE_REAL_TRADING: "true",
     });
 
     expect(status.realTradingEnabled).toBe(true);
-    expect(status.enableRealTradingConfigured).toBe(true);
-    expect(status.allowedLicenseCount).toBe(0);
-    expect(status.currentOperationalStatus).toBe("REAL_TRADING_BLOCKED");
-  });
-
-  it("retorna parcialmente permitido quando flag e allowlist existem", () => {
-    const status = getRealTradingGuardAdminStatus({
-      ENABLE_REAL_TRADING: "true",
-      REAL_TRADING_ALLOWED_LICENSE_IDS:
-        "cmpj3wby70005sx18ot5e939p other-license-1234",
-    });
-
-    expect(status.realTradingEnabled).toBe(true);
-    expect(status.allowedLicenseCount).toBe(2);
-    expect(status.allowedLicenseIdsMasked).toEqual([
-      "cmpj3w...939p",
-      "other-...1234",
-    ]);
+    expect(status.activeManualApprovalCount).toBe(0);
     expect(status.currentOperationalStatus).toBe(
-      "REAL_TRADING_PARTIALLY_ALLOWED_BY_ALLOWLIST"
+      "REAL_TRADING_MASTER_SWITCH_OPEN"
     );
   });
 
-  it("mascara licenseId sem expor valor completo", () => {
-    expect(maskLicenseId("cmpj3wby70005sx18ot5e939p")).toBe("cmpj3w...939p");
-    expect(maskLicenseId("abcd1234")).toBe("ab...34");
-    expect(maskLicenseId("")).toBe("***");
+  it("conta aprovações manuais ativas", async () => {
+    vi.mocked(prisma.realTradingApproval.count).mockResolvedValue(2);
+
+    const status = await getRealTradingGuardAdminStatus({
+      ENABLE_REAL_TRADING: "true",
+    });
+
+    expect(status.activeManualApprovalCount).toBe(2);
+    expect(status.manualAllowlistConfigured).toBe(true);
+    expect(status.currentOperationalStatus).toBe(
+      "REAL_TRADING_PARTIALLY_ALLOWED_BY_MANUAL_APPROVAL"
+    );
   });
 
-  it("não retorna valores brutos das envs", () => {
+  it("mascara licenseId e accountLogin", () => {
+    expect(maskLicenseId("cmpj3wby70005sx18ot5e939p")).toBe("cmpj3w...939p");
+    expect(maskAccountLogin("52609973")).toBe("***9973");
+  });
+
+  it("não retorna valores brutos das envs", async () => {
     const rawLicenseId = "cmpj3wby70005sx18ot5e939p";
-    const status = getRealTradingGuardAdminStatus({
+    const status = await getRealTradingGuardAdminStatus({
       ENABLE_REAL_TRADING: "true",
       REAL_TRADING_ALLOWED_LICENSE_IDS: rawLicenseId,
     });

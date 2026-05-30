@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { REAL_TRADING_APPROVAL_CONFIRM_PHRASE } from "@/lib/admin/real-trading-approval";
 
 export type RealTradingLicenseOption = {
   licenseId: string;
@@ -23,9 +24,9 @@ export function RealTradingApprovalForm({
   const [magicNumber, setMagicNumber] = useState("910001");
   const [maxContracts, setMaxContracts] = useState("1");
   const [minFreeMargin, setMinFreeMargin] = useState("");
-  const [marginBuffer, setMarginBuffer] = useState("10");
-  const [approveImmediately, setApproveImmediately] = useState(true);
+  const [marginBuffer, setMarginBuffer] = useState("15");
   const [notes, setNotes] = useState("");
+  const [adminConfirmation, setAdminConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -35,6 +36,17 @@ export function RealTradingApprovalForm({
     e.preventDefault();
     if (!selected) {
       setMessage("Selecione uma licença.");
+      return;
+    }
+    if (adminConfirmation.trim() !== REAL_TRADING_APPROVAL_CONFIRM_PHRASE) {
+      setMessage(
+        `Confirmação obrigatória: digite exatamente "${REAL_TRADING_APPROVAL_CONFIRM_PHRASE}".`
+      );
+      return;
+    }
+    const minMargin = Number(minFreeMargin);
+    if (!Number.isFinite(minMargin) || minMargin <= 0) {
+      setMessage("Margem livre mínima deve ser maior que zero.");
       return;
     }
     setBusy(true);
@@ -51,12 +63,10 @@ export function RealTradingApprovalForm({
           symbol: symbol.trim(),
           magic_number: Number(magicNumber),
           max_contracts: Number(maxContracts),
-          min_free_margin: minFreeMargin.trim()
-            ? Number(minFreeMargin)
-            : undefined,
+          min_free_margin: minMargin,
           margin_buffer_percent: Number(marginBuffer),
-          approve_immediately: approveImmediately,
           notes: notes.trim() || undefined,
+          admin_confirmation: REAL_TRADING_APPROVAL_CONFIRM_PHRASE,
         }),
       });
       const data = await res.json();
@@ -75,6 +85,12 @@ export function RealTradingApprovalForm({
 
   return (
     <form onSubmit={onSubmit} className="max-w-xl space-y-4">
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+        Esta aprovação não envia ordem. Ela apenas permite que o preflight avalie a
+        sessão real. A ordem continua dependendo de dispatch manual, margem, snapshot,
+        EA online e proteção SL/TP.
+      </div>
+
       <label className="block text-sm">
         <span className="text-muted-foreground">Licença</span>
         <select
@@ -120,7 +136,7 @@ export function RealTradingApprovalForm({
           />
         </label>
         <label className="block text-sm">
-          <span className="text-muted-foreground">MagicNumber</span>
+          <span className="text-muted-foreground">MagicNumber (910001–910999)</span>
           <input
             className="mt-1 w-full rounded-md border border-white/10 bg-background px-3 py-2"
             value={magicNumber}
@@ -135,36 +151,36 @@ export function RealTradingApprovalForm({
           <input
             type="number"
             min={1}
+            max={100}
             className="mt-1 w-full rounded-md border border-white/10 bg-background px-3 py-2"
             value={maxContracts}
             onChange={(e) => setMaxContracts(e.target.value)}
           />
         </label>
         <label className="block text-sm">
-          <span className="text-muted-foreground">Margem livre mín.</span>
+          <span className="text-muted-foreground">Margem livre mín. *</span>
           <input
+            type="number"
+            min={0.01}
+            step="any"
             className="mt-1 w-full rounded-md border border-white/10 bg-background px-3 py-2"
             value={minFreeMargin}
             onChange={(e) => setMinFreeMargin(e.target.value)}
+            required
           />
         </label>
         <label className="block text-sm">
           <span className="text-muted-foreground">Buffer margem %</span>
           <input
+            type="number"
+            min={0}
+            max={100}
             className="mt-1 w-full rounded-md border border-white/10 bg-background px-3 py-2"
             value={marginBuffer}
             onChange={(e) => setMarginBuffer(e.target.value)}
           />
         </label>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={approveImmediately}
-          onChange={(e) => setApproveImmediately(e.target.checked)}
-        />
-        Aprovar imediatamente (allowReal)
-      </label>
       <label className="block text-sm">
         <span className="text-muted-foreground">Notas admin</span>
         <textarea
@@ -174,13 +190,26 @@ export function RealTradingApprovalForm({
           onChange={(e) => setNotes(e.target.value)}
         />
       </label>
+      <label className="block text-sm">
+        <span className="text-muted-foreground">
+          Confirmação obrigatória — digite:{" "}
+          <span className="font-mono text-gold">{REAL_TRADING_APPROVAL_CONFIRM_PHRASE}</span>
+        </span>
+        <input
+          className="mt-1 w-full rounded-md border border-gold/30 bg-background px-3 py-2 font-mono"
+          value={adminConfirmation}
+          onChange={(e) => setAdminConfirmation(e.target.value)}
+          autoComplete="off"
+          required
+        />
+      </label>
       {message && <p className="text-sm text-amber-400">{message}</p>}
       <button
         type="submit"
         disabled={busy}
         className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
       >
-        {busy ? "Salvando…" : "Criar aprovação"}
+        {busy ? "Salvando…" : "Criar aprovação APPROVED"}
       </button>
     </form>
   );

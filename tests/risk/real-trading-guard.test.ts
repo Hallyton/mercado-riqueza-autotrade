@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TradeMode } from "@prisma/client";
 import {
   evaluateRealTradingGuard,
+  evaluateRealTradingGuardAsync,
   isLicenseAllowedForRealTrading,
   isRealTradingEnabled,
 } from "@/lib/risk/real-trading-guard";
@@ -11,7 +12,26 @@ import {
   runRealTradingGuardDiagnostics,
 } from "@/scripts/risk/diagnose-real-trading-guard";
 
-describe("Real Trading Guard", () => {
+vi.mock("@/lib/prisma", () => ({
+  default: {
+    realTradingApproval: { findFirst: vi.fn() },
+  },
+}));
+
+import prisma from "@/lib/prisma";
+
+const baseCtx = {
+  tradeMode: TradeMode.REAL,
+  licenseId: "lic-1",
+  userId: "user-1",
+  accountLogin: "12345678",
+  accountServer: "XPMT5-REAL",
+  symbol: "WDOM26",
+  magicNumber: 910001,
+  requestedContracts: 1,
+};
+
+describe("Real Trading Guard — sync", () => {
   it("bloqueia REAL por padrão quando ENABLE_REAL_TRADING está ausente", () => {
     const decision = evaluateRealTradingGuard(
       { tradeMode: TradeMode.REAL, licenseId: "lic-1" },
@@ -24,7 +44,7 @@ describe("Real Trading Guard", () => {
     }
   });
 
-  it("permite DEMO sem feature flag futura", () => {
+  it("permite DEMO sem feature flag", () => {
     const decision = evaluateRealTradingGuard(
       { tradeMode: TradeMode.DEMO, licenseId: "lic-1" },
       {}
@@ -33,7 +53,7 @@ describe("Real Trading Guard", () => {
     expect(decision.allowed).toBe(true);
   });
 
-  it("feature flag futura não libera REAL sem allowlist", () => {
+  it("master switch on sem approval bloqueia na camada sync", () => {
     const decision = evaluateRealTradingGuard(
       { tradeMode: TradeMode.REAL, licenseId: "lic-out" },
       { ENABLE_REAL_TRADING: "true", REAL_TRADING_ALLOWED_LICENSE_IDS: "lic-in" }
@@ -41,9 +61,12 @@ describe("Real Trading Guard", () => {
 
     expect(isRealTradingEnabled({ ENABLE_REAL_TRADING: "true" })).toBe(true);
     expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.APPROVAL_REQUIRED);
+    }
   });
 
-  it("feature flag futura com allowlist permite tecnicamente a avaliação do guard", () => {
+  it("allowlist env não libera REAL sozinha (sync)", () => {
     const env = {
       ENABLE_REAL_TRADING: "true",
       REAL_TRADING_ALLOWED_LICENSE_IDS: "lic-a, lic-b",
@@ -54,7 +77,7 @@ describe("Real Trading Guard", () => {
     );
 
     expect(isLicenseAllowedForRealTrading("lic-b", env)).toBe(true);
-    expect(decision.allowed).toBe(true);
+    expect(decision.allowed).toBe(false);
   });
 
   it("harness diagnóstico cobre todos os cenários obrigatórios sem falhas", () => {
@@ -62,15 +85,106 @@ describe("Real Trading Guard", () => {
 
     expect(results).toHaveLength(REAL_TRADING_GUARD_DIAGNOSTIC_SCENARIOS.length);
     expect(results.every((result) => result.status === "PASS")).toBe(true);
-    expect(results.map((result) => result.name)).toEqual([
-      "A) DEMO sem env",
-      "B) REAL sem env",
-      "C) REAL com ENABLE_REAL_TRADING=false",
-      "D) REAL com ENABLE_REAL_TRADING=true sem allowlist",
-      "E) REAL com allowlist sem a licença",
-      "F) REAL com allowlist contendo a licença",
-      "G) tradeMode ausente",
-      "G2) tradeMode desconhecido",
-    ]);
+  });
+});
+
+describe("Real Trading Guard — async", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("ENABLE_REAL_TRADING=false bloqueia mesmo com approval no banco", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: baseCtx.accountLogin,
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {});
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.ENV_NOT_ENABLED);
+    }
+  });
+
+  it("ENABLE_REAL_TRADING=true sem approval bloqueia", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue(null);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {
+      ENABLE_REAL_TRADING: "true",
+    });
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.APPROVAL_REQUIRED);
+    }
+  });
+
+  it("ENABLE_REAL_TRADING=true com approval APPROVED permite seguir", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: baseCtx.accountLogin,
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {
+      ENABLE_REAL_TRADING: "true",
+    });
+    expect(decision.allowed).toBe(true);
+    if (decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.ALLOWED_BY_MANUAL_APPROVAL);
+    }
+  });
+
+  it("account mismatch bloqueia", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: "other-login",
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {
+      ENABLE_REAL_TRADING: "true",
+    });
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.ACCOUNT_MISMATCH);
+    }
+  });
+
+  it("maxContracts excedido bloqueia", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: baseCtx.accountLogin,
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(
+      { ...baseCtx, requestedContracts: 2 },
+      { ENABLE_REAL_TRADING: "true" }
+    );
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.CONTRACT_LIMIT_EXCEEDED);
+    }
   });
 });

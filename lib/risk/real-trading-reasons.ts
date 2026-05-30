@@ -23,6 +23,7 @@ export const REAL_TRADING_REASONS = {
   AUTO_DISPATCH_DISABLED: "REAL_TRADING_AUTO_DISPATCH_DISABLED",
   PREFLIGHT_FAILED: "REAL_TRADING_PREFLIGHT_FAILED",
   ALLOWED_BY_CONTROLLED_GATE: "REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE",
+  ALLOWED_BY_MANUAL_APPROVAL: "REAL_TRADING_ALLOWED_BY_MANUAL_APPROVAL",
 } as const;
 
 export type RealTradingReasonCode =
@@ -34,7 +35,7 @@ export const REAL_TRADING_REASON_MESSAGES: Record<RealTradingReasonCode, string>
   REAL_TRADING_ENV_NOT_ENABLED:
     "Conta real bloqueada: ENABLE_REAL_TRADING não está habilitado.",
   REAL_TRADING_LICENSE_NOT_ALLOWLISTED:
-    "Conta real bloqueada: licença fora da allowlist REAL_TRADING_ALLOWED_LICENSE_IDS.",
+    "Conta real bloqueada: licença sem aprovação manual ativa nem allowlist técnica opcional.",
   REAL_TRADING_PAYMENT_NOT_ACTIVE:
     "Conta real bloqueada: pagamento/assinatura comercial não está em dia.",
   REAL_TRADING_SUBSCRIPTION_NOT_ACTIVE:
@@ -74,4 +75,6 @@ export const REAL_TRADING_REASON_MESSAGES: Record<RealTradingReasonCode, string>
   REAL_TRADING_PREFLIGHT_FAILED: "Preflight de conta real falhou.",
   REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE:
     "REAL liberado somente por gate controlado — todos os critérios OK.",
+  REAL_TRADING_ALLOWED_BY_MANUAL_APPROVAL:
+    "REAL permitido para preflight: master switch ativo e aprovação manual APPROVED.",
 };

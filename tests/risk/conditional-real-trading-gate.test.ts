@@ -7,6 +7,7 @@ import {
   TradeMode,
 } from "@prisma/client";
 import { REAL_TRADING_REASONS } from "@/lib/risk/real-trading-reasons";
+import { buildMockApprovedRealTradingApproval } from "@/tests/risk/_real-trading-mocks";
 
 vi.mock("@/lib/prisma", () => ({
   default: {
@@ -43,7 +44,7 @@ const baseInput = {
 
 function mockAllCriteriaPassing() {
   process.env.ENABLE_REAL_TRADING = "true";
-  process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
+  delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
 
   vi.mocked(prisma.license.findUnique).mockResolvedValue({
     id: baseInput.licenseId,
@@ -82,15 +83,11 @@ function mockAllCriteriaPassing() {
         return null;
       }
       if (where?.status === RealTradingApprovalStatus.APPROVED) {
-        return {
-          id: "appr-1",
-          symbol: "WDOM26",
-          magicNumber: 910001,
-          marginBufferPercent: 10,
-          minFreeMargin: 1000,
-          maxContracts: 2,
+        return buildMockApprovedRealTradingApproval({
+          accountLogin: baseInput.accountLogin,
+          accountServer: baseInput.accountServer,
           userId: baseInput.userId,
-        } as never;
+        }) as never;
       }
       return null;
     }
@@ -129,7 +126,7 @@ describe("Conditional Real Trading Gate — cenários obrigatórios", () => {
     if (!d.allowed) expect(d.code).toBe(REAL_TRADING_REASONS.ENV_NOT_ENABLED);
   });
 
-  it("2) bloqueia se license fora da allowlist", () => {
+  it("2) bloqueia REAL sem approval (sync) — allowlist env não substitui", () => {
     process.env.ENABLE_REAL_TRADING = "true";
     process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = "other";
     const d = evaluateRealTradingGuard({
@@ -138,13 +135,12 @@ describe("Conditional Real Trading Gate — cenários obrigatórios", () => {
     });
     expect(d.allowed).toBe(false);
     if (!d.allowed) {
-      expect(d.code).toBe(REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED);
+      expect(d.code).toBe(REAL_TRADING_REASONS.APPROVAL_REQUIRED);
     }
   });
 
   it("3) bloqueia sem RealTradingApproval", async () => {
     process.env.ENABLE_REAL_TRADING = "true";
-    process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
     vi.mocked(prisma.license.findUnique).mockResolvedValue({
       userId: baseInput.userId,
       status: LicenseStatus.ACTIVE,
@@ -174,7 +170,6 @@ describe("Conditional Real Trading Gate — cenários obrigatórios", () => {
 
   it("4-6) bloqueia subscription/payment/terms", async () => {
     process.env.ENABLE_REAL_TRADING = "true";
-    process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = baseInput.licenseId;
 
     vi.mocked(prisma.license.findUnique).mockResolvedValue({
       userId: baseInput.userId,
