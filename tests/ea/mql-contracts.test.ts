@@ -25,6 +25,7 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(executor).toContain("input string InpDeviceId");
     expect(executor).toContain("input int    InpLogLevel");
     expect(executor).toContain("input bool   InpDebugMode       = true");
+    expect(executor).toContain('input string InpTradeMode       = "DEMO"');
 
     for (const forbiddenInput of [
       "InpStopLoss",
@@ -63,6 +64,15 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(signal).toContain("MR_AT_ValidateInstructionContext");
     expect(executor).toContain("MR_AT_EnsurePreMarketSnapshot");
     expect(executor).toContain('MR_AT_SendAccountSnapshot("POST_MARKET")');
+  });
+
+  it("envia trade_mode e conta na ativação sem logar código ou token", () => {
+    expect(license).toContain("trade_mode");
+    expect(license).toContain("account_login");
+    expect(license).toContain("account_server");
+    expect(executor).toContain("TradeMode configurado:");
+    expect(license).not.toContain("MR_AT_LogInfo(\"License\", code");
+    expect(license).not.toContain("MR_AT_LogInfo(\"License\", g_device_token");
   });
 
   it("não loga Authorization, Bearer ou tokens em mensagens operacionais", () => {

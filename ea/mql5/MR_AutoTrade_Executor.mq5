@@ -21,6 +21,7 @@ input string InpDeviceId        = "";                                    // ID d
 input bool   InpShowPanel       = true;                                  // Painel mínimo no gráfico
 input int    InpLogLevel        = 1;                                     // 0=erro 1=info 2=debug
 input bool   InpDebugMode       = true;                                  // true = não envia ordens reais
+input string InpTradeMode       = "DEMO";                                // DEMO | REAL (modo reportado à API)
 input bool   InpSendPreMarketOnInit = true;                              // REAL: enviar PRE_MARKET no OnInit
 input bool   InpSendPostMarketOnDeinit = false;                          // REAL: enviar POST_MARKET no OnDeinit
 
@@ -53,6 +54,7 @@ bool   g_halt_all_trading = false;
 bool   g_can_accept_new_entries = false;
 bool   g_can_manage_open_positions = false;
 bool   g_subscription_active = true;
+string g_configured_trade_mode = "DEMO";
 datetime g_last_timer_run = 0;
 
 //+------------------------------------------------------------------+
@@ -87,6 +89,15 @@ int OnInit()
    g_device_id = MR_AT_ResolveDeviceId();
    g_log_level = InpLogLevel;
    g_debug_mode = InpDebugMode;
+
+   string tm = InpTradeMode;
+   StringTrimLeft(tm);
+   StringTrimRight(tm);
+   StringToUpper(tm);
+   if(tm != "REAL")
+      tm = "DEMO";
+   g_configured_trade_mode = tm;
+   MR_AT_LogInfo("Init", "TradeMode configurado: " + g_configured_trade_mode);
 
    MR_AT_ResetTokenRecoveryState();
    MR_AT_LogInfo("Init", MR_AT_EA_NAME + " v" + MR_AT_EA_VERSION + " iniciando");

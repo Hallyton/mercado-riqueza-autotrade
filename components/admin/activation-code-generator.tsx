@@ -30,10 +30,16 @@ export function ActivationCodeGenerator({
   licenseId,
   canGenerate,
   ineligibleReason,
+  expectedAccountLogin,
+  expectedAccountServer,
+  expectedTradeMode,
 }: {
   licenseId: string;
   canGenerate: boolean;
   ineligibleReason?: string | null;
+  expectedAccountLogin?: string | null;
+  expectedAccountServer?: string | null;
+  expectedTradeMode?: string;
 }) {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -121,6 +127,36 @@ export function ActivationCodeGenerator({
           {ineligibleReason ??
             "Licença ou assinatura não elegível para novo código de ativação."}
         </p>
+      )}
+
+      {(expectedAccountLogin || expectedTradeMode) && (
+        <div className="rounded border border-white/10 bg-black/30 p-4 text-sm space-y-2">
+          <p className="font-medium">Este código será gerado para:</p>
+          <ul className="list-disc pl-5 text-muted-foreground space-y-1">
+            <li>
+              Conta esperada:{" "}
+              <span className="font-mono text-foreground">
+                {expectedAccountLogin ?? "—"}
+              </span>
+            </li>
+            <li>
+              Servidor esperado:{" "}
+              <span className="font-mono text-foreground">
+                {expectedAccountServer ?? "—"}
+              </span>
+            </li>
+            <li>
+              Modo esperado:{" "}
+              <span className="font-mono text-gold">{expectedTradeMode ?? "DEMO"}</span>
+            </li>
+          </ul>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Depois de gerar o código, anexe o EA no MT5 conectado nesta conta/servidor e
+            configure <span className="font-mono">InpTradeMode=REAL</span> quando o modo
+            esperado for REAL. O novo device deve aparecer como{" "}
+            <strong className="text-foreground">ACTIVE + REAL</strong> após o heartbeat.
+          </p>
+        </div>
       )}
 
       {canGenerate && !showCode && (

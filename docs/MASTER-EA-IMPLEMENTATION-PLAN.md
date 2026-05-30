@@ -2411,6 +2411,20 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.7 — Post-Real-Order Review & Incident/Success Report *(após execução ao vivo ou aborto formal documentado com IDs)*.
 
+### Fase 12.6.3 — Real TradeMode Activation Flow
+
+**Status:** `REAL_TRADEMODE_ACTIVATION_FLOW_IMPLEMENTED`  
+**Documento:** [`docs/REAL-TRADEMODE-ACTIVATION-FLOW.md`](REAL-TRADEMODE-ACTIVATION-FLOW.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Separar modo esperado (admin) de tradeMode histórico (heartbeat) |
+| License | `expectedTradeMode`, conta/servidor/symbol/magic esperados |
+| Ativação | Valida conta/servidor/tradeMode vs esperado |
+| EA | `InpTradeMode` DEMO/REAL + payload na ativação |
+| UI | Card modo esperado + badges de compatibilidade |
+| Ordem real | **Nenhuma** automática |
+
 ### Fase 12.6.2 — Admin User & Activation Management
 
 **Status:** `ADMIN_USER_AND_ACTIVATION_MANAGEMENT_IMPLEMENTED`  

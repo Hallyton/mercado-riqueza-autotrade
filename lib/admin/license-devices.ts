@@ -8,6 +8,12 @@ import { recordAdminAction } from "@/lib/admin/record-action";
 import { createActivationCodeForLicense } from "@/lib/ea/activate";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import prisma from "@/lib/prisma";
+import {
+  computeDeviceCompatibility,
+  computeLicenseOperationalStatus,
+  parseDeviceIdAccount,
+  resolveExpectedAccount,
+} from "@/lib/licensing/license-expected-mode";
 import { maskLicenseId } from "@/lib/risk/real-trading-guard-status";
 
 export const DEVICE_REVOKE_CONFIRM_PHRASE = "REVOGAR DEVICE";
@@ -90,8 +96,25 @@ export async function getLicenseAdminDetail(licenseId: string) {
     where: { licenseId, ...ACTIVE_DEVICE_WHERE },
   });
 
+  const expectedAccount = resolveExpectedAccount(license);
+
   const devices = license.devices.map((device) => {
     const hb = heartbeatByDevice.get(device.deviceId);
+    const parsed = parseDeviceIdAccount(device.deviceId);
+    const accountLogin = license.mt5Account?.login ?? parsed.login;
+    const accountServer = license.mt5Account?.server ?? parsed.server;
+    const reportedTradeMode = hb?.tradeMode ?? null;
+    const compatibility = computeDeviceCompatibility({
+      deviceStatus: device.status,
+      reportedTradeMode,
+      accountLogin,
+      accountServer,
+      hasHeartbeat: Boolean(hb),
+      expectedTradeMode: license.expectedTradeMode,
+      expectedAccountLogin: license.expectedAccountLogin,
+      expectedAccountServer: license.expectedAccountServer,
+    });
+
     return {
       id: device.id,
       deviceId: device.deviceId,
@@ -102,10 +125,30 @@ export async function getLicenseAdminDetail(licenseId: string) {
       revokedAt: device.revokedAt,
       blockedAt: device.blockedAt,
       lastHeartbeatAt: hb?.receivedAt ?? null,
-      tradeMode: hb?.tradeMode ?? null,
-      accountLogin: license.mt5Account?.login ?? null,
-      accountServer: license.mt5Account?.server ?? null,
+      reportedTradeMode,
+      accountLogin,
+      accountServer,
+      compatibility,
     };
+  });
+
+  const operationalStatus = computeLicenseOperationalStatus({
+    license,
+    activeDevices: devices
+      .filter((d) => d.status === DeviceStatus.ACTIVE)
+      .map((d) => ({
+        status: DeviceStatus.ACTIVE,
+        tradeMode: d.reportedTradeMode,
+        accountLogin: d.accountLogin,
+        accountServer: d.accountServer,
+      })),
+    latestHeartbeat: latestHeartbeat
+      ? {
+          tradeMode: latestHeartbeat.tradeMode,
+          deviceId: latestHeartbeat.deviceId,
+          receivedAt: latestHeartbeat.receivedAt,
+        }
+      : null,
   });
 
   return {
@@ -120,6 +163,13 @@ export async function getLicenseAdminDetail(licenseId: string) {
     maxDevices: license.subscription?.plan.maxDevices ?? 0,
     activeDeviceCount,
     mt5Account: license.mt5Account,
+    expectedTradeMode: license.expectedTradeMode,
+    expectedAccountLogin: license.expectedAccountLogin,
+    expectedAccountServer: license.expectedAccountServer,
+    expectedSymbol: license.expectedSymbol,
+    expectedMagicNumber: license.expectedMagicNumber,
+    expectedAccount,
+    operationalStatus,
     devices,
     latestHeartbeat: latestHeartbeat
       ? {

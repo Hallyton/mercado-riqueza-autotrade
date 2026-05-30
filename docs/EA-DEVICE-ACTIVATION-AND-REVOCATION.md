@@ -23,6 +23,19 @@ O plano limita **devices ativos** por licença (`maxDevices`). Ao mudar de conta
 
 ---
 
+## DEMO → REAL — caminho correto
+
+1. Abrir licença → **Modo operacional esperado** → configurar **REAL** + conta BTG
+2. **Revogar** device DEMO (`REVOGAR DEVICE`) — tradeMode DEMO na tabela é **histórico**
+3. **Gerar novo código de ativação** (resumo mostra conta/servidor/modo esperado)
+4. No MT5 conta real: `InpTradeMode=REAL`, código novo, ativar
+5. Confirmar device **ACTIVE** + badge **OK — device real ativo** + heartbeat REAL
+6. Seguir approval manual → PRE_MARKET → preflight → dispatch manual (sem ordem automática)
+
+Ver: [`REAL-TRADEMODE-ACTIVATION-FLOW.md`](REAL-TRADEMODE-ACTIVATION-FLOW.md)
+
+---
+
 ## Caminho correto (admin)
 
 1. Abrir **Clientes** → `/admin/clientes`

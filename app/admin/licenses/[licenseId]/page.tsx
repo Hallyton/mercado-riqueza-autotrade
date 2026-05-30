@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActivationCodeGenerator } from "@/components/admin/activation-code-generator";
 import { LicenseDeviceManagement } from "@/components/admin/license-device-management";
+import { LicenseOperationalModeCard } from "@/components/admin/license-operational-mode";
 import { LicenseStatus, SubscriptionStatus } from "@prisma/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseStatusBadge } from "@/components/subscription/status-badge";
@@ -73,18 +74,10 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Conta MT5</dt>
+            <dt className="text-muted-foreground">Conta MT5 vinculada</dt>
             <dd>
               {detail.mt5Account
                 ? `${detail.mt5Account.login} @ ${detail.mt5Account.server}`
-                : "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Último heartbeat</dt>
-            <dd>
-              {detail.latestHeartbeat
-                ? `${detail.latestHeartbeat.tradeMode ?? "—"} · ${detail.latestHeartbeat.deviceId} · ${detail.latestHeartbeat.receivedAt.toISOString()}`
                 : "—"}
             </dd>
           </div>
@@ -92,10 +85,30 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
       </Card>
 
       <Card className="p-6">
+        <LicenseOperationalModeCard
+          licenseId={detail.licenseId}
+          expectedTradeMode={detail.expectedTradeMode}
+          expectedAccountLogin={detail.expectedAccount.login}
+          expectedAccountServer={detail.expectedAccount.server}
+          expectedSymbol={detail.expectedSymbol}
+          expectedMagicNumber={detail.expectedMagicNumber}
+          mt5Login={detail.mt5Account?.login ?? null}
+          mt5Server={detail.mt5Account?.server ?? null}
+          operationalStatus={detail.operationalStatus}
+          latestHeartbeatTradeMode={detail.latestHeartbeat?.tradeMode ?? null}
+          latestHeartbeatDeviceId={detail.latestHeartbeat?.deviceId ?? null}
+          latestHeartbeatAt={
+            detail.latestHeartbeat?.receivedAt.toISOString() ?? null
+          }
+        />
+      </Card>
+
+      <Card className="p-6">
         <CardHeader className="p-0 pb-4">
           <CardTitle>Devices / VPS</CardTitle>
           <CardDescription>
-            Revogue o device DEMO antigo para liberar vaga antes de ativar na conta real.
+            tradeMode na tabela é o último valor reportado pelo heartbeat (histórico).
+            Devices REVOKED não são editáveis — configure o modo esperado e ative um novo device.
           </CardDescription>
         </CardHeader>
         <LicenseDeviceManagement
@@ -103,6 +116,7 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
           devices={deviceRows}
           maxDevices={detail.maxDevices}
           activeDeviceCount={detail.activeDeviceCount}
+          expectedTradeMode={detail.expectedTradeMode}
         />
       </Card>
 
@@ -110,6 +124,9 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
         licenseId={detail.licenseId}
         canGenerate={canGenerateCode}
         ineligibleReason={ineligibleReason}
+        expectedAccountLogin={detail.expectedAccount.login}
+        expectedAccountServer={detail.expectedAccount.server}
+        expectedTradeMode={detail.expectedTradeMode}
       />
     </div>
   );

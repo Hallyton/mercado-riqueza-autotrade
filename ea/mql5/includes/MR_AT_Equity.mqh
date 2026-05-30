@@ -5,6 +5,8 @@
 
 #include "MR_AT_Log.mqh"
 
+extern string g_configured_trade_mode;
+
 //+------------------------------------------------------------------+
 double MR_AT_GetEquity()
   {
@@ -23,6 +25,8 @@ double MR_AT_GetMargin()
 
 string MR_AT_GetTradeMode()
   {
+   if(g_configured_trade_mode == "REAL" || g_configured_trade_mode == "DEMO")
+      return g_configured_trade_mode;
    long mode = AccountInfoInteger(ACCOUNT_TRADE_MODE);
    if(mode == ACCOUNT_TRADE_MODE_DEMO)
       return "DEMO";

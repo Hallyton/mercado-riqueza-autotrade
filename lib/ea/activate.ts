@@ -5,6 +5,7 @@ import {
   SubscriptionStatus,
 } from "@prisma/client";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
+import { validateLicenseExpectedActivation } from "@/lib/licensing/license-expected-mode";
 import { createAuditLog } from "@/lib/audit/log";
 import { syncLicenseFlags } from "@/lib/licensing/service";
 import prisma from "@/lib/prisma";
@@ -35,6 +36,9 @@ export async function activateEaDevice(input: {
   deviceId: string;
   fingerprint?: string;
   eaVersion?: string;
+  accountLogin?: string;
+  accountServer?: string;
+  tradeMode?: string;
   requestId?: string | null;
   ipAddress?: string | null;
 }) {
@@ -79,6 +83,26 @@ export async function activateEaDevice(input: {
   }
   if (license.status === LicenseStatus.SUSPENDED) {
     return { ok: false as const, code: "LICENSE_SUSPENDED" };
+  }
+
+  const expectedCheck = validateLicenseExpectedActivation({
+    license,
+    accountLogin: input.accountLogin,
+    accountServer: input.accountServer,
+    tradeMode: input.tradeMode,
+  });
+  if (!expectedCheck.ok) {
+    await createAuditLog({
+      actorType: AuditActorType.EA,
+      actorId: license.userId,
+      action: "ea.activation_rejected",
+      entityType: "license",
+      entityId: license.id,
+      requestId: input.requestId,
+      ipAddress: input.ipAddress,
+      metadata: { code: expectedCheck.code, deviceId: input.deviceId },
+    });
+    return { ok: false as const, code: expectedCheck.code };
   }
 
   const maxDevices = sub.plan.maxDevices;

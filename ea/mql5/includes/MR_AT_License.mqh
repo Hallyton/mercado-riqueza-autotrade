@@ -8,6 +8,7 @@
 #include "MR_AT_Json.mqh"
 #include "MR_AT_Http.mqh"
 #include "MR_AT_Auth.mqh"
+#include "MR_AT_Equity.mqh"
 
 extern string g_api_base_url;
 extern string g_device_id;
@@ -56,6 +57,9 @@ bool MR_AT_Activate(const string activation_code)
    string body = "{";
    body += "\"activation_code\":" + MR_AT_JsonQuote(code) + ",";
    body += "\"device_id\":" + MR_AT_JsonQuote(g_device_id) + ",";
+   body += "\"account_login\":" + MR_AT_JsonQuote(MR_AT_AccountLoginStr()) + ",";
+   body += "\"account_server\":" + MR_AT_JsonQuote(MR_AT_AccountServerStr()) + ",";
+   body += "\"trade_mode\":" + MR_AT_JsonQuote(MR_AT_GetTradeMode()) + ",";
    body += "\"ea_version\":" + MR_AT_JsonQuote(MR_AT_EA_VERSION);
    body += "}";
 

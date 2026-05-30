@@ -3,6 +3,7 @@ import {
   DeviceStatus,
   LicenseStatus,
   SubscriptionStatus,
+  TradeMode,
 } from "@prisma/client";
 
 const { prismaMock, auditMock, syncMock } = vi.hoisted(() => ({
@@ -33,6 +34,11 @@ const licenseBase = {
   id: "lic_1",
   userId: "user_1",
   status: LicenseStatus.PENDING_ACTIVATION,
+  expectedTradeMode: TradeMode.DEMO,
+  expectedAccountLogin: null,
+  expectedAccountServer: null,
+  expectedSymbol: null,
+  expectedMagicNumber: null,
   mt5Account: { login: "1", server: "S" },
   subscription: {
     status: SubscriptionStatus.ACTIVE,
@@ -115,6 +121,61 @@ describe("activateEaDevice validações", () => {
     });
 
     expect(result).toEqual({ ok: false, code: "DEVICE_BLOCKED" });
+  });
+
+  it("rejeita tradeMode DEMO quando licença espera REAL", async () => {
+    prismaMock.activationCode.findFirst.mockResolvedValue({
+      id: "act_1",
+      license: {
+        ...licenseBase,
+        expectedTradeMode: TradeMode.REAL,
+        expectedAccountLogin: "4598526",
+        expectedAccountServer: "BancoBTGPactual-PRD",
+        mt5Account: { login: "4598526", server: "BancoBTGPactual-PRD" },
+      },
+    });
+
+    const result = await activateEaDevice({
+      activationCode: "CODE",
+      deviceId: "vps-real",
+      accountLogin: "4598526",
+      accountServer: "BancoBTGPactual-PRD",
+      tradeMode: "DEMO",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "LICENSE_EXPECTED_TRADE_MODE_MISMATCH",
+    });
+  });
+
+  it("aceita ativação REAL após device revogado quando dados conferem", async () => {
+    prismaMock.activationCode.findFirst.mockResolvedValue({
+      id: "act_1",
+      license: {
+        ...licenseBase,
+        expectedTradeMode: TradeMode.REAL,
+        expectedAccountLogin: "4598526",
+        expectedAccountServer: "BancoBTGPactual-PRD",
+        mt5Account: { login: "4598526", server: "BancoBTGPactual-PRD" },
+      },
+    });
+    prismaMock.device.findUnique.mockResolvedValue({
+      id: "dev-old",
+      status: DeviceStatus.REVOKED,
+      revokedAt: new Date(),
+    });
+    prismaMock.device.update.mockResolvedValue({ id: "dev-old" });
+
+    const result = await activateEaDevice({
+      activationCode: "CODE",
+      deviceId: "vps-real",
+      accountLogin: "4598526",
+      accountServer: "BancoBTGPactual-PRD",
+      tradeMode: "REAL",
+    });
+
+    expect(result.ok).toBe(true);
   });
 
   it("persiste somente tokenHash do device, nunca o token bruto", async () => {

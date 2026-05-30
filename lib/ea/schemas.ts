@@ -7,6 +7,9 @@ export const activateBodySchema = z.object({
   device_id: z.string().min(1).max(128),
   fingerprint: z.string().max(256).optional(),
   ea_version: z.string().max(32).optional(),
+  account_login: z.string().min(1).max(32).optional(),
+  account_server: z.string().min(1).max(128).optional(),
+  trade_mode: z.enum(["DEMO", "REAL"]).optional(),
 });
 
 export const mt5AccountSchema = z.object({

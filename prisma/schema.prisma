@@ -478,6 +478,11 @@ model License {
   activatedAt         DateTime?     @map("activated_at")
   suspendedAt         DateTime?     @map("suspended_at")
   revokedAt           DateTime?     @map("revoked_at")
+  expectedTradeMode     TradeMode     @default(DEMO) @map("expected_trade_mode")
+  expectedAccountLogin  String?       @map("expected_account_login")
+  expectedAccountServer String?       @map("expected_account_server")
+  expectedSymbol        String?       @map("expected_symbol")
+  expectedMagicNumber   Int?          @map("expected_magic_number")
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
 

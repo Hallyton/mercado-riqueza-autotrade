@@ -37,6 +37,9 @@ export async function POST(request: Request) {
     deviceId: parsed.data.device_id,
     fingerprint: parsed.data.fingerprint,
     eaVersion: parsed.data.ea_version,
+    accountLogin: parsed.data.account_login,
+    accountServer: parsed.data.account_server,
+    tradeMode: parsed.data.trade_mode,
     requestId: headers.requestId,
     ipAddress: request.headers.get("x-forwarded-for"),
   });
@@ -68,11 +71,20 @@ export async function POST(request: Request) {
         "Este dispositivo foi revogado. Revogue o device antigo no admin ou use novo código de ativação.",
       DEVICE_BLOCKED:
         "Este dispositivo está bloqueado. Contate o suporte ou use outro deviceId.",
+      LICENSE_EXPECTED_ACCOUNT_MISMATCH:
+        "A conta MT5 informada não corresponde à conta esperada desta licença.",
+      LICENSE_EXPECTED_SERVER_MISMATCH:
+        "O servidor MT5 informado não corresponde ao esperado desta licença.",
+      LICENSE_EXPECTED_TRADE_MODE_MISMATCH:
+        "O modo operacional informado não corresponde ao modo esperado (configure o EA para REAL se a licença espera REAL).",
     };
     const status =
       result.code === "DEVICE_LIMIT_EXCEEDED" ||
       result.code === "DEVICE_BLOCKED" ||
-      result.code === "DEVICE_REVOKED"
+      result.code === "DEVICE_REVOKED" ||
+      result.code === "LICENSE_EXPECTED_ACCOUNT_MISMATCH" ||
+      result.code === "LICENSE_EXPECTED_SERVER_MISMATCH" ||
+      result.code === "LICENSE_EXPECTED_TRADE_MODE_MISMATCH"
         ? 403
         : 401;
     return problemJson(

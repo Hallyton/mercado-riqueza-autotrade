@@ -6,6 +6,8 @@ import {
   DEVICE_BLOCK_CONFIRM_PHRASE,
   DEVICE_REVOKE_CONFIRM_PHRASE,
 } from "@/lib/admin/license-devices";
+import type { DeviceCompatibilityLabel } from "@/lib/licensing/license-expected-mode";
+import { DeviceCompatibilityBadge } from "@/components/admin/license-operational-mode";
 
 export type LicenseDeviceRow = {
   id: string;
@@ -17,9 +19,10 @@ export type LicenseDeviceRow = {
   revokedAt: string | null;
   blockedAt: string | null;
   lastHeartbeatAt: string | null;
-  tradeMode: string | null;
+  reportedTradeMode: string | null;
   accountLogin: string | null;
   accountServer: string | null;
+  compatibility: DeviceCompatibilityLabel;
 };
 
 function formatDt(iso: string | null) {
@@ -35,11 +38,13 @@ export function LicenseDeviceManagement({
   devices,
   maxDevices,
   activeDeviceCount,
+  expectedTradeMode,
 }: {
   licenseId: string;
   devices: LicenseDeviceRow[];
   maxDevices: number;
   activeDeviceCount: number;
+  expectedTradeMode: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -79,8 +84,9 @@ export function LicenseDeviceManagement({
           Devices ativos: <strong>{activeDeviceCount}</strong> / {maxDevices}
         </p>
         <p className="mt-1 text-muted-foreground">
-          Revogue o device DEMO antigo antes de ativar o EA na conta real. Tokens
-          nunca são exibidos nesta tela.
+          Modo esperado da licença: <span className="font-mono text-gold">{expectedTradeMode}</span>.
+          Revogue o device DEMO antigo antes de ativar o EA na conta real com{" "}
+          <span className="font-mono">InpTradeMode=REAL</span>.
         </p>
       </div>
 
@@ -91,10 +97,10 @@ export function LicenseDeviceManagement({
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">DeviceId</th>
               <th className="px-3 py-2">Conta</th>
-              <th className="px-3 py-2">tradeMode</th>
+              <th className="px-3 py-2">tradeMode reportado</th>
+              <th className="px-3 py-2">Compatibilidade</th>
               <th className="px-3 py-2">Último HB</th>
               <th className="px-3 py-2">Criado</th>
-              <th className="px-3 py-2">Revogado</th>
               <th className="px-3 py-2">Ações</th>
             </tr>
           </thead>
@@ -108,10 +114,21 @@ export function LicenseDeviceManagement({
                     ? `${d.accountLogin} @ ${d.accountServer}`
                     : "—"}
                 </td>
-                <td className="px-3 py-2">{d.tradeMode ?? "—"}</td>
+                <td className="px-3 py-2">
+                  <span className="font-mono text-xs">
+                    {d.reportedTradeMode ?? "—"}
+                  </span>
+                  {(d.status === "REVOKED" || d.status === "BLOCKED") && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Histórico — não editável
+                    </p>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <DeviceCompatibilityBadge label={d.compatibility} />
+                </td>
                 <td className="px-3 py-2 text-xs">{formatDt(d.lastHeartbeatAt)}</td>
                 <td className="px-3 py-2 text-xs">{formatDt(d.createdAt)}</td>
-                <td className="px-3 py-2 text-xs">{formatDt(d.revokedAt)}</td>
                 <td className="px-3 py-2 min-w-[200px]">
                   {d.status === "ACTIVE" ? (
                     <div className="space-y-2">
@@ -167,7 +184,9 @@ export function LicenseDeviceManagement({
                       </button>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-xs text-muted-foreground">
+                      Device revogado/bloqueado — sem ações
+                    </span>
                   )}
                 </td>
               </tr>
