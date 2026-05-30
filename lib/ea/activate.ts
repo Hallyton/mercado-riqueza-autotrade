@@ -1,8 +1,10 @@
 import {
   AuditActorType,
+  DeviceStatus,
   LicenseStatus,
   SubscriptionStatus,
 } from "@prisma/client";
+import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import { createAuditLog } from "@/lib/audit/log";
 import { syncLicenseFlags } from "@/lib/licensing/service";
 import prisma from "@/lib/prisma";
@@ -90,9 +92,13 @@ export async function activateEaDevice(input: {
     },
   });
 
+  if (existingDevice?.status === DeviceStatus.BLOCKED) {
+    return { ok: false as const, code: "DEVICE_BLOCKED" };
+  }
+
   if (!existingDevice) {
     const activeDeviceCount = await prisma.device.count({
-      where: { licenseId: license.id, revokedAt: null },
+      where: { licenseId: license.id, ...ACTIVE_DEVICE_WHERE },
     });
     if (activeDeviceCount >= maxDevices) {
       await createAuditLog({
@@ -122,7 +128,7 @@ export async function activateEaDevice(input: {
       data: { usedAt: new Date() },
     });
 
-    if (existingDevice?.revokedAt) {
+    if (existingDevice?.revokedAt || existingDevice?.status === DeviceStatus.REVOKED) {
       return tx.device.update({
         where: { id: existingDevice.id },
         data: {
@@ -130,7 +136,11 @@ export async function activateEaDevice(input: {
           fingerprint: input.fingerprint,
           eaVersion: input.eaVersion,
           lastSeenAt: new Date(),
+          status: DeviceStatus.ACTIVE,
           revokedAt: null,
+          revokedByUserId: null,
+          blockedAt: null,
+          blockedByUserId: null,
         },
       });
     }
@@ -143,6 +153,7 @@ export async function activateEaDevice(input: {
           fingerprint: input.fingerprint,
           eaVersion: input.eaVersion,
           lastSeenAt: new Date(),
+          status: DeviceStatus.ACTIVE,
         },
       });
     }
@@ -154,6 +165,7 @@ export async function activateEaDevice(input: {
         fingerprint: input.fingerprint,
         eaVersion: input.eaVersion,
         tokenHash,
+        status: DeviceStatus.ACTIVE,
         lastSeenAt: new Date(),
       },
     });

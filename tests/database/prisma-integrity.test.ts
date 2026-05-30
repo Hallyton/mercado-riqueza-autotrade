@@ -73,7 +73,9 @@ describe("Prisma schema — integridade crítica e histórico", () => {
     const device = modelBlock("Device");
     const activationCode = modelBlock("ActivationCode");
 
-    expect(device).toContain("tokenHash   String    @map(\"token_hash\")");
+    expect(device).toContain("tokenHash");
+    expect(device).toContain("@map(\"token_hash\")");
+    expect(device).toContain("status          DeviceStatus");
     expect(device).not.toContain("deviceToken");
     expect(device).not.toContain(" token ");
 

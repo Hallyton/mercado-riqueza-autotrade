@@ -2411,6 +2411,21 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.7 — Post-Real-Order Review & Incident/Success Report *(após execução ao vivo ou aborto formal documentado com IDs)*.
 
+### Fase 12.6.1 — EA Device Revocation & Real Account Activation Flow
+
+**Status:** `EA_DEVICE_REVOCATION_FLOW_IMPLEMENTED`  
+**Documento:** [`docs/EA-DEVICE-ACTIVATION-AND-REVOCATION.md`](EA-DEVICE-ACTIVATION-AND-REVOCATION.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Admin revoga device DEMO antigo e ativa novo device na conta real sem estourar limite |
+| UI | `/admin/licenses/[licenseId]` + link em `/admin/clientes` |
+| Device status | ACTIVE / REVOKED / BLOCKED |
+| Limite | Apenas devices **ACTIVE** contam em `maxDevices` |
+| Tokens | Não expostos na UI admin |
+| Ordem real | **Nenhuma** nesta fase |
+| Dispatch automático | **Desativado** |
+
 ### Fluxo de aprovação manual REAL (admin)
 
 **Status:** `REAL_TRADING_MANUAL_APPROVAL_FLOW_IMPLEMENTED`  

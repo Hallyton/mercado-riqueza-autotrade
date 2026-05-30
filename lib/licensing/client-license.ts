@@ -1,8 +1,10 @@
 import {
   AuditActorType,
+  DeviceStatus,
   LicenseStatus,
   SubscriptionStatus,
 } from "@prisma/client";
+import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import { createAuditLog } from "@/lib/audit/log";
 import { createActivationCodeForLicense } from "@/lib/ea/activate";
 import prisma from "@/lib/prisma";
@@ -97,8 +99,11 @@ async function revokeLicenseDevicesAndPendingCodes(licenseId: string) {
   const now = new Date();
 
   const devices = await prisma.device.updateMany({
-    where: { licenseId, revokedAt: null },
-    data: { revokedAt: now },
+    where: { licenseId, ...ACTIVE_DEVICE_WHERE },
+    data: {
+      status: DeviceStatus.REVOKED,
+      revokedAt: now,
+    },
   });
 
   await prisma.activationCode.updateMany({

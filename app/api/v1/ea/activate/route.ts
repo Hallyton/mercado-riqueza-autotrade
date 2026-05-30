@@ -50,6 +50,8 @@ export async function POST(request: Request) {
       LICENSE_REVOKED: "Licença revogada",
       LICENSE_SUSPENDED: "Licença suspensa",
       DEVICE_LIMIT_EXCEEDED: "Limite de dispositivos",
+      DEVICE_REVOKED: "Dispositivo revogado",
+      DEVICE_BLOCKED: "Dispositivo bloqueado",
     };
     const details: Record<string, string> = {
       INVALID_ACTIVATION_CODE:
@@ -62,8 +64,17 @@ export async function POST(request: Request) {
       LICENSE_SUSPENDED: "Licença suspensa.",
       DEVICE_LIMIT_EXCEEDED:
         "Limite de dispositivos/VPS do plano atingido.",
+      DEVICE_REVOKED:
+        "Este dispositivo foi revogado. Revogue o device antigo no admin ou use novo código de ativação.",
+      DEVICE_BLOCKED:
+        "Este dispositivo está bloqueado. Contate o suporte ou use outro deviceId.",
     };
-    const status = result.code === "DEVICE_LIMIT_EXCEEDED" ? 403 : 401;
+    const status =
+      result.code === "DEVICE_LIMIT_EXCEEDED" ||
+      result.code === "DEVICE_BLOCKED" ||
+      result.code === "DEVICE_REVOKED"
+        ? 403
+        : 401;
     return problemJson(
       status,
       result.code,

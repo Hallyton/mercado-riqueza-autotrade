@@ -1,4 +1,5 @@
 import {
+  DeviceStatus,
   LicenseStatus,
   SubscriptionStatus,
   type Device,
@@ -63,10 +64,7 @@ export async function authenticateEaRequest(
   const headers = readEaHeaders(request);
 
   const device = await prisma.device.findFirst({
-    where: {
-      tokenHash,
-      revokedAt: null,
-    },
+    where: { tokenHash },
     include: {
       license: { include: eaLicenseInclude },
     },
@@ -74,6 +72,26 @@ export async function authenticateEaRequest(
 
   if (!device?.license) {
     throw new EaAuthError("Token inválido", "INVALID_TOKEN", 401);
+  }
+
+  if (device.status === DeviceStatus.BLOCKED || device.blockedAt) {
+    throw new EaAuthError(
+      "Dispositivo bloqueado pelo administrador",
+      "DEVICE_BLOCKED",
+      403
+    );
+  }
+
+  if (device.status === DeviceStatus.REVOKED || device.revokedAt) {
+    throw new EaAuthError(
+      "Dispositivo revogado — gere novo código de ativação",
+      "DEVICE_REVOKED",
+      403
+    );
+  }
+
+  if (device.status !== DeviceStatus.ACTIVE) {
+    throw new EaAuthError("Dispositivo inativo", "DEVICE_INACTIVE", 403);
   }
 
   if (headers.deviceId && headers.deviceId !== device.deviceId) {

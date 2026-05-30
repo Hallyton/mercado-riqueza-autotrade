@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
+  DeviceStatus,
   LicenseStatus,
   SubscriptionStatus,
 } from "@prisma/client";
@@ -69,7 +70,7 @@ describe("activateEaDevice validações", () => {
     expect(result).toEqual({ ok: false, code: "MT5_NOT_LINKED" });
   });
 
-  it("rejeita limite de devices", async () => {
+  it("rejeita limite de devices ativos", async () => {
     prismaMock.device.count.mockResolvedValue(1);
 
     const result = await activateEaDevice({
@@ -81,6 +82,39 @@ describe("activateEaDevice validações", () => {
     expect(auditMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: "ea.activation_rejected" })
     );
+  });
+
+  it("reativa device revogado sem contar no limite", async () => {
+    prismaMock.device.findUnique.mockResolvedValue({
+      id: "dev-old",
+      status: DeviceStatus.REVOKED,
+      revokedAt: new Date(),
+    });
+    prismaMock.device.update.mockResolvedValue({ id: "dev-old" });
+
+    const result = await activateEaDevice({
+      activationCode: "CODE",
+      deviceId: "vps-real",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMock.device.count).not.toHaveBeenCalled();
+    expect(prismaMock.device.update).toHaveBeenCalled();
+  });
+
+  it("rejeita device bloqueado existente", async () => {
+    prismaMock.device.findUnique.mockResolvedValue({
+      id: "dev-blocked",
+      status: DeviceStatus.BLOCKED,
+      revokedAt: new Date(),
+    });
+
+    const result = await activateEaDevice({
+      activationCode: "CODE",
+      deviceId: "vps-blocked",
+    });
+
+    expect(result).toEqual({ ok: false, code: "DEVICE_BLOCKED" });
   });
 
   it("persiste somente tokenHash do device, nunca o token bruto", async () => {

@@ -165,6 +165,12 @@ enum RealTradingApprovalStatus {
   BLOCKED
 }
 
+enum DeviceStatus {
+  ACTIVE
+  REVOKED
+  BLOCKED
+}
+
 enum AccountSnapshotType {
   PRE_MARKET
   PRE_TRADE
@@ -505,21 +511,25 @@ model LicenseExposureProfile {
 }
 
 model Device {
-  id          String    @id @default(cuid())
-  licenseId   String    @map("license_id")
-  deviceId    String    @map("device_id")
-  fingerprint String?
-  eaVersion   String?   @map("ea_version")
-  tokenHash   String    @map("token_hash")
-  lastSeenAt  DateTime? @map("last_seen_at")
-  rotateAfter DateTime? @map("rotate_after")
-  revokedAt   DateTime? @map("revoked_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id              String       @id @default(cuid())
+  licenseId       String       @map("license_id")
+  deviceId        String       @map("device_id")
+  fingerprint     String?
+  eaVersion       String?      @map("ea_version")
+  tokenHash       String       @map("token_hash")
+  status          DeviceStatus @default(ACTIVE)
+  lastSeenAt      DateTime?    @map("last_seen_at")
+  rotateAfter     DateTime?    @map("rotate_after")
+  revokedAt       DateTime?    @map("revoked_at")
+  revokedByUserId String?      @map("revoked_by_user_id")
+  blockedAt       DateTime?    @map("blocked_at")
+  blockedByUserId String?      @map("blocked_by_user_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
 
   license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
 
   @@unique([licenseId, deviceId])
-  @@index([licenseId])
+  @@index([licenseId, status])
   @@map("devices")
 }
 

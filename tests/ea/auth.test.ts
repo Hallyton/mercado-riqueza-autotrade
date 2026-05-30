@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
+  DeviceStatus,
   LicenseStatus,
   SubscriptionStatus,
 } from "@prisma/client";
@@ -73,10 +74,7 @@ describe("LicenseToken", () => {
     });
     expect(prisma.device.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          tokenHash: "hash-bad",
-          revokedAt: null,
-        }),
+        where: { tokenHash: "hash-bad" },
       })
     );
   });
@@ -87,7 +85,9 @@ describe("LicenseToken", () => {
       deviceId: "mt5-12345-Broker",
       licenseId: "lic1",
       tokenHash: "hash-good",
+      status: DeviceStatus.ACTIVE,
       revokedAt: null,
+      blockedAt: null,
       license: baseLicense,
     } as never);
 
@@ -106,7 +106,9 @@ describe("LicenseToken", () => {
       deviceId: "dev-1",
       licenseId: "lic1",
       tokenHash: "hash-good",
+      status: DeviceStatus.ACTIVE,
       revokedAt: null,
+      blockedAt: null,
       license: baseLicense,
     } as never);
 
@@ -129,7 +131,9 @@ describe("LicenseToken", () => {
       deviceId: "dev-original",
       licenseId: "lic1",
       tokenHash: "hash-good",
+      status: DeviceStatus.ACTIVE,
       revokedAt: null,
+      blockedAt: null,
       license: baseLicense,
     } as never);
 

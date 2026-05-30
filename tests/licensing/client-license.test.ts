@@ -141,8 +141,16 @@ describe("updateMt5AccountForLicense — alterar MT5", () => {
     expect(result.changed).toBe(true);
     expect(result.devicesRevoked).toBe(1);
     expect(prismaMock.device.updateMany).toHaveBeenCalledWith({
-      where: { licenseId: "lic_1", revokedAt: null },
-      data: expect.objectContaining({ revokedAt: expect.any(Date) }),
+      where: {
+        licenseId: "lic_1",
+        revokedAt: null,
+        status: "ACTIVE",
+        blockedAt: null,
+      },
+      data: expect.objectContaining({
+        revokedAt: expect.any(Date),
+        status: "REVOKED",
+      }),
     });
     expect(prismaMock.license.update).toHaveBeenCalledWith({
       where: { id: "lic_1" },

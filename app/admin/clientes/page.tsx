@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { listAdminClientsOverview } from "@/lib/licensing/service";
 import {
   LicenseStatusBadge,
@@ -89,6 +90,12 @@ export default async function AdminClientesPage() {
                               {lic.mt5}
                               {lic.haltNewEntries ? " · sem novas entradas" : ""}
                             </p>
+                            <Link
+                              href={`/admin/licenses/${lic.id}`}
+                              className="inline-block text-xs text-gold hover:underline"
+                            >
+                              Gerenciar licença / devices →
+                            </Link>
                           </li>
                         ))}
                       </ul>
