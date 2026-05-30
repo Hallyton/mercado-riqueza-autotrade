@@ -354,3 +354,28 @@ Somente poderá iniciar se:
 - Stop/take obrigatórios e `PROTECTION_CONFIRMED` em conta **REAL**.
 
 **Nesta fase (12.5):** nenhuma ordem real enviada. Dispatch automático desativado. Real Trading Guard inalterado.
+
+---
+
+## 17. Fase 12.5.1 — Session 001 Gate Fill
+
+**Status:** `GATE_SESSION_PENDING_REVIEW`  
+**Documento:** [`docs/FIRST-REAL-ORDER-GATE-SESSION-001.md`](FIRST-REAL-ORDER-GATE-SESSION-001.md)
+
+| Item | Resultado Session 001 |
+|------|------------------------|
+| Preenchimento operacional | Concluído (2026-05-30) |
+| Decisão sessão | `FIRST_REAL_ORDER_NOT_EXECUTED` |
+| Gate sessão | `BLOCKED_FOR_FIRST_REAL_ORDER` |
+| COMERCIAL | `COMERCIAL_OK` |
+| LICENSE_DEVICE | `LICENSE_DEVICE_OK` *(revalidar T-0 REAL)* |
+| REAL_GUARD | `REAL_GUARD_OK` *(registrar ApprovalId)* |
+| MARGIN | `MARGIN_OK` *(revalidar T-0)* |
+| INSTRUCTION (plano) | `INSTRUCTION_OK` *(InstructionId pendente)* |
+| EXECUTOR | `EXECUTOR_OK` |
+| PROTEÇÃO (plano) | `PROTECTION_PLAN_OK` |
+| SUPERVISÃO/ROLLBACK | `SUPERVISION_ROLLBACK_BLOCKED` |
+| Ordem real | **Nenhuma** |
+| Próxima etapa | Fase 12.6 — execução autorizada |
+
+**Checklist mestre:** permanece `REAL_ORDER_GATE_PENDING_APPROVAL` até Session 001 aprovar todos os blocos na 12.6.

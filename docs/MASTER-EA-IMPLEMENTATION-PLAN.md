@@ -2356,6 +2356,25 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.6 — First Ultra-Controlled Real Order Execution.
 
+### Fase 12.5.1 — Fill First Real Order Gate Checklist
+
+**Status:** `GATE_SESSION_PENDING_REVIEW`  
+**Documento:** [`docs/FIRST-REAL-ORDER-GATE-SESSION-001.md`](FIRST-REAL-ORDER-GATE-SESSION-001.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Preencher checklist da primeira ordem real com dados da Session 001 — **sem executar ordem real** |
+| Gate sessão 001 | `BLOCKED_FOR_FIRST_REAL_ORDER` |
+| Decisão | `FIRST_REAL_ORDER_NOT_EXECUTED` |
+| Blocos OK | COMERCIAL, LICENSE_DEVICE*, REAL_GUARD*, MARGIN*, INSTRUCTION (plano), EXECUTOR, PROTECTION_PLAN |
+| Blocos blocked | SUPERVISION_ROLLBACK (T-0 pendente) |
+| Pendências 12.6 | ApprovalId, InstructionId, horário, suplente, revalidação REAL T-0 |
+| Ordem real | **Nenhuma** |
+| Dispatch automático | **Desativado** |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fase 12.6 — First Ultra-Controlled Real Order Execution.
+
 ### EA device_token — localização (investigação)
 
 **Status:** `EA_DEVICE_TOKEN_LOCATION_IDENTIFIED`  
