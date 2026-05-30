@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   adminUserConfirmationSchema,
-  blockAdminUser,
+  deactivateAdminUser,
   UserAdminError,
 } from "@/lib/admin/users";
 import { clientIp, requireAdminApiSession } from "@/lib/auth/admin-api";
@@ -25,7 +25,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   try {
-    const result = await blockAdminUser({
+    const result = await deactivateAdminUser({
       userId,
       actorId: authResult.session!.user!.id!,
       adminConfirmation: parsed.data.admin_confirmation,
@@ -40,6 +40,9 @@ export async function POST(request: Request, context: RouteContext) {
         { status: e.status }
       );
     }
-    return NextResponse.json({ error: "Falha ao bloquear usuário" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Falha ao inativar usuário" },
+      { status: 500 }
+    );
   }
 }

@@ -112,6 +112,7 @@ export async function getLicenseAdminDetail(licenseId: string) {
     licenseId: license.id,
     licenseIdMasked: maskLicenseId(license.id),
     status: license.status,
+    subscription: license.subscription,
     haltNewEntries: license.haltNewEntries,
     haltAllTrading: license.haltAllTrading,
     user: license.user,

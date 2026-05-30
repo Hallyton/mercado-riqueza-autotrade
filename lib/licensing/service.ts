@@ -475,6 +475,7 @@ export async function listAdminClientsOverview() {
       id: user.id,
       email: user.email,
       name: user.name,
+      status: user.status,
       createdAt: user.createdAt,
       subscription: sub
         ? {

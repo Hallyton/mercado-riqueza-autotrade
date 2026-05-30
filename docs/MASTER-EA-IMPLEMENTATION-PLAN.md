@@ -2411,6 +2411,20 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.7 — Post-Real-Order Review & Incident/Success Report *(após execução ao vivo ou aborto formal documentado com IDs)*.
 
+### Fase 12.6.2 — Admin User & Activation Management
+
+**Status:** `ADMIN_USER_AND_ACTIVATION_MANAGEMENT_IMPLEMENTED`  
+**Documento:** [`docs/ADMIN-USER-MANAGEMENT.md`](ADMIN-USER-MANAGEMENT.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Admin cadastra/gerencia usuários, senhas, licenças e códigos de ativação |
+| UI usuários | `/admin/users`, `/admin/users/new`, `/admin/users/[userId]` |
+| UI código EA | Melhoria em `/admin/licenses/[licenseId]` (uma vez + copiar) |
+| User status | ACTIVE / INACTIVE / BLOCKED |
+| Ordem real | **Nenhuma** |
+| Dispatch automático | **Desativado** |
+
 ### Fase 12.6.1 — EA Device Revocation & Real Account Activation Flow
 
 **Status:** `EA_DEVICE_REVOCATION_FLOW_IMPLEMENTED`  

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ActivationCodeGenerator } from "@/components/admin/activation-code-generator";
 import { LicenseDeviceManagement } from "@/components/admin/license-device-management";
+import { LicenseStatus, SubscriptionStatus } from "@prisma/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseStatusBadge } from "@/components/subscription/status-badge";
 import { getLicenseAdminDetail } from "@/lib/admin/license-devices";
@@ -11,6 +13,25 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
   const { licenseId } = await params;
   const detail = await getLicenseAdminDetail(licenseId);
   if (!detail) notFound();
+
+  const sub = detail.subscription;
+  const canGenerateCode =
+    Boolean(detail.mt5Account) &&
+    (detail.status === LicenseStatus.ACTIVE ||
+      detail.status === LicenseStatus.PENDING_ACTIVATION) &&
+    sub?.status === SubscriptionStatus.ACTIVE &&
+    (!sub?.currentPeriodEnd || sub.currentPeriodEnd >= new Date());
+
+  let ineligibleReason: string | null = null;
+  if (!detail.mt5Account) {
+    ineligibleReason = "Vincule uma conta MT5 antes de gerar o código.";
+  } else if (detail.status === LicenseStatus.REVOKED) {
+    ineligibleReason = "Licença revogada.";
+  } else if (detail.status === LicenseStatus.SUSPENDED) {
+    ineligibleReason = "Licença suspensa.";
+  } else if (!sub || sub.status !== SubscriptionStatus.ACTIVE) {
+    ineligibleReason = "Assinatura inativa.";
+  }
 
   const deviceRows = detail.devices.map((d) => ({
     ...d,
@@ -84,6 +105,12 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
           activeDeviceCount={detail.activeDeviceCount}
         />
       </Card>
+
+      <ActivationCodeGenerator
+        licenseId={detail.licenseId}
+        canGenerate={canGenerateCode}
+        ineligibleReason={ineligibleReason}
+      />
     </div>
   );
 }

@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  ADMIN_ACTIVATION_CODE_CONFIRM_PHRASE,
   DEVICE_BLOCK_CONFIRM_PHRASE,
   DEVICE_REVOKE_CONFIRM_PHRASE,
 } from "@/lib/admin/license-devices";
@@ -45,9 +44,7 @@ export function LicenseDeviceManagement({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [activationCode, setActivationCode] = useState<string | null>(null);
   const [confirmations, setConfirmations] = useState<Record<string, string>>({});
-  const [activationConfirm, setActivationConfirm] = useState("");
 
   async function postAction(
     path: string,
@@ -67,34 +64,6 @@ export function LicenseDeviceManagement({
         setMessage(data.error ?? "Falha na operação.");
         return;
       }
-      router.refresh();
-    } catch {
-      setMessage("Erro de rede.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function generateActivationCode() {
-    setBusy("activation");
-    setMessage(null);
-    setActivationCode(null);
-    try {
-      const res = await fetch(
-        `/api/admin/licenses/${licenseId}/activation-code`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ admin_confirmation: activationConfirm }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage(data.error ?? "Falha ao gerar código.");
-        return;
-      }
-      setActivationCode(data.code);
-      setActivationConfirm("");
       router.refresh();
     } catch {
       setMessage("Erro de rede.");
@@ -212,36 +181,6 @@ export function LicenseDeviceManagement({
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="rounded-lg border border-gold/30 bg-gold/5 p-4 space-y-3">
-        <p className="text-sm font-medium">Gerar novo código de ativação</p>
-        <p className="text-xs text-muted-foreground">
-          Digite <span className="font-mono text-gold">{ADMIN_ACTIVATION_CODE_CONFIRM_PHRASE}</span>.
-          O código é exibido uma única vez abaixo.
-        </p>
-        <input
-          className="w-full max-w-md rounded border border-white/10 bg-background px-3 py-2 text-sm font-mono"
-          value={activationConfirm}
-          onChange={(e) => setActivationConfirm(e.target.value)}
-          autoComplete="off"
-        />
-        <button
-          type="button"
-          disabled={busy !== null}
-          onClick={generateActivationCode}
-          className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
-        >
-          {busy === "activation" ? "Gerando…" : "Gerar código"}
-        </button>
-        {activationCode && (
-          <div className="rounded border border-gold/40 bg-black/40 p-3">
-            <p className="text-xs text-muted-foreground mb-1">
-              Código (copie agora — não será exibido novamente):
-            </p>
-            <p className="font-mono text-lg text-gold tracking-widest">{activationCode}</p>
-          </div>
-        )}
       </div>
 
       {message && <p className="text-sm text-amber-400">{message}</p>}

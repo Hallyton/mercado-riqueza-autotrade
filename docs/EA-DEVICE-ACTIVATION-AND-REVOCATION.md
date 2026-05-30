@@ -29,7 +29,10 @@ O plano limita **devices ativos** por licença (`maxDevices`). Ao mudar de conta
 2. Na licença do cliente, clicar **Gerenciar licença / devices**
 3. Rota: `/admin/licenses/[licenseId]`
 4. **Revogar** o device DEMO antigo (confirmação: `REVOGAR DEVICE`)
-5. **Gerar novo código de ativação** (confirmação: `GERAR CODIGO DE ATIVACAO`) — código exibido **uma vez**
+5. Na licença, seção **Gerar novo código de ativação**:
+   - confirmação: `GERAR CODIGO DE ATIVACAO`
+   - botão **Gerar código** → código em destaque + **Copiar código** + **Concluir**
+   - após concluir ou F5, o código **não** reaparece
 6. No MT5 conta real: ativar EA com o novo código
 7. Confirmar heartbeat com `tradeMode=REAL` e conta/servidor corretos
 8. Seguir gate real: approval manual → PRE_MARKET → preflight PASSED → dispatch manual (sem ordem automática)

@@ -4,6 +4,7 @@ import { compare } from "bcryptjs";
 import { z } from "zod";
 import { authConfig } from "@/lib/auth/config";
 import { toAppRole } from "@/lib/auth/roles";
+import { canUserAuthenticate } from "@/lib/auth/user-access";
 import prisma from "@/lib/prisma";
 
 const loginSchema = z.object({
@@ -28,10 +29,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = parsed.data.email.trim().toLowerCase();
         const user = await prisma.user.findUnique({ where: { email } });
 
-        if (!user?.passwordHash) return null;
+        if (!user || !canUserAuthenticate(user)) return null;
 
-        const valid = await compare(parsed.data.password, user.passwordHash);
+        const valid = await compare(parsed.data.password, user.passwordHash!);
         if (!valid) return null;
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
 
         const appRole = toAppRole(user.role);
 

@@ -107,6 +107,11 @@ describe("auditoria admin auth e rotas protegidas", () => {
       "app/api/admin/real-trading/approvals/[approvalId]/route.ts",
       "app/api/admin/real-trading/approvals/route.ts",
       "app/api/admin/users/[userId]/block/route.ts",
+      "app/api/admin/users/[userId]/deactivate/route.ts",
+      "app/api/admin/users/[userId]/reactivate/route.ts",
+      "app/api/admin/users/[userId]/reset-password/route.ts",
+      "app/api/admin/users/[userId]/route.ts",
+      "app/api/admin/users/route.ts",
     ]);
 
     for (const filePath of routeFiles) {
