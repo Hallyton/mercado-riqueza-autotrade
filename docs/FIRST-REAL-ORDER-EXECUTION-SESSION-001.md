@@ -342,4 +342,19 @@ Confirmado por runbook — [`REAL-TRADING-GUARD.md`](REAL-TRADING-GUARD.md):
 
 ---
 
-*Mercado da Riqueza AutoTrade — Session 001 execução 12.6. Próxima etapa documental: Fase 12.7 — Post-Real-Order Review & Incident/Success Report (após execução ao vivo concluída ou aborto formal).*
+## Nota — validação adiada (2026-05-30)
+
+Validação de ordem real **adiada** por indisponibilidade do servidor MetaTrader/BTG. **Não** classificar como falha do sistema.
+
+| Item | Valor |
+|------|--------|
+| Status trilha | `APPROVED_PENDING_LIVE_ORDER_VALIDATION` |
+| Decisão | `LIVE_ORDER_VALIDATION_DEFERRED` |
+| `FIRST_REAL_ORDER_NOT_EXECUTED` | **Mantido** |
+| Ordem real validada | **Não** |
+
+Ver: [`REAL-ORDER-VALIDATION-PENDING-META-SERVER.md`](REAL-ORDER-VALIDATION-PENDING-META-SERVER.md)
+
+---
+
+*Mercado da Riqueza AutoTrade — Session 001 execução 12.6. Trilha aprovada com pendência de validação de ordem; retomar quando Meta/BTG estiver estável.*

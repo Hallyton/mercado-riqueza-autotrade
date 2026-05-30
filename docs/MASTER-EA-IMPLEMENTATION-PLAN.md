@@ -2411,6 +2411,27 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fase 12.7 — Post-Real-Order Review & Incident/Success Report *(após execução ao vivo ou aborto formal documentado com IDs)*.
 
+### Fase 12.6.4 — Real Order Validation Deferred Due to MetaTrader Server
+
+**Status:** `APPROVED_PENDING_LIVE_ORDER_VALIDATION`  
+**Decisão:** `LIVE_ORDER_VALIDATION_DEFERRED`  
+**Documento:** [`docs/REAL-ORDER-VALIDATION-PENDING-META-SERVER.md`](REAL-ORDER-VALIDATION-PENDING-META-SERVER.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Encerrar trilha de preparação conta real com pendência documentada |
+| Causa pendência | Servidor MetaTrader/BTG indisponível — **dependência externa** |
+| Trilha preparação | **Aprovada** (admin, devices, activation code, modo REAL, guards) |
+| Ordem real | **Não executada** — **não validada** |
+| `FIRST_REAL_ORDER_NOT_EXECUTED` | Mantido |
+| Dispatch automático | **Desativado** |
+| REAL global | **Não** liberado |
+| Caixa preta | Preservada |
+
+**Resumo:** A trilha de preparação para conta real foi aprovada com pendência de validação prática da ordem, devido à indisponibilidade externa do servidor MetaTrader/BTG. A primeira ordem real não foi executada. O projeto pode avançar para a próxima fase de produto/comercial, mantendo a validação real como pendência operacional futura.
+
+**Próxima fase:** Fase 13.1 — Commercial Client Portal & Subscription Flow
+
 ### Fase 12.6.3 — Real TradeMode Activation Flow
 
 **Status:** `REAL_TRADEMODE_ACTIVATION_FLOW_IMPLEMENTED`  

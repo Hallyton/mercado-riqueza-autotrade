@@ -332,4 +332,19 @@ Nenhuma exposição de estratégia ou parâmetros internos nesta fase.
 
 ---
 
+## Nota — validação adiada (2026-05-30)
+
+Validação de ordem real **adiada** por indisponibilidade do servidor MetaTrader/BTG (`DEPENDÊNCIA EXTERNA — META/BTG SERVER UNAVAILABLE`).
+
+| Item | Valor |
+|------|--------|
+| Status trilha | `APPROVED_PENDING_LIVE_ORDER_VALIDATION` |
+| Decisão | `LIVE_ORDER_VALIDATION_DEFERRED` |
+| Execução ordem | `FIRST_REAL_ORDER_NOT_EXECUTED` — **mantido** |
+| Ordem real validada | **Não** |
+
+Ver: [`REAL-ORDER-VALIDATION-PENDING-META-SERVER.md`](REAL-ORDER-VALIDATION-PENDING-META-SERVER.md)
+
+---
+
 *Mercado da Riqueza AutoTrade — Session 001. T-0 revalidado (12.5.2); execução 12.6 abortada antes do send — dispatch ao vivo pendente.*
