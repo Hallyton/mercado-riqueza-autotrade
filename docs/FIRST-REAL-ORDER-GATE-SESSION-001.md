@@ -294,4 +294,41 @@ Permanece bloqueada para Fase 12.6 até: (1) rotação de credencial Neon/Vercel
 
 ---
 
-*Mercado da Riqueza AutoTrade — Session 001. T-0 revalidado (12.5.2); execução real somente na 12.6 após gate aprovado.*
+## 14. Fase 12.6 — First Ultra-Controlled Real Order Execution
+
+**Documento:** [`docs/FIRST-REAL-ORDER-EXECUTION-SESSION-001.md`](FIRST-REAL-ORDER-EXECUTION-SESSION-001.md)  
+**Data abertura:** 2026-05-27  
+**Status execução:** `FIRST_REAL_ORDER_ABORTED_BEFORE_SEND`
+
+| Item | Valor |
+|------|--------|
+| Ordem real enviada | **Não** |
+| InstructionId | PENDENTE |
+| ExecutionId | PENDENTE |
+| ProtectionReportId | PENDENTE |
+| PreflightId | PENDENTE |
+| Resultado final | `FIRST_REAL_ORDER_NOT_EXECUTED` |
+
+### Gates declarados OK pelo operador (pré-send)
+
+| Bloco | Resultado |
+|-------|-----------|
+| SECURITY | `SECURITY_OK` (rotação DATABASE_URL declarada concluída) |
+| COMERCIAL | `COMERCIAL_OK` |
+| LICENSE_DEVICE | `LICENSE_DEVICE_OK` * |
+| REAL_GUARD | `REAL_GUARD_OK` |
+| MARGIN | `MARGIN_OK` * |
+| PREFLIGHT | `PREFLIGHT_BLOCKED` — Id não registrado nesta sessão agente |
+| EXECUÇÃO | Abortada antes do send |
+
+### Decisão atualizada Session 001
+
+**`FIRST_REAL_ORDER_NOT_EXECUTED`** — execução ao vivo (preflight Id + instruction + OrderSend + proteção) **pendente** operador MT5/admin.
+
+**Status sessão:** `GATE_SESSION_12_6_ABORTED_BEFORE_SEND`
+
+Nenhuma exposição de estratégia ou parâmetros internos nesta fase.
+
+---
+
+*Mercado da Riqueza AutoTrade — Session 001. T-0 revalidado (12.5.2); execução 12.6 abortada antes do send — dispatch ao vivo pendente.*

@@ -2393,6 +2393,24 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima etapa sugerida:** Fechar pendências T-0 (credencial, approvalId, heartbeat REAL, PRE_MARKET do dia, preflight PASSED, supervisão) → **Fase 12.6**.
 
+### Fase 12.6 — First Ultra-Controlled Real Order Execution
+
+**Status:** `FIRST_REAL_ORDER_ABORTED_BEFORE_SEND`  
+**Documento:** [`docs/FIRST-REAL-ORDER-EXECUTION-SESSION-001.md`](FIRST-REAL-ORDER-EXECUTION-SESSION-001.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Executar ou abortar de forma segura a primeira ordem real ultra-controlada — 1 contrato, dispatch manual, preflight PASSED, proteção obrigatória, monitoramento ao vivo |
+| Decisão | `FIRST_REAL_ORDER_NOT_EXECUTED` |
+| Ordem real | **Nenhuma** nesta sessão documental |
+| Gates pré-send | SECURITY/COMERCIAL/LICENSE/REAL_GUARD/MARGIN declarados OK; preflight ao vivo **pendente** (Id não registrado) |
+| InstructionId / ExecutionId / ProtectionReportId | **Pendentes** |
+| Dispatch automático | **Desativado** |
+| REAL global | **Não** liberado |
+| Caixa preta | Preservada |
+
+**Próxima etapa sugerida:** Fase 12.7 — Post-Real-Order Review & Incident/Success Report *(após execução ao vivo ou aborto formal documentado com IDs)*.
+
 ### EA device_token — localização (investigação)
 
 **Status:** `EA_DEVICE_TOKEN_LOCATION_IDENTIFIED`  
