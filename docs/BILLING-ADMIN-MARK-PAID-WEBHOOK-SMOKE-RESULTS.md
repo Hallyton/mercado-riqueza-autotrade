@@ -194,4 +194,17 @@ Script: `scripts/homologation/billing-admin-webhook-smoke-13222.ts` (usa secret 
 
 ---
 
+## 12. Fase 13.2.3 — correção de consistência visual
+
+**Documento:** [`BILLING-PORTAL-UI-CONSISTENCY-FIX-RESULTS.md`](BILLING-PORTAL-UI-CONSISTENCY-FIX-RESULTS.md)  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+| Restrição 13.2.2 | Fechamento 13.2.3 |
+|------------------|-------------------|
+| Copy detalhe fatura PAID inconsistente | **OK** |
+| Portal "Nenhum robô provisionado" vs admin 1/1 | **OK** |
+| Mark-paid UI fresh PENDING | **Pendente** browser |
+
+---
+
 *Mercado da Riqueza AutoTrade — smoke admin + webhook mock. Nenhum segredo, DATABASE_URL, token ou Bearer registrado neste documento.*

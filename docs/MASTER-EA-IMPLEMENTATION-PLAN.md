@@ -2501,6 +2501,24 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | RealTradingApproval automático | **Não** |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
+**Próxima fase:** Fase 13.2.3 — Billing Portal UI Consistency Fix
+
+### Fase 13.2.3 — Billing Portal UI Consistency Fix
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/BILLING-PORTAL-UI-CONSISTENCY-FIX-RESULTS.md`](BILLING-PORTAL-UI-CONSISTENCY-FIX-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Corrigir copy fatura PAID e exibição de RobotInstance no portal antes de gateway real |
+| Copy fatura PAID | **OK** — "Pagamento confirmado." |
+| RobotInstance no portal | **OK** — fallback query + AWAITING_APPROVAL visível |
+| magicNumber read-only | **OK** |
+| Aviso conta real | **OK** — PRE_MARKET + preflight + protection |
+| Mark-paid UI fresh PENDING | **Pendente** browser |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
 **Próxima fase:** Fase 13.3 — Payment Provider Integration (gateway real)
 
 ### Fase 13.2.1 — Billing Manual/Sandbox Smoke Test

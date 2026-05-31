@@ -2,7 +2,6 @@ import { requireAppRole } from "@/lib/auth/session";
 import { getCommercialPortalOverview } from "@/lib/commercial/portal-overview";
 import { SubscriptionRequestForm } from "@/components/commercial/subscription-request-form";
 import { CommercialInvoicesSection } from "@/components/billing/commercial-invoices-section";
-import { PUBLIC_PORTAL_ROBOT_COPY } from "@/lib/commercial/public-terms";
 import { SubscriptionStatusBadge } from "@/components/subscription/status-badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -122,27 +121,43 @@ export default async function ComercialPortalPage() {
         </CardHeader>
         {overview.robots.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
-            Nenhum robô provisionado. Será criado após confirmação administrativa.
+            Nenhum robô provisionado ainda. Após confirmação administrativa do pagamento, o
+            robô será alocado com magicNumber exclusivo.
           </p>
         ) : (
           <ul className="divide-y divide-white/5 px-6 pb-6">
             {overview.robots.map((robot) => (
               <li key={robot.id} className="py-4 space-y-2 text-sm">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Robô provisionado
+                </p>
                 <div className="flex flex-wrap justify-between gap-2">
-                  <span className="font-medium">{robot.productName}</span>
+                  <span className="font-medium">Produto: {robot.productName}</span>
                   <span className="rounded-full border border-gold/30 px-2 py-0.5 text-xs text-gold">
-                    {robot.displayStatusLabel}
+                    Status: {robot.displayStatusLabel}
                   </span>
                 </div>
                 <p className="text-muted-foreground">
                   MagicNumber:{" "}
-                  <span className="font-mono text-foreground">
+                  <span className="font-mono text-foreground" aria-readonly="true">
                     {robot.magicNumber ?? "Aguardando alocação"}
                   </span>
                 </p>
-                {robot.licenseIdMasked && (
+                {robot.symbol && (
+                  <p className="text-muted-foreground">
+                    Símbolo: <span className="text-foreground">{robot.symbol}</span>
+                  </p>
+                )}
+                {robot.licenseStatusLabel && (
+                  <p className="text-muted-foreground">
+                    Licença:{" "}
+                    <span className="text-foreground">{robot.licenseStatusLabel}</span>
+                    {robot.licenseIdMasked ? ` · ${robot.licenseIdMasked}` : ""}
+                  </p>
+                )}
+                {robot.deviceStatusLabel && (
                   <p className="text-xs text-muted-foreground">
-                    Licença: {robot.licenseIdMasked}
+                    Device/EA: {robot.deviceStatusLabel}
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground">

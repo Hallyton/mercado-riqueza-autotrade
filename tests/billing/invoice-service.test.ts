@@ -88,6 +88,46 @@ describe("billing invoice service", () => {
     expect(prismaMock.planPrice.findFirst).toHaveBeenCalled();
   });
 
+  it("mark-paid idempotente em PAID retorna alreadyPaid", async () => {
+    prismaMock.invoice.findUnique.mockResolvedValue({
+      id: "inv_paid",
+      subscriptionId: "sub_1",
+      status: InvoiceStatus.PAID,
+      amountCents: 30000,
+      currency: "BRL",
+      periodStart: new Date(),
+      periodEnd: new Date(),
+      subscription: { plan: { name: "AutoTrade Single Robot" } },
+    });
+
+    const result = await applyInvoicePaidEffects({
+      invoiceId: "inv_paid",
+      actorId: "admin_1",
+    });
+
+    expect(result.alreadyPaid).toBe(true);
+    expect(result.licenseId).toBeNull();
+    expect(activateCommercialSubscriptionFromPayment).not.toHaveBeenCalled();
+  });
+
+  it("markInvoicePaid idempotente não registra AdminAction duplicado", async () => {
+    const { recordAdminAction } = await import("@/lib/admin/record-action");
+    prismaMock.invoice.findUnique.mockResolvedValue({
+      id: "inv_paid",
+      subscriptionId: "sub_1",
+      status: InvoiceStatus.PAID,
+      subscription: { plan: { name: "AutoTrade Single Robot" } },
+    });
+
+    await markInvoicePaid({
+      invoiceId: "inv_paid",
+      actorId: "admin_1",
+      confirmationPhrase: "MARCAR FATURA PAGA",
+    });
+
+    expect(recordAdminAction).not.toHaveBeenCalled();
+  });
+
   it("mark-paid ativa subscription comercial sem RealTradingApproval", async () => {
     prismaMock.invoice.findUnique.mockResolvedValue({
       id: "inv_1",

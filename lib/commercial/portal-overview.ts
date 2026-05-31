@@ -1,4 +1,11 @@
-import { ProtectionStatus } from "@prisma/client";
+import {
+  AdminPaymentStatus,
+  ProtectionStatus,
+  RobotInstanceStatus,
+  SubscriptionStatus,
+  type RobotInstance,
+  type RobotProduct,
+} from "@prisma/client";
 import { listInvoicesForUser } from "@/lib/billing/invoice-service";
 import prisma from "@/lib/prisma";
 import { resolveSubscriptionDisplayStatus } from "@/lib/licensing/display";
@@ -10,6 +17,7 @@ import {
 } from "./constants";
 import { resolveRobotInstanceDisplayStatus } from "./robot-instance";
 import { hasCommercialSignupTerms } from "./signup";
+import { PORTAL_REAL_ACCOUNT_REQUIREMENTS } from "@/lib/billing/invoice-client-copy";
 
 function maskAccountLogin(login: string | null | undefined): string | null {
   if (!login) return null;
@@ -17,36 +25,72 @@ function maskAccountLogin(login: string | null | undefined): string | null {
   return `${login.slice(0, 2)}****${login.slice(-2)}`;
 }
 
-export async function getCommercialPortalOverview(userId: string) {
-  const subscription = await prisma.subscription.findFirst({
-    where: { userId },
-    orderBy: { updatedAt: "desc" },
+const LICENSE_STATUS_LABELS: Record<string, string> = {
+  PENDING_ACTIVATION: "Aguardando ativação",
+  ACTIVE: "Ativa",
+  SUSPENDED: "Suspensa",
+  REVOKED: "Revogada",
+};
+
+const subscriptionInclude = {
+  plan: { include: { prices: { where: { isActive: true }, take: 1 } } },
+  licenses: {
     include: {
-      plan: { include: { prices: { where: { isActive: true }, take: 1 } } },
-      licenses: {
-        include: {
-          mt5Account: true,
-          exposureProfile: true,
-          devices: {
-            where: { revokedAt: null },
-            orderBy: { lastSeenAt: "desc" },
-            take: 5,
-            select: {
-              id: true,
-              deviceId: true,
-              status: true,
-              eaVersion: true,
-              lastSeenAt: true,
-            },
-          },
+      mt5Account: true,
+      exposureProfile: true,
+      devices: {
+        where: { revokedAt: null },
+        orderBy: { lastSeenAt: "desc" as const },
+        take: 5,
+        select: {
+          id: true,
+          deviceId: true,
+          status: true,
+          eaVersion: true,
+          lastSeenAt: true,
         },
       },
-      robotInstances: {
-        include: { robotProduct: true },
-        orderBy: { createdAt: "asc" },
-      },
     },
+  },
+  robotInstances: {
+    include: { robotProduct: true },
+    orderBy: { createdAt: "asc" as const },
+  },
+} as const;
+
+export function pickPortalSubscription<
+  T extends { status: SubscriptionStatus; adminPaymentStatus: AdminPaymentStatus },
+>(subscriptions: T[]): T | null {
+  if (subscriptions.length === 0) return null;
+  return (
+    subscriptions.find((s) => s.status === SubscriptionStatus.ACTIVE) ??
+    subscriptions.find((s) => s.adminPaymentStatus === AdminPaymentStatus.CONFIRMED) ??
+    subscriptions[0]
+  );
+}
+
+async function resolveSubscriptionRobotInstances(
+  userId: string,
+  subscriptionId: string,
+  fromRelation: Array<RobotInstance & { robotProduct: RobotProduct }>
+) {
+  if (fromRelation.length > 0) return fromRelation;
+
+  return prisma.robotInstance.findMany({
+    where: { userId, subscriptionId },
+    include: { robotProduct: true },
+    orderBy: { createdAt: "asc" },
   });
+}
+
+export async function getCommercialPortalOverview(userId: string) {
+  const subscriptions = await prisma.subscription.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    include: subscriptionInclude,
+  });
+
+  const subscription = pickPortalSubscription(subscriptions);
 
   const termsAccepted = await hasCommercialSignupTerms(userId);
   const invoices = await listInvoicesForUser(userId).catch(() => []);
@@ -70,8 +114,14 @@ export async function getCommercialPortalOverview(userId: string) {
   const displayStatus = resolveSubscriptionDisplayStatus(subscription);
   const price = subscription.plan.prices[0];
 
+  const robotInstances = await resolveSubscriptionRobotInstances(
+    userId,
+    subscription.id,
+    subscription.robotInstances
+  );
+
   const robots = await Promise.all(
-    subscription.robotInstances.map(async (instance) => {
+    robotInstances.map(async (instance) => {
       const displayRobotStatus = await resolveRobotInstanceDisplayStatus(
         instance
       );
@@ -81,6 +131,7 @@ export async function getCommercialPortalOverview(userId: string) {
 
       let lastHeartbeat: Date | null = null;
       let lastProtectionStatus: string | null = null;
+      let deviceStatusLabel: string | null = null;
 
       if (license) {
         const hb = await prisma.eaHeartbeat.findFirst({
@@ -96,18 +147,31 @@ export async function getCommercialPortalOverview(userId: string) {
           select: { protectionStatus: true, reportedAt: true },
         });
         lastProtectionStatus = protection?.protectionStatus ?? null;
+
+        const activeDevice = license.devices.find((d) => d.status === "ACTIVE");
+        deviceStatusLabel = activeDevice
+          ? "Device ativo"
+          : license.devices.length > 0
+            ? "Device registrado — offline"
+            : "Sem device vinculado";
       }
 
       return {
         id: instance.id,
         productName: instance.robotProduct.name,
         magicNumber: instance.magicNumber,
+        symbol: instance.symbol,
         displayStatus: displayRobotStatus,
         displayStatusLabel:
           ROBOT_INSTANCE_STATUS_LABELS[displayRobotStatus] ?? displayRobotStatus,
         licenseIdMasked: instance.licenseId
           ? maskLicenseId(instance.licenseId)
           : null,
+        licenseStatus: license?.status ?? null,
+        licenseStatusLabel: license
+          ? (LICENSE_STATUS_LABELS[license.status] ?? license.status)
+          : null,
+        deviceStatusLabel,
         lastHeartbeat,
         lastProtectionStatus,
       };
@@ -149,9 +213,7 @@ export async function getCommercialPortalOverview(userId: string) {
     alerts.push("Termos comerciais pendentes de aceite.");
   }
 
-  alerts.push(
-    "Conta real depende de aprovação administrativa, preflight e proteção — pagamento não libera operação real."
-  );
+  alerts.push(PORTAL_REAL_ACCOUNT_REQUIREMENTS);
 
   return {
     subscription: {

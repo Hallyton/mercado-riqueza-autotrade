@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RenewalClientButton } from "@/components/billing/renewal-client-button";
+import { invoiceIsPaid } from "@/lib/billing/invoice-client-copy";
 import type { ClientInvoiceView } from "@/lib/billing/types";
 
 function formatMoney(cents: number, currency: string) {
@@ -49,13 +50,15 @@ export function CommercialInvoicesSection({
             >
               Ver fatura
             </Link>
-            {currentInvoice.checkoutUrl ? (
+            {currentInvoice.checkoutUrl && !invoiceIsPaid(currentInvoice.status) ? (
               <Link href={currentInvoice.checkoutUrl} className="text-gold hover:underline">
                 Abrir pagamento
               </Link>
+            ) : invoiceIsPaid(currentInvoice.status) ? (
+              <span className="text-gold">Pagamento confirmado</span>
             ) : (
               <span className="text-muted-foreground">
-                Aguardando confirmação administrativa
+                Aguardando confirmação de pagamento
               </span>
             )}
           </div>
