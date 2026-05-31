@@ -2464,6 +2464,24 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Estratégia | **Protegida** — sem exposição de setup, filtros, horários ou parâmetros |
 | Ordem real | **Nenhuma** enviada · dispatch automático **desativado** |
 
+**Próxima fase:** Fase 13.1.3 — Client Portal Manual Smoke & Subscription Acceptance
+
+### Fase 13.1.3 — Client Portal Manual Smoke & Subscription Acceptance
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/CLIENT-PORTAL-MANUAL-SMOKE-RESULTS.md`](CLIENT-PORTAL-MANUAL-SMOKE-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Validar portal cliente em browser — login, termos, cadastro, `/dashboard/comercial` |
+| Usuário smoke browser | `portal-smoke-1313-20260530212108@example.com` |
+| Referência homolog | `cliente.homolog@example.com` (Neon 13.1.1 — magic `910001`) |
+| `/planos`, `/termos`, `/cadastro` | **OK** |
+| Login browser + portal comercial | **OK** (usuário smoke) |
+| Admin comercial browser | **Herdado 13.1.1** (não revalidado em browser) |
+| Login homolog browser | **Pendente** (credencial staging) |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
 **Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation
 
 ### Fase 13.1.1 — Staging Commercial Smoke Test & Catalog Seed
