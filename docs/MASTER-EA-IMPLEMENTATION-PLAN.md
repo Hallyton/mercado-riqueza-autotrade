@@ -2503,6 +2503,25 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
 
+### Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Validar env Asaas sandbox + E2E cobrança/checkout/webhook |
+| Env runtime | **OK** — sonda `ASAAS_SANDBOX_RUNTIME_OK` |
+| Provider Asaas | **Ativo** — faturas novas |
+| invoiceId | `cmptcblws0001jo04wwag9y97` |
+| Checkout sandbox | **OK** — R$ 300 · Pix na página Asaas |
+| Webhook PAID | **Pendente** |
+| Idempotência | **Pendente** |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
+**Próxima fase:** Fechar webhook PAID sandbox → Fase 14.1 Production Billing Gate
+
 ### Fase 13.4 — Commercial & Billing Final Consolidation
 
 **Status:** `PHASE_13_COMMERCIAL_BILLING_READY_WITH_RESTRICTIONS`  
@@ -2526,9 +2545,8 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 ### Fase 13.3 — Asaas Payment Provider Integration
 
-**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E sandbox **pendente** (Fase 13.4)  
-**Documento:** [`docs/ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTEGRATION.md)  
-**Consolidação:** [`docs/PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)
+**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E sandbox **`APPROVED_WITH_RESTRICTIONS`** (13.3.1)  
+**Smoke:** [`docs/ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
 
 | Item | Resultado |
 |------|-----------|

@@ -5,7 +5,7 @@
 **Commit base:** `dd2c5f3` — feat: add asaas payment provider integration  
 **Deploy staging:** https://autotrade-staging.mercadodariqueza.com.br  
 **Status final:** `PHASE_13_COMMERCIAL_BILLING_READY_WITH_RESTRICTIONS`  
-**Decisão operacional:** `COMMERCIAL_PORTAL_AND_BILLING_READY_PENDING_ASAAS_E2E`
+**Decisão operacional:** `COMMERCIAL_PORTAL_AND_BILLING_READY_PENDING_ASAAS_WEBHOOK_PAID`
 
 ---
 
@@ -220,7 +220,24 @@ Deploy executado nesta sessão via `vercel deploy --prod --force`. Alias: https:
 
 ---
 
-## 13. Próxima fase recomendada
+## 13. Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Env runtime | **OK** — `ASAAS_SANDBOX_RUNTIME_OK` |
+| Provider Asaas ativo | **OK** — faturas novas ASAAS |
+| invoiceId smoke | `cmptcblws0001jo04wwag9y97` (PENDING · R$ 300) |
+| providerPaymentId | `pay_ef…pbg9` |
+| Checkout/Pix hosted | **OK** (browser Asaas sandbox) |
+| Webhook PAID + idempotência | **Pendente** |
+| RealTradingApproval automático | **Não** |
+
+**Pendência:** confirmar pagamento sandbox + webhook → fechar PAID/idempotência.
+
+---
 
 **Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke**
 

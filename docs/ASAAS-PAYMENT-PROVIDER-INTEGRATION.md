@@ -2,8 +2,8 @@
 
 **Data:** 2026-05-31  
 **Branch:** `staging-vps-homologacao`  
-**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E sandbox **pendente** (`ASAAS_SANDBOX_E2E_PENDING_CREDENTIALS`)  
-**Consolidação Fase 13:** [`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)
+**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E **`APPROVED_WITH_RESTRICTIONS`**  
+**Smoke 13.3.1:** [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
 
 ---
 
@@ -193,15 +193,19 @@ Nesta fase: cobrança **avulsa** por Invoice; assinatura interna continua fonte 
 
 ---
 
-## 13. Pendências — Fase 13.3.1
+## 13. Smoke E2E — Fase 13.3.1 (2026-05-31)
 
-**Atualização Fase 13.4 (2026-05-27):** variáveis Asaas existem no projeto Vercel staging, porém **valores sandbox ainda não configurados** (env pull retorna vazios). Portal staging continua em **provider Manual**. E2E não executado — ver [`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md).
+**Documento:** [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
 
-1. Configurar credenciais sandbox no Vercel staging (`ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `BILLING_PROVIDER=asaas`, `ASAAS_ENV=sandbox`, `BILLING_REAL_PAYMENTS_ENABLED=false`).
-2. Smoke E2E: solicitar fatura → Pix → webhook → PAID → portal/admin.
-3. Confirmar chave Pix registrada no dashboard Asaas sandbox (requisito Pix QR).
+| Item | Resultado |
+|------|-----------|
+| Env runtime | **OK** |
+| Provider ativo | **OK** |
+| Fatura + checkout | **OK** |
+| Webhook PAID | **Pendente** |
 
-**Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+**Próximo:** confirmar pagamento sandbox + webhook → `ASAAS_SANDBOX_E2E_SMOKE_APPROVED`.
 
 ---
 
