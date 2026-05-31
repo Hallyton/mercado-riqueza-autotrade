@@ -2482,7 +2482,26 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Login homolog browser | **Pendente** (credencial staging) |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.2.1 — Billing Manual/Sandbox Smoke Test
+**Próxima fase:** Fase 13.2.2 — Billing Admin Mark-Paid & Mock Webhook Validation
+
+### Fase 13.2.2 — Billing Admin Mark-Paid & Mock Webhook Validation
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/BILLING-ADMIN-MARK-PAID-WEBHOOK-SMOKE-RESULTS.md`](BILLING-ADMIN-MARK-PAID-WEBHOOK-SMOKE-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Fechar login admin, mark-paid, webhook mock e idempotência antes de gateway real |
+| Admin browser staging | **OK** (`sync-staging-admin-from-env` no build) |
+| Env staging | `MOCK_BILLING_WEBHOOK_ENABLED=true` · `BILLING_PROVIDER=manual` · real off |
+| Webhook mock + idempotência | **OK** |
+| invoiceId | `cmpt3ahzo0044l70447agvdsg` (PAID · R$ 300) |
+| Mark-paid admin | **OK** (idempotente; UI em PENDING fresh — restrição menor) |
+| Portal pós-pagamento | **OK** (browser) |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
+**Próxima fase:** Fase 13.3 — Payment Provider Integration (gateway real)
 
 ### Fase 13.2.1 — Billing Manual/Sandbox Smoke Test
 

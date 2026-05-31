@@ -196,7 +196,25 @@ Validação por comportamento observado — **nenhum valor de env impresso**.
 2. **Sincronizar** credencial admin staging (ou reset controlado) para validar mark-paid no painel `/admin/users/[userId]`.
 3. Após mark-paid validado: confirmar subscription ACTIVE, licença/robô comercial, **ausência** de RealTradingApproval e conta real ainda bloqueada.
 
-**Próxima fase sugerida:** Fase 13.3 — Payment Provider Integration (gateway real) **ou** repetir 13.2.1 após ajuste de env staging.
+**Próxima fase sugerida:** ~~repetir 13.2.1~~ → **Fase 13.2.2** (executada) → Fase 13.3 gateway real.
+
+---
+
+## 12. Fase 13.2.2 — fechamento das restrições
+
+**Documento:** [`BILLING-ADMIN-MARK-PAID-WEBHOOK-SMOKE-RESULTS.md`](BILLING-ADMIN-MARK-PAID-WEBHOOK-SMOKE-RESULTS.md)  
+**Status:** `APPROVED_WITH_RESTRICTIONS`
+
+| Restrição 13.2.1 | Fechamento 13.2.2 |
+|------------------|-------------------|
+| Admin mark-paid pendente (login) | **OK** — sync admin no build + login browser SUPERADMIN |
+| Webhook mock 503 | **OK** — `MOCK_BILLING_WEBHOOK_ENABLED=true` + redeploy |
+| Idempotência pendente | **OK** — duplicata `duplicate: true`; PAID imutável `ignored: true` |
+| Subscription INCOMPLETE/PENDING | **OK** — ACTIVE · CONFIRMED (fatura `cmpt3ahzo0044l70447agvdsg` PAID) |
+| RealTradingApproval automático | **OK** — não criado |
+| Conta real | **OK** — continua travada |
+
+**Pendências menores herdadas:** mark-paid UI em fatura PENDING fresh; login fetch programático; copy detalhe fatura portal.
 
 ---
 

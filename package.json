@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && prisma migrate deploy && tsx scripts/homologation/sync-staging-admin-from-env.ts && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -17,6 +17,8 @@
     "db:reset": "prisma migrate reset",
     "homolog:create-client": "tsx scripts/homologation/create-test-client.ts",
     "homolog:reset-staging-client-password": "tsx scripts/homologation/reset-staging-client-password.ts",
+    "homolog:reset-staging-admin-password": "tsx scripts/homologation/reset-staging-admin-password.ts",
+    "homolog:sync-staging-admin-from-env": "tsx scripts/homologation/sync-staging-admin-from-env.ts",
     "homolog:create-subscription": "tsx scripts/homologation/create-active-subscription.ts",
     "homolog:enable-demo": "tsx scripts/homologation/enable-demo-for-local-plan.ts",
     "homolog:disable-demo": "tsx scripts/homologation/disable-demo-for-local-plan.ts",
