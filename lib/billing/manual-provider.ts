@@ -99,14 +99,6 @@ export class MockBillingProvider implements BillingProviderAdapter {
   }
 }
 
-export function getBillingProviderAdapter(
-  provider?: BillingProvider
-): BillingProviderAdapter {
-  const selected = provider ?? BillingProvider.MANUAL;
-  if (selected === BillingProvider.MOCK) return new MockBillingProvider();
-  return new ManualBillingProvider();
-}
-
 export function defaultInvoiceDueDate(from = new Date()) {
   return addDays(from, 7);
 }

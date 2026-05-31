@@ -97,6 +97,9 @@ describe("auditoria admin auth e rotas protegidas", () => {
     const routeFiles = listRouteFiles(ADMIN_API_DIR);
 
     expect(routeFiles.map(relativeToRepo).sort()).toEqual([
+      "app/api/admin/billing/invoices/[invoiceId]/asaas/cancel/route.ts",
+      "app/api/admin/billing/invoices/[invoiceId]/asaas/create-payment/route.ts",
+      "app/api/admin/billing/invoices/[invoiceId]/asaas/sync/route.ts",
       "app/api/admin/billing/invoices/[invoiceId]/cancel/route.ts",
       "app/api/admin/billing/invoices/[invoiceId]/mark-paid/route.ts",
       "app/api/admin/billing/invoices/[invoiceId]/mark-pending/route.ts",

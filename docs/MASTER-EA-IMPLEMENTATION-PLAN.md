@@ -2501,7 +2501,27 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | RealTradingApproval automático | **Não** |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.2.3 — Billing Portal UI Consistency Fix
+**Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+
+### Fase 13.3 — Asaas Payment Provider Integration
+
+**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED_PENDING_SANDBOX_CREDENTIALS`  
+**Documento:** [`docs/ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTEGRATION.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Integrar Asaas sandbox Pix/checkout R$ 300 com webhook idempotente |
+| Provider Asaas | **Implementado** |
+| BillingCustomer | **Implementado** |
+| Webhook `/api/billing/webhook/asaas` | **Implementado** |
+| Portal Pix/checkout | **Implementado** |
+| Admin create/sync/cancel | **Implementado** |
+| Credenciais sandbox Vercel | **Pendente** |
+| Smoke E2E real | **Pendente** (13.3.1) |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
+**Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
 
 ### Fase 13.2.3 — Billing Portal UI Consistency Fix
 
@@ -2519,7 +2539,23 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | RealTradingApproval automático | **Não** |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.3 — Payment Provider Integration (gateway real)
+**Próxima fase:** Fase 13.3 — Asaas Payment Provider Integration
+
+### Fase 13.2.2 — Billing Admin Mark-Paid & Mock Webhook Validation
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/BILLING-ADMIN-MARK-PAID-WEBHOOK-SMOKE-RESULTS.md`](BILLING-ADMIN-MARK-PAID-WEBHOOK-SMOKE-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Fechar login admin, mark-paid, webhook mock e idempotência antes de gateway real |
+| Admin browser staging | **OK** |
+| Webhook mock + idempotência | **OK** |
+| invoiceId | `cmpt3ahzo0044l70447agvdsg` (PAID · R$ 300) |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
+**Próxima fase:** Fase 13.2.3 — Billing Portal UI Consistency Fix
 
 ### Fase 13.2.1 — Billing Manual/Sandbox Smoke Test
 

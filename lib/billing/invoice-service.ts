@@ -23,10 +23,11 @@ import {
   linkRobotInstanceToLicense,
 } from "@/lib/commercial/robot-instance";
 import { activateCommercialSubscriptionFromPayment } from "@/lib/billing/payment-service";
+import { BillingError } from "@/lib/billing/errors";
 import {
   defaultInvoiceDueDate,
   getBillingProviderAdapter,
-} from "@/lib/billing/manual-provider";
+} from "@/lib/billing/provider-registry";
 import { getConfiguredBillingProvider } from "@/lib/billing/provider";
 import { redactPixCopyPaste } from "@/lib/billing/redact";
 import {
@@ -38,15 +39,14 @@ import {
   type ClientInvoiceView,
 } from "@/lib/billing/types";
 
-export class BillingError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly status: number
-  ) {
-    super(message);
-    this.name = "BillingError";
+export { BillingError } from "@/lib/billing/errors";
+
+function readProviderStatus(metadataJson: unknown): string | null {
+  if (!metadataJson || typeof metadataJson !== "object" || Array.isArray(metadataJson)) {
+    return null;
   }
+  const status = (metadataJson as Record<string, unknown>).asaasStatus;
+  return typeof status === "string" ? status : null;
 }
 
 function addMonth(date: Date) {
@@ -78,6 +78,7 @@ export function serializeClientInvoice(
     amountCents: invoice.amountCents,
     currency: invoice.currency,
     description: invoice.description,
+    provider: invoice.provider,
     providerLabel: BILLING_PROVIDER_LABELS[invoice.provider],
     methodLabel: latestAttempt
       ? PAYMENT_METHOD_LABELS[latestAttempt.method]
@@ -88,6 +89,9 @@ export function serializeClientInvoice(
     periodEnd: invoice.periodEnd?.toISOString() ?? null,
     paymentUrl: invoice.paymentUrl,
     checkoutUrl: latestAttempt?.checkoutUrl ?? invoice.paymentUrl,
+    pixCopyPaste: invoice.pixCopyPaste,
+    pixQrCodeUrl: invoice.pixQrCodeUrl,
+    providerStatus: readProviderStatus(invoice.metadataJson),
     createdAt: invoice.createdAt.toISOString(),
   };
 }
@@ -121,6 +125,18 @@ export async function createSubscriptionInvoice(
   const periodStart = now;
   const periodEnd = addMonth(now);
   const provider = options?.provider ?? getConfiguredBillingProvider();
+
+  if (provider === BillingProvider.ASAAS) {
+    const { isAsaasConfigured } = await import("@/lib/billing/asaas-config");
+    if (!isAsaasConfigured()) {
+      throw new BillingError(
+        "Asaas não configurado. Defina ASAAS_API_KEY no ambiente.",
+        "ASAAS_NOT_CONFIGURED",
+        503
+      );
+    }
+  }
+
   const adapter = getBillingProviderAdapter(provider);
 
   const external = await adapter.createInvoice({
@@ -174,7 +190,12 @@ export async function createSubscriptionInvoice(
         invoiceId: created.id,
         userId: subscription.userId,
         provider,
-        method: PaymentMethod.MANUAL,
+        method:
+          provider === BillingProvider.ASAAS
+            ? PaymentMethod.PIX
+            : provider === BillingProvider.MANUAL
+              ? PaymentMethod.MANUAL
+              : PaymentMethod.UNKNOWN,
         status: PaymentAttemptStatus.CREATED,
         amountCents,
         providerPaymentId: attemptExternal.providerPaymentId ?? null,
@@ -201,6 +222,13 @@ export async function createSubscriptionInvoice(
     entityId: invoice.id,
     metadata: { subscriptionId, provider, amountCents },
   });
+
+  if (provider === BillingProvider.ASAAS) {
+    const { provisionAsaasPaymentForInvoice } = await import(
+      "@/lib/billing/asaas-invoice-service"
+    );
+    return provisionAsaasPaymentForInvoice(invoice.id);
+  }
 
   return invoice;
 }
@@ -565,6 +593,11 @@ export function serializeAdminInvoice(
     description: invoice.description,
     provider: invoice.provider,
     providerLabel: BILLING_PROVIDER_LABELS[invoice.provider],
+    providerInvoiceIdMasked: invoice.providerInvoiceId
+      ? `${invoice.providerInvoiceId.slice(0, 6)}…${invoice.providerInvoiceId.slice(-4)}`
+      : null,
+    providerStatus: readProviderStatus(invoice.metadataJson),
+    pixAvailable: Boolean(invoice.pixCopyPaste || invoice.pixQrCodeUrl),
     dueAt: invoice.dueAt,
     paidAt: invoice.paidAt,
     pixCopyPasteMasked: redactPixCopyPaste(invoice.pixCopyPaste),

@@ -56,4 +56,4 @@ export function isMockBillingWebhookAllowed(): boolean {
   return process.env.MOCK_BILLING_WEBHOOK_ENABLED === "true";
 }
 
-export { getBillingProviderAdapter } from "@/lib/billing/manual-provider";
+export { getBillingProviderAdapter, defaultInvoiceDueDate } from "@/lib/billing/provider-registry";

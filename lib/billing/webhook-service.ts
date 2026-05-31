@@ -3,11 +3,9 @@ import { createAuditLog } from "@/lib/audit/log";
 import { verifyBillingWebhookRequest } from "@/lib/env/critical";
 import prisma from "@/lib/prisma";
 import { markInvoiceOverdue, applyInvoicePaidEffects } from "@/lib/billing/invoice-service";
-import {
-  getBillingProviderAdapter,
-  isMockBillingWebhookAllowed,
-  isRealBillingEnabled,
-} from "@/lib/billing/provider";
+import { getBillingProviderAdapter } from "@/lib/billing/provider-registry";
+import { isMockBillingWebhookAllowed, isRealBillingEnabled } from "@/lib/billing/provider";
+import { isAsaasWebhookAllowedWithoutRealFlag } from "@/lib/billing/asaas-config";
 import { redactBillingPayload } from "@/lib/billing/redact";
 import type { NormalizedProviderEvent } from "@/lib/billing/types";
 
@@ -64,6 +62,17 @@ export function assertProviderWebhookAllowed(providerSlug: string) {
     return provider;
   }
 
+  if (provider === BillingProvider.ASAAS) {
+    if (isAsaasWebhookAllowedWithoutRealFlag() || isRealBillingEnabled()) {
+      return provider;
+    }
+    throw new BillingWebhookError(
+      "Webhook Asaas desabilitado. Configure ASAAS_API_KEY e ASAAS_ENV=sandbox.",
+      "WEBHOOK_DISABLED",
+      503
+    );
+  }
+
   if (!isRealBillingEnabled()) {
     throw new BillingWebhookError(
       "Cobrança real desabilitada. Defina BILLING_REAL_PAYMENTS_ENABLED=true com credenciais.",
@@ -80,6 +89,12 @@ export function verifyProviderWebhookSignature(
   request: Request,
   rawBody: string
 ) {
+  const adapter = getBillingProviderAdapter(provider);
+
+  if (provider === BillingProvider.ASAAS) {
+    return adapter.verifyWebhookSignature?.(request, rawBody) ?? false;
+  }
+
   const auth = verifyBillingWebhookRequest(request);
   if (!auth.ok) {
     if (auth.code === "WEBHOOK_MISCONFIGURED" && process.env.NODE_ENV !== "production") {
@@ -88,7 +103,6 @@ export function verifyProviderWebhookSignature(
     return false;
   }
 
-  const adapter = getBillingProviderAdapter(provider);
   if (adapter.verifyWebhookSignature) {
     return adapter.verifyWebhookSignature(request, rawBody);
   }
@@ -180,7 +194,24 @@ export async function handleProviderWebhook(
       return { duplicate: false, processed: false, ignored: true };
     }
 
-    const invoice = await prisma.invoice.findUnique({ where: { id: event.invoiceId } });
+    const invoice =
+      (event.invoiceId
+        ? await prisma.invoice.findUnique({ where: { id: event.invoiceId } })
+        : null) ??
+      (event.providerPaymentId
+        ? await prisma.invoice.findFirst({
+            where: {
+              OR: [
+                { providerInvoiceId: event.providerPaymentId },
+                {
+                  paymentAttempts: {
+                    some: { providerPaymentId: event.providerPaymentId },
+                  },
+                },
+              ],
+            },
+          })
+        : null);
     if (!invoice) {
       await prisma.paymentProviderEvent.update({
         where: { id: eventRecord.id },
@@ -219,6 +250,15 @@ export async function handleProviderWebhook(
           actorId: "system_webhook",
         });
       }
+    } else if (event.eventType.includes("cancelled") || event.eventType.includes("deleted")) {
+      await prisma.paymentAttempt.updateMany({
+        where: { invoiceId: invoice.id },
+        data: { status: PaymentAttemptStatus.CANCELLED },
+      });
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: InvoiceStatus.CANCELLED, cancelledAt: new Date() },
+      });
     } else if (event.eventType.includes("failed")) {
       await prisma.paymentAttempt.updateMany({
         where: { invoiceId: invoice.id },

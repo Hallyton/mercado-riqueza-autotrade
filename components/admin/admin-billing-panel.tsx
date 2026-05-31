@@ -12,9 +12,14 @@ type AdminInvoice = {
   amountCents: number;
   currency: string;
   description: string | null;
+  provider: string;
   providerLabel: string;
+  providerInvoiceIdMasked: string | null;
+  providerStatus: string | null;
+  pixAvailable: boolean;
   dueAt: string | null;
   paidAt: string | null;
+  paymentAttempts: Array<{ checkoutUrl: string | null }>;
 };
 
 export function AdminBillingPanel({
@@ -31,6 +36,9 @@ export function AdminBillingPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [confirmPaidId, setConfirmPaidId] = useState<string | null>(null);
   const [confirmPhrase, setConfirmPhrase] = useState("");
+  const [asaasSyncId, setAsaasSyncId] = useState<string | null>(null);
+  const [asaasCancelId, setAsaasCancelId] = useState<string | null>(null);
+  const [asaasPhrase, setAsaasPhrase] = useState("");
 
   async function refresh() {
     const res = await fetch(
@@ -81,6 +89,35 @@ export function AdminBillingPanel({
     window.location.reload();
   }
 
+  async function asaasAction(
+    invoiceId: string,
+    action: "create-payment" | "sync" | "cancel"
+  ) {
+    setLoading(`${action}:${invoiceId}`);
+    setMessage(null);
+    const res = await fetch(
+      `/api/admin/billing/invoices/${invoiceId}/asaas/${action}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          action === "create-payment" ? {} : { confirmationPhrase: asaasPhrase }
+        ),
+      }
+    );
+    setLoading(null);
+    setAsaasSyncId(null);
+    setAsaasCancelId(null);
+    setAsaasPhrase("");
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+      setMessage(data.error ?? "Falha na operação Asaas.");
+      return;
+    }
+    setMessage("Operação Asaas concluída.");
+    await refresh();
+  }
+
   function formatMoney(cents: number) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
       cents / 100
@@ -92,7 +129,8 @@ export function AdminBillingPanel({
       <CardHeader className="p-0 pb-4">
         <CardTitle>Faturas e billing</CardTitle>
         <CardDescription>
-          Gestão manual — confirmação textual para ações críticas. Sem exposição de secrets.
+          Gestão manual e Asaas sandbox — confirmação textual para ações críticas. Sem exposição de
+          secrets.
         </CardDescription>
       </CardHeader>
 
@@ -120,15 +158,88 @@ export function AdminBillingPanel({
               <p className="text-xs text-muted-foreground">
                 {inv.providerLabel} · Assinatura {inv.subscriptionId.slice(0, 8)}…
               </p>
+              {inv.provider === "ASAAS" && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>Provider payment: {inv.providerInvoiceIdMasked ?? "—"}</p>
+                  <p>Status provider: {inv.providerStatus ?? "—"}</p>
+                  <p>Pix disponível: {inv.pixAvailable ? "Sim" : "Não"}</p>
+                </div>
+              )}
+
+              {inv.provider === "ASAAS" && inv.status !== "PAID" && inv.status !== "CANCELLED" && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={loading === `create-payment:${inv.id}`}
+                    onClick={() => asaasAction(inv.id, "create-payment")}
+                  >
+                    Criar cobrança Asaas
+                  </Button>
+                  {asaasSyncId === inv.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={asaasPhrase}
+                        onChange={(e) => setAsaasPhrase(e.target.value)}
+                        placeholder="SINCRONIZAR ASAAS"
+                        className="w-full rounded border border-white/20 bg-transparent px-3 py-2 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => asaasAction(inv.id, "sync")}
+                      >
+                        Confirmar sync
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAsaasSyncId(inv.id)}
+                    >
+                      Sincronizar Asaas
+                    </Button>
+                  )}
+                  {asaasCancelId === inv.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={asaasPhrase}
+                        onChange={(e) => setAsaasPhrase(e.target.value)}
+                        placeholder="CANCELAR COBRANCA ASAAS"
+                        className="w-full rounded border border-white/20 bg-transparent px-3 py-2 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => asaasAction(inv.id, "cancel")}
+                      >
+                        Confirmar cancelamento
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAsaasCancelId(inv.id)}
+                    >
+                      Cancelar cobrança Asaas
+                    </Button>
+                  )}
+                </div>
+              )}
+
               {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
-                <div className="space-y-2">
+                <div className="space-y-2 pt-2">
                   {confirmPaidId === inv.id ? (
                     <>
                       <input
                         type="text"
                         value={confirmPhrase}
                         onChange={(e) => setConfirmPhrase(e.target.value)}
-                        placeholder='Digite: MARCAR FATURA PAGA'
+                        placeholder="Digite: MARCAR FATURA PAGA"
                         className="w-full rounded border border-white/20 bg-transparent px-3 py-2 text-sm"
                       />
                       <Button

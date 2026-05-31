@@ -20,9 +20,7 @@ vi.mock("@/lib/billing/invoice-service", () => ({
 vi.mock("@/lib/env/critical", () => ({
   verifyBillingWebhookRequest: vi.fn(() => ({ ok: true })),
 }));
-vi.mock("@/lib/billing/provider", () => ({
-  isRealBillingEnabled: vi.fn(() => false),
-  isMockBillingWebhookAllowed: vi.fn(() => true),
+vi.mock("@/lib/billing/provider-registry", () => ({
   getBillingProviderAdapter: vi.fn(() => ({
     normalizeEvent: (payload: Record<string, unknown>) => ({
       provider: BillingProvider.MOCK,
@@ -34,6 +32,10 @@ vi.mock("@/lib/billing/provider", () => ({
     }),
     verifyWebhookSignature: vi.fn(() => true),
   })),
+}));
+vi.mock("@/lib/billing/provider", () => ({
+  isRealBillingEnabled: vi.fn(() => false),
+  isMockBillingWebhookAllowed: vi.fn(() => true),
 }));
 
 import { handleProviderWebhook } from "@/lib/billing/webhook-service";

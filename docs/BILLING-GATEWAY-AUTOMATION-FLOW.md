@@ -42,13 +42,30 @@ Status de fatura: `DRAFT`, `OPEN`, `PENDING`, `PAID`, `OVERDUE`, `CANCELLED`, `V
 |----------|------|
 | `MANUAL` | Padrão — confirmação admin |
 | `MOCK` | Sandbox — webhook de teste |
-| `ASAAS` / `MERCADO_PAGO` / `STRIPE` | Estrutura futura (sem credenciais nesta fase) |
+| `ASAAS` | **Implementado (Fase 13.3)** — Pix/checkout sandbox |
+| `MERCADO_PAGO` / `STRIPE` | Estrutura futura |
 
 Env:
 
-- `BILLING_PROVIDER=manual|mock`
+- `BILLING_PROVIDER=manual|mock|asaas`
 - `BILLING_REAL_PAYMENTS_ENABLED=false` (obrigatório para bloquear cartão/Pix real)
 - `MOCK_BILLING_WEBHOOK_ENABLED=true` (sandbox em staging/dev)
+- `ASAAS_ENV=sandbox` · `ASAAS_API_KEY` · `ASAAS_WEBHOOK_TOKEN` (Fase 13.3)
+
+---
+
+## 4.1 Asaas provider (Fase 13.3)
+
+Documento: [`ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTEGRATION.md)
+
+| Item | Detalhe |
+|------|---------|
+| Customer | `BillingCustomer` + `POST /customers` Asaas |
+| Cobrança | Pix `POST /payments` + `GET /payments/{id}/pixQrCode` |
+| Webhook | `POST /api/billing/webhook/asaas` idempotente |
+| Sandbox | `https://api-sandbox.asaas.com/v3` |
+| Produção | Bloqueada sem `BILLING_REAL_PAYMENTS_ENABLED=true` |
+| Conta real | **Não** liberada por pagamento Asaas |
 
 ---
 
@@ -81,6 +98,9 @@ Env:
 | POST | `/api/admin/billing/invoices/[id]/mark-paid` |
 | POST | `/api/admin/billing/invoices/[id]/cancel` |
 | POST | `/api/admin/billing/invoices/[id]/mark-pending` |
+| POST | `/api/admin/billing/invoices/[id]/asaas/create-payment` |
+| POST | `/api/admin/billing/invoices/[id]/asaas/sync` |
+| POST | `/api/admin/billing/invoices/[id]/asaas/cancel` |
 
 ### Webhook
 

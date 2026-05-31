@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { InvoiceStatus } from "@prisma/client";
+import { BillingProvider, InvoiceStatus } from "@prisma/client";
 import { requireAppRole } from "@/lib/auth/session";
 import { getInvoiceForUser } from "@/lib/billing/invoice-service";
+import { InvoiceAsaasPayment } from "@/components/billing/invoice-asaas-payment";
 import {
   getInvoiceStatusClientMessage,
   INVOICE_REAL_ACCOUNT_DISCLAIMER,
@@ -41,6 +42,12 @@ export default async function FaturaDetailPage({ params }: PageProps) {
   const statusMessage = getInvoiceStatusClientMessage(invoice.status);
   const showCheckout =
     invoice.checkoutUrl &&
+    !invoiceIsPaid(invoice.status) &&
+    invoice.status !== InvoiceStatus.CANCELLED &&
+    invoice.status !== InvoiceStatus.VOID;
+
+  const showAsaasPending =
+    invoice.provider === BillingProvider.ASAAS &&
     !invoiceIsPaid(invoice.status) &&
     invoice.status !== InvoiceStatus.CANCELLED &&
     invoice.status !== InvoiceStatus.VOID;
@@ -103,7 +110,15 @@ export default async function FaturaDetailPage({ params }: PageProps) {
         {INVOICE_REAL_ACCOUNT_DISCLAIMER}
       </p>
 
-      {showCheckout && (
+      {showAsaasPending && (
+        <InvoiceAsaasPayment
+          paymentUrl={invoice.paymentUrl ?? invoice.checkoutUrl}
+          pixCopyPaste={invoice.pixCopyPaste}
+          pixQrCodeUrl={invoice.pixQrCodeUrl}
+        />
+      )}
+
+      {showCheckout && invoice.provider !== BillingProvider.ASAAS && (
         <Link
           href={invoice.checkoutUrl!}
           className="inline-flex h-10 items-center rounded-lg bg-gold px-5 text-sm font-semibold text-black"
@@ -112,7 +127,9 @@ export default async function FaturaDetailPage({ params }: PageProps) {
         </Link>
       )}
 
-      {invoiceHasPendingPaymentCopy(invoice.status) && !invoice.checkoutUrl && (
+      {invoiceHasPendingPaymentCopy(invoice.status) &&
+        !invoice.checkoutUrl &&
+        invoice.provider !== BillingProvider.ASAAS && (
         <p className="text-sm text-muted-foreground">{statusMessage}</p>
       )}
     </div>

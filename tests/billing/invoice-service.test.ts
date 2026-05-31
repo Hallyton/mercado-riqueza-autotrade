@@ -24,7 +24,7 @@ const prismaMock = vi.hoisted(() => ({
 vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
 vi.mock("@/lib/audit/log", () => ({ createAuditLog: vi.fn() }));
 vi.mock("@/lib/admin/record-action", () => ({ recordAdminAction: vi.fn() }));
-vi.mock("@/lib/billing/manual-provider", () => ({
+vi.mock("@/lib/billing/provider-registry", () => ({
   getBillingProviderAdapter: vi.fn(() => ({
     createInvoice: vi.fn().mockResolvedValue({}),
     createPaymentAttempt: vi.fn().mockResolvedValue({}),

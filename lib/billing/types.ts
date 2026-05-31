@@ -55,6 +55,7 @@ export type ClientInvoiceView = {
   amountCents: number;
   currency: string;
   description: string | null;
+  provider: BillingProvider;
   providerLabel: string;
   methodLabel: string;
   dueAt: string | null;
@@ -63,6 +64,9 @@ export type ClientInvoiceView = {
   periodEnd: string | null;
   paymentUrl: string | null;
   checkoutUrl: string | null;
+  pixCopyPaste: string | null;
+  pixQrCodeUrl: string | null;
+  providerStatus: string | null;
   createdAt: string;
 };
 
@@ -73,6 +77,7 @@ export type NormalizedProviderEvent = {
   idempotencyKey: string;
   invoiceId?: string;
   paymentAttemptId?: string;
+  providerPaymentId?: string;
   amountCents?: number;
   paid: boolean;
   failureMessage?: string;
