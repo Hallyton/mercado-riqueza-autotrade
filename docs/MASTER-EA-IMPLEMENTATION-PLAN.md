@@ -2482,7 +2482,26 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Login homolog browser | **Pendente** (credencial staging) |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.3 — Payment Provider Integration **ou** Multi-Robot Admin Scaling
+**Próxima fase:** Fase 13.2.1 — Billing Manual/Sandbox Smoke Test
+
+### Fase 13.2.1 — Billing Manual/Sandbox Smoke Test
+
+**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Documento:** [`docs/BILLING-MANUAL-SANDBOX-SMOKE-RESULTS.md`](BILLING-MANUAL-SANDBOX-SMOKE-RESULTS.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Validar fatura/pagamento manual/sandbox no portal cliente e admin antes de gateway real |
+| Usuário smoke | `portal-smoke-1313-20260530212108@example.com` |
+| invoiceId | `cmpt3ahzo0044l70447agvdsg` (PENDING · R$ 300 · manual) |
+| Portal cliente billing | **OK** |
+| Admin mark-paid browser | **Pendente** (credencial admin local ≠ Neon staging) |
+| Webhook mock / idempotência | **Pendente** (`MOCK_BILLING_WEBHOOK_ENABLED` off no staging) |
+| Isolamento cliente + security | **OK** |
+| RealTradingApproval automático | **Não** (fatura pendente + testes 13.2) |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
+**Próxima fase:** Fase 13.3 — Payment Provider Integration **ou** re-smoke 13.2.1 após env staging
 
 ### Fase 13.2 — Payment Gateway & Billing Automation
 
@@ -2498,7 +2517,7 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Conta real | **Não** liberada por pagamento |
 | Ordem real | **Nenhuma** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.3 — Payment Provider Integration **ou** Multi-Robot Admin Scaling
+**Próxima fase:** Fase 13.2.1 — Billing Manual/Sandbox Smoke Test
 
 ### Fase 13.1.1 — Staging Commercial Smoke Test & Catalog Seed
 
