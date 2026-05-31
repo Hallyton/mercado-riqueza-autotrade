@@ -107,19 +107,19 @@ Cobertura principal:
 
 ## 6. Mark-paid fresh PENDING (browser)
 
-**Status:** **Pendente nesta sessão** — validação programática coberta em `invoice-service.test.ts`; fluxo browser admin `MARCAR FATURA PAGA` em fatura nova PENDING requer sessão admin + fixture dedicada pós-deploy.
+**Status:** **Pendente** — confirmado na Fase 13.4 ([`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)). Fatura smoke `cmpt3ahzo0044l70447agvdsg` já PAID; mark-paid API idempotente coberto em testes e 13.2.2.
 
-**Recomendação:** repetir smoke operacional na 13.2.4 ou antes da 13.3 com nova fatura manual no admin.
+**Recomendação:** executar na Fase 13.3.1 com nova fatura PENDING + sessão admin browser.
 
 ---
 
 ## 7. Restrições remanescentes
 
-1. Mark-paid UI em fatura fresh PENDING — pendente browser.
-2. Login programático (fetch) — documentado na 13.2.2, fora de escopo.
-3. Smoke user pode ainda não ter RobotInstance no Neon até mark-paid/fulfillment completo — UI agora exibe corretamente quando existir.
+1. Mark-paid UI em fatura fresh PENDING — pendente browser (13.4).
+2. Login programático (fetch) — session null; browser OK.
+3. Asaas E2E sandbox — pendente credenciais (13.4).
 
-**Próxima fase sugerida:** Fase 13.3 — Payment Provider Integration (gateway real).
+**Próxima fase sugerida:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke.
 
 ---
 

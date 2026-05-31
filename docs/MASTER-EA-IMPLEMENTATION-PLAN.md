@@ -2503,10 +2503,32 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
 
+### Fase 13.4 — Commercial & Billing Final Consolidation
+
+**Status:** `PHASE_13_COMMERCIAL_BILLING_READY_WITH_RESTRICTIONS`  
+**Documento:** [`docs/PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)  
+**Decisão:** `COMMERCIAL_PORTAL_AND_BILLING_READY_PENDING_ASAAS_E2E`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Consolidar portal, billing, Asaas, segurança e travas de operação real |
+| Portal / planos / cadastro / termos | **OK** (browser staging) |
+| Billing manual/mock + webhook idempotência | **OK** |
+| Asaas provider (código) | **Implementado** |
+| Asaas sandbox E2E | **Pendente** — credenciais vazias no staging |
+| Mark-paid UI fresh PENDING | **Pendente** browser |
+| Testes | **388/388 OK** |
+| Build + deploy staging | **OK** |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
+**Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+
 ### Fase 13.3 — Asaas Payment Provider Integration
 
-**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED_PENDING_SANDBOX_CREDENTIALS`  
-**Documento:** [`docs/ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTEGRATION.md)
+**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E sandbox **pendente** (Fase 13.4)  
+**Documento:** [`docs/ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTEGRATION.md)  
+**Consolidação:** [`docs/PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)
 
 | Item | Resultado |
 |------|-----------|

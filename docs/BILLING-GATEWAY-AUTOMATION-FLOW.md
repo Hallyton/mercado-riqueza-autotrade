@@ -131,8 +131,9 @@ Documento: [`ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTE
 
 ## 9. Próxima fase
 
-**Fase 13.3 — Payment Provider Integration** (Asaas/Mercado Pago/Stripe com credenciais)  
-ou **Fase 13.3 — Multi-Robot Admin Scaling**
+**Fase 13.4 concluída** — ver [`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md).
+
+**Próxima:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke (credenciais sandbox) · depois Fase 14.1 Production Billing Gate.
 
 ---
 

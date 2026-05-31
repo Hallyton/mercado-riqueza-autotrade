@@ -203,7 +203,20 @@ Script: `scripts/homologation/billing-admin-webhook-smoke-13222.ts` (usa secret 
 |------------------|-------------------|
 | Copy detalhe fatura PAID inconsistente | **OK** |
 | Portal "Nenhum robô provisionado" vs admin 1/1 | **OK** |
-| Mark-paid UI fresh PENDING | **Pendente** browser |
+| Mark-paid UI fresh PENDING | **Pendente** browser (confirmado Fase 13.4) |
+
+---
+
+## 13. Fase 13.4 — consolidação
+
+**Documento:** [`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)
+
+| Item | Resultado 13.4 |
+|------|----------------|
+| Webhook mock idempotência | **Revalidado OK** |
+| Portal / fatura PAID browser | **OK** |
+| Mark-paid fresh PENDING UI | **Pendente** |
+| Asaas E2E | **Pendente** credenciais |
 
 ---
 
