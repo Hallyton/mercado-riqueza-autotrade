@@ -4,6 +4,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit/log";
+import { createSubscriptionInvoice, requestRenewalInvoice } from "@/lib/billing/invoice-service";
 import prisma from "@/lib/prisma";
 import {
   AUTOTRADE_SINGLE_ROBOT_PLAN_SLUG,
@@ -137,6 +138,12 @@ export async function requestCommercialSubscription(
       ipAddress: input.ipAddress ?? null,
     });
 
+    try {
+      await requestRenewalInvoice(input.userId);
+    } catch {
+      /* ignore */
+    }
+
     return { subscriptionId: existing.id, planSlug: plan.slug, created: false };
   }
 
@@ -163,6 +170,12 @@ export async function requestCommercialSubscription(
     metadata: { planSlug: plan.slug },
     ipAddress: input.ipAddress ?? null,
   });
+
+  try {
+    await createSubscriptionInvoice(subscription.id);
+  } catch {
+    /* ignore */
+  }
 
   return {
     subscriptionId: subscription.id,

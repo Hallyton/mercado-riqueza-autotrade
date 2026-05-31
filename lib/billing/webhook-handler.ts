@@ -100,7 +100,9 @@ async function recordPayment(
 
   const invoice = await prisma.invoice.create({
     data: {
+      userId: subscription.userId,
       subscriptionId,
+      planId: subscription.planId,
       status: success ? InvoiceStatus.PAID : InvoiceStatus.OPEN,
       amountCents,
       currency: event.data.currency,

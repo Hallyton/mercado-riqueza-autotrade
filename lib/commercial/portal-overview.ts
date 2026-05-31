@@ -1,4 +1,5 @@
 import { ProtectionStatus } from "@prisma/client";
+import { listInvoicesForUser } from "@/lib/billing/invoice-service";
 import prisma from "@/lib/prisma";
 import { resolveSubscriptionDisplayStatus } from "@/lib/licensing/display";
 import { getLicenseOperationalFlags } from "@/lib/licensing/service";
@@ -48,12 +49,16 @@ export async function getCommercialPortalOverview(userId: string) {
   });
 
   const termsAccepted = await hasCommercialSignupTerms(userId);
+  const invoices = await listInvoicesForUser(userId).catch(() => []);
+  const currentInvoice = invoices[0] ?? null;
 
   if (!subscription) {
     return {
       subscription: null,
       displayStatus: resolveSubscriptionDisplayStatus(null),
       termsAccepted,
+      invoices,
+      currentInvoice,
       robots: [],
       licenses: [],
       alerts: [
@@ -165,6 +170,8 @@ export async function getCommercialPortalOverview(userId: string) {
       currentPeriodEnd: subscription.currentPeriodEnd,
     },
     termsAccepted,
+    invoices,
+    currentInvoice,
     robots,
     licenses: licensesWithFlags,
     alerts,

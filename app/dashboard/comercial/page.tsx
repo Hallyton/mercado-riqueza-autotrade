@@ -1,6 +1,7 @@
 import { requireAppRole } from "@/lib/auth/session";
 import { getCommercialPortalOverview } from "@/lib/commercial/portal-overview";
 import { SubscriptionRequestForm } from "@/components/commercial/subscription-request-form";
+import { CommercialInvoicesSection } from "@/components/billing/commercial-invoices-section";
 import { PUBLIC_PORTAL_ROBOT_COPY } from "@/lib/commercial/public-terms";
 import { SubscriptionStatusBadge } from "@/components/subscription/status-badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +107,11 @@ export default async function ComercialPortalPage() {
           termsAccepted={overview.termsAccepted}
         />
       )}
+
+      <CommercialInvoicesSection
+        invoices={overview.invoices}
+        currentInvoice={overview.currentInvoice}
+      />
 
       <Card>
         <CardHeader>

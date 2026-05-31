@@ -1,10 +1,13 @@
 import {
   AdminPaymentStatus,
   InvoiceStatus,
-  PaymentStatus,
   SubscriptionStatus,
 } from "@prisma/client";
 import { recordAdminAction } from "@/lib/admin/record-action";
+import {
+  applyInvoicePaidEffects,
+  createSubscriptionInvoice,
+} from "@/lib/billing/invoice-service";
 import {
   activateSubscription,
   cancelSubscription,
@@ -54,55 +57,23 @@ export async function confirmSubscriptionPayment(
     );
   }
 
-  await prisma.subscription.update({
-    where: { id: subscriptionId },
-    data: { adminPaymentStatus: AdminPaymentStatus.CONFIRMED },
+  let invoice = await prisma.invoice.findFirst({
+    where: {
+      subscriptionId,
+      status: { in: [InvoiceStatus.OPEN, InvoiceStatus.PENDING, InvoiceStatus.OVERDUE] },
+    },
+    orderBy: { createdAt: "desc" },
   });
 
-  const period = subscriptionPeriod();
-  await activateSubscription(subscriptionId, period, {
-    gateway: "manual_admin",
-    actorId,
-  });
-
-  const license = await ensureLicenseForSubscription(subscriptionId, actorId);
-  const robot = await createRobotInstanceForSubscription(
-    subscriptionId,
-    actorId
-  );
-
-  if (robot && license) {
-    await linkRobotInstanceToLicense(robot.id, license.id, actorId);
+  if (!invoice) {
+    invoice = await createSubscriptionInvoice(subscriptionId, {
+      status: InvoiceStatus.PENDING,
+    });
   }
 
-  await prisma.invoice.create({
-    data: {
-      subscriptionId,
-      status: InvoiceStatus.PAID,
-      amountCents:
-        (
-          await prisma.planPrice.findFirst({
-            where: { planId: subscription.planId, isActive: true },
-          })
-        )?.amountCents ?? 30000,
-      currency: "BRL",
-      paidAt: new Date(),
-      dueAt: period.start,
-      payments: {
-        create: {
-          status: PaymentStatus.SUCCEEDED,
-          amountCents:
-            (
-              await prisma.planPrice.findFirst({
-                where: { planId: subscription.planId, isActive: true },
-              })
-            )?.amountCents ?? 30000,
-          currency: "BRL",
-          paidAt: new Date(),
-          gatewayPaymentId: `manual_${Date.now()}`,
-        },
-      },
-    },
+  const result = await applyInvoicePaidEffects({
+    invoiceId: invoice.id,
+    actorId,
   });
 
   await recordAdminAction({
@@ -112,13 +83,19 @@ export async function confirmSubscriptionPayment(
     targetId: subscriptionId,
     metadata: {
       planSlug: subscription.plan.slug,
-      licenseId: license.id,
-      robotInstanceId: robot?.id ?? null,
+      invoiceId: invoice.id,
+      licenseId: result.licenseId,
+      robotInstanceId: result.robotInstanceId,
     },
     ipAddress,
   });
 
-  return { subscriptionId, licenseId: license.id, robotInstanceId: robot?.id };
+  return {
+    subscriptionId,
+    invoiceId: invoice.id,
+    licenseId: result.licenseId,
+    robotInstanceId: result.robotInstanceId,
+  };
 }
 
 export async function markSubscriptionPaymentPending(

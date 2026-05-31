@@ -2482,7 +2482,23 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Login homolog browser | **Pendente** (credencial staging) |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.2 — Payment Gateway & Billing Automation
+**Próxima fase:** Fase 13.3 — Payment Provider Integration **ou** Multi-Robot Admin Scaling
+
+### Fase 13.2 — Payment Gateway & Billing Automation
+
+**Status:** `BILLING_AUTOMATION_FOUNDATION_IMPLEMENTED`  
+**Documento:** [`docs/BILLING-GATEWAY-AUTOMATION-FLOW.md`](BILLING-GATEWAY-AUTOMATION-FLOW.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Invoice, PaymentAttempt, PaymentProviderEvent, portal/admin billing |
+| Provider | MANUAL + MOCK/sandbox — real bloqueado sem env |
+| Plano | R$ 300/mês · 1 robô |
+| Webhook | `/api/billing/webhook/[provider]` idempotente |
+| Conta real | **Não** liberada por pagamento |
+| Ordem real | **Nenhuma** · dispatch **desativado** |
+
+**Próxima fase:** Fase 13.3 — Payment Provider Integration **ou** Multi-Robot Admin Scaling
 
 ### Fase 13.1.1 — Staging Commercial Smoke Test & Catalog Seed
 

@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminUserActions } from "@/components/admin/admin-user-actions";
 import { AdminCommercialActions } from "@/components/admin/admin-commercial-actions";
+import { AdminBillingPanel } from "@/components/admin/admin-billing-panel";
 import { getAdminUserDetail } from "@/lib/admin/users";
 import { getAdminCommercialOverview } from "@/lib/commercial/admin-subscription";
+import { listInvoicesAdmin, serializeAdminInvoice } from "@/lib/billing/invoice-service";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseStatusBadge } from "@/components/subscription/status-badge";
 
@@ -24,6 +26,9 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
   if (!detail) notFound();
 
   const commercial = await getAdminCommercialOverview(userId);
+  const adminInvoices = commercial?.subscriptions[0]
+    ? (await listInvoicesAdmin({ userId })).map(serializeAdminInvoice)
+    : [];
 
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -106,7 +111,18 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       </Card>
 
       {commercial && commercial.subscriptions.length > 0 && (
-        <AdminCommercialActions subscriptions={commercial.subscriptions} />
+        <>
+          <AdminCommercialActions subscriptions={commercial.subscriptions} />
+          <AdminBillingPanel
+            userId={userId}
+            subscriptionId={commercial.subscriptions[0].id}
+            initialInvoices={adminInvoices.map((inv) => ({
+              ...inv,
+              dueAt: inv.dueAt?.toISOString() ?? null,
+              paidAt: inv.paidAt?.toISOString() ?? null,
+            }))}
+          />
+        </>
       )}
 
       <Card className="p-6">

@@ -7,6 +7,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit/log";
+import { createSubscriptionInvoice } from "@/lib/billing/invoice-service";
 import prisma from "@/lib/prisma";
 import {
   AUTOTRADE_SINGLE_ROBOT_PLAN_SLUG,
@@ -147,6 +148,12 @@ export async function commercialSignup(input: CommercialSignupInput) {
     },
     ipAddress: input.ipAddress ?? null,
   });
+
+  try {
+    await createSubscriptionInvoice(result.subscription.id);
+  } catch {
+    /* fatura pode ser recriada pelo portal/admin */
+  }
 
   return {
     userId: result.user.id,

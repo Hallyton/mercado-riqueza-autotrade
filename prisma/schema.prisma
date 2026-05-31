@@ -46,9 +46,38 @@ enum LicenseStatus {
 enum InvoiceStatus {
   DRAFT
   OPEN
+  PENDING
   PAID
+  OVERDUE
+  CANCELLED
   VOID
+  FAILED
   UNCOLLECTIBLE
+}
+
+enum PaymentAttemptStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  PIX
+  CARD
+  BOLETO
+  MANUAL
+  UNKNOWN
+}
+
+enum BillingProvider {
+  MANUAL
+  MOCK
+  ASAAS
+  MERCADO_PAGO
+  STRIPE
 }
 
 enum PaymentStatus {
@@ -255,6 +284,8 @@ model User {
   accounts        Account[]
   sessions        Session[]
   subscriptions   Subscription[]
+  invoices        Invoice[]
+  paymentAttempts PaymentAttempt[]
   licenses        License[]
   mt5Accounts     Mt5Account[]
   auditLogs              AuditLog[]              @relation("AuditLogActor")
@@ -334,6 +365,7 @@ model Plan {
   features      PlanFeature[]
   planProfiles  PlanExposureProfile[]
   subscriptions Subscription[]
+  invoices      Invoice[]
 
   @@map("plans")
 }
@@ -381,12 +413,15 @@ model Subscription {
   cancelledAt           DateTime?          @map("cancelled_at")
   adminPaymentStatus    AdminPaymentStatus @default(PENDING) @map("admin_payment_status")
   robotCount            Int                @default(1) @map("robot_count")
+  nextBillingAt         DateTime?          @map("next_billing_at")
+  lastInvoiceId         String?            @unique @map("last_invoice_id")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan           Plan            @relation(fields: [planId], references: [id])
   invoices       Invoice[]
+  lastInvoice    Invoice?        @relation("SubscriptionLastInvoice", fields: [lastInvoiceId], references: [id], onDelete: SetNull)
   licenses       License[]
   robotInstances RobotInstance[]
 
@@ -396,21 +431,89 @@ model Subscription {
 }
 
 model Invoice {
-  id               String        @id @default(cuid())
-  subscriptionId   String        @map("subscription_id")
-  status           InvoiceStatus @default(DRAFT)
-  amountCents      Int           @map("amount_cents")
-  currency         String        @default("BRL")
-  gatewayInvoiceId String?       @map("gateway_invoice_id")
-  dueAt            DateTime?     @map("due_at")
-  paidAt           DateTime?     @map("paid_at")
-  createdAt        DateTime      @default(now()) @map("created_at")
+  id                 String          @id @default(cuid())
+  userId             String          @map("user_id")
+  subscriptionId     String          @map("subscription_id")
+  planId             String          @map("plan_id")
+  status             InvoiceStatus   @default(DRAFT)
+  amountCents        Int             @map("amount_cents")
+  currency           String          @default("BRL")
+  description        String?         @db.Text
+  provider           BillingProvider @default(MANUAL)
+  providerInvoiceId  String?         @map("provider_invoice_id")
+  gatewayInvoiceId   String?         @map("gateway_invoice_id")
+  paymentUrl         String?         @map("payment_url")
+  pixQrCodeUrl       String?         @map("pix_qr_code_url")
+  pixCopyPaste       String?         @map("pix_copy_paste")
+  metadataJson       Json?           @map("metadata_json")
+  periodStart        DateTime?       @map("period_start")
+  periodEnd          DateTime?       @map("period_end")
+  dueAt              DateTime?       @map("due_at")
+  paidAt             DateTime?       @map("paid_at")
+  cancelledAt        DateTime?       @map("cancelled_at")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
 
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  payments     Payment[]
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription      Subscription           @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  plan              Plan                   @relation(fields: [planId], references: [id])
+  subscriptionAsLast Subscription?         @relation("SubscriptionLastInvoice")
+  payments          Payment[]
+  paymentAttempts   PaymentAttempt[]
+  providerEvents    PaymentProviderEvent[]
 
   @@index([subscriptionId, status])
+  @@index([userId, status])
+  @@index([planId])
   @@map("invoices")
+}
+
+model PaymentAttempt {
+  id                String               @id @default(cuid())
+  invoiceId         String               @map("invoice_id")
+  userId            String               @map("user_id")
+  provider          BillingProvider      @default(MANUAL)
+  method            PaymentMethod        @default(MANUAL)
+  status            PaymentAttemptStatus @default(CREATED)
+  amountCents       Int                  @map("amount_cents")
+  providerPaymentId String?              @map("provider_payment_id")
+  checkoutUrl       String?              @map("checkout_url")
+  failureCode       String?              @map("failure_code")
+  failureMessage    String?              @map("failure_message")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  invoice        Invoice                @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerEvents PaymentProviderEvent[]
+
+  @@unique([provider, providerPaymentId])
+  @@index([invoiceId, status])
+  @@index([userId])
+  @@map("payment_attempts")
+}
+
+model PaymentProviderEvent {
+  id               String           @id @default(cuid())
+  provider         BillingProvider
+  eventId          String           @map("event_id")
+  eventType        String           @map("event_type")
+  invoiceId        String?          @map("invoice_id")
+  paymentAttemptId String?          @map("payment_attempt_id")
+  rawJson          Json             @map("raw_json")
+  idempotencyKey   String           @map("idempotency_key")
+  processStatus    String           @default("pending") @map("process_status")
+  processError     String?          @map("process_error")
+  processedAt      DateTime?        @map("processed_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  invoice        Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  paymentAttempt PaymentAttempt? @relation(fields: [paymentAttemptId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, eventId])
+  @@unique([idempotencyKey])
+  @@index([provider, eventType])
+  @@map("payment_provider_events")
 }
 
 model Payment {
