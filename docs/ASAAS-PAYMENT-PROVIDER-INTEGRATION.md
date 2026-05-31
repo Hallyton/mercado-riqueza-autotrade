@@ -2,7 +2,7 @@
 
 **Data:** 2026-05-31  
 **Branch:** `staging-vps-homologacao`  
-**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E **`APPROVED_WITH_RESTRICTIONS`**  
+**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E sandbox **`ASAAS_SANDBOX_E2E_SMOKE_APPROVED`**  
 **Smoke 13.3.1:** [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
 
 ---
@@ -193,19 +193,44 @@ Nesta fase: cobrança **avulsa** por Invoice; assinatura interna continua fonte 
 
 ---
 
-## 13. Smoke E2E — Fase 13.3.1 (2026-05-31)
+## 13. Smoke E2E — Fase 13.3.1 (aprovado)
 
 **Documento:** [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)  
-**Status:** `APPROVED_WITH_RESTRICTIONS`
+**Status:** `ASAAS_SANDBOX_E2E_SMOKE_APPROVED`
 
 | Item | Resultado |
 |------|-----------|
-| Env runtime | **OK** |
-| Provider ativo | **OK** |
-| Fatura + checkout | **OK** |
-| Webhook PAID | **Pendente** |
+| invoiceId | `cmptcblws0001jo04wwag9y97` |
+| providerPaymentId | `pay_ef…pbg9` |
+| Webhook first | `processed: true` |
+| Reenvio | `duplicate: true` |
+| Late fail | `ignored: true` |
+| Invoice | **PAID** |
+| Subscription | **ACTIVE** |
+| Pagamento libera real | **Não** |
+| RealTradingApproval automático | **Não** |
+| Token pós-teste | Removido do ambiente |
 
-**Próximo:** confirmar pagamento sandbox + webhook → `ASAAS_SANDBOX_E2E_SMOKE_APPROVED`.
+---
+
+## 14. Fase 13.3.1 — Smoke Asaas sandbox aprovado
+
+Encerramento operador (2026-05-31):
+
+```bash
+node scripts/homologation/asaas-webhook-complete.mjs cmptcblws0001jo04wwag9y97 pay_efunfd39uzugpbg9
+```
+
+| Validação | Estado |
+|-----------|--------|
+| Cobrança Asaas sandbox | **OK** |
+| Checkout/Pix hosted | **OK** |
+| Webhook PAID | **OK** |
+| Idempotência | **OK** |
+| PAID imutável | **OK** |
+| Segurança (sem real, sem ordem) | **OK** |
+
+**Próxima fase:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation.
 
 ---
 

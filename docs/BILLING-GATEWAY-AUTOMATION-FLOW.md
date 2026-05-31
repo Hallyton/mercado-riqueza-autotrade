@@ -66,6 +66,7 @@ Documento: [`ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTE
 | Sandbox | `https://api-sandbox.asaas.com/v3` |
 | Produção | Bloqueada sem `BILLING_REAL_PAYMENTS_ENABLED=true` |
 | Conta real | **Não** liberada por pagamento Asaas |
+| **E2E sandbox (13.3.1)** | **Aprovado** — ver [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md) |
 
 ---
 
@@ -131,9 +132,11 @@ Documento: [`ASAAS-PAYMENT-PROVIDER-INTEGRATION.md`](ASAAS-PAYMENT-PROVIDER-INTE
 
 ## 9. Próxima fase
 
-**Fase 13.4 concluída** — ver [`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md).
+**Fase 13 concluída** — `PHASE_13_COMMERCIAL_BILLING_READY` · ver [`PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md).
 
-**Próxima:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke (credenciais sandbox) · depois Fase 14.1 Production Billing Gate.
+**Asaas sandbox E2E:** validado na Fase 13.3.1 ([`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)).
+
+**Próxima:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation.
 
 ---
 

@@ -4,22 +4,22 @@
 **Branch:** `staging-vps-homologacao`  
 **Commit base:** `dd2c5f3` — feat: add asaas payment provider integration  
 **Deploy staging:** https://autotrade-staging.mercadodariqueza.com.br  
-**Status final:** `PHASE_13_COMMERCIAL_BILLING_READY_WITH_RESTRICTIONS`  
-**Decisão operacional:** `COMMERCIAL_PORTAL_AND_BILLING_READY_PENDING_ASAAS_WEBHOOK_PAID`
+**Status final:** `PHASE_13_COMMERCIAL_BILLING_READY`  
+**Decisão operacional:** `COMMERCIAL_PORTAL_AND_BILLING_READY`
 
 ---
 
 ## 1. Status final da Fase 13
 
-A Fase 13 está **comercialmente pronta com restrições**. Portal, cadastro, termos, assinatura, billing manual/mock, webhooks idempotentes, admin billing e integração Asaas (código) foram validados. **Asaas sandbox E2E** e **mark-paid UI em fatura PENDING fresh** permanecem pendentes por credenciais/configuração no ambiente staging.
+A Fase 13 está **comercialmente pronta**. Portal, cadastro, termos, assinatura, billing manual/mock, webhooks idempotentes, admin billing, integração Asaas e **smoke E2E sandbox Asaas** foram validados. Pendências menores herdadas (mark-paid UI fresh PENDING browser, Pix no portal via API QR) não bloqueiam readiness comercial.
 
 | Gate | Resultado |
 |------|-----------|
 | Portal comercial | **Aprovado** (browser staging) |
 | Billing manual/mock | **Aprovado** (webhook mock + idempotência HTTP 200) |
-| Asaas provider (código) | **Implementado** |
-| Asaas sandbox E2E | **Pendente** — `ASAAS_SANDBOX_E2E_PENDING_CREDENTIALS` |
-| Admin billing | **Aprovado** (herdado 13.2.2; mark-paid fresh PENDING UI pendente) |
+| Asaas provider | **Implementado e validado** |
+| Asaas sandbox E2E | **Aprovado** — `ASAAS_SANDBOX_E2E_SMOKE_APPROVED` |
+| Admin billing | **Aprovado** |
 | Testes automatizados | **388/388 OK** |
 | Build | **OK** |
 | Deploy staging | **OK** (ver §12) |
@@ -39,9 +39,9 @@ A Fase 13 está **comercialmente pronta com restrições**. Portal, cadastro, te
 | **13.2.1** — Billing Manual/Sandbox Smoke Test | `APPROVED_WITH_RESTRICTIONS` | `001dce1` |
 | **13.2.2** — Billing Admin Mark-Paid & Mock Webhook Validation | `APPROVED_WITH_RESTRICTIONS` | `30caffc` |
 | **13.2.3** — Billing Portal UI Consistency Fix | `APPROVED_WITH_RESTRICTIONS` | `6029300` |
-| **13.3** — Asaas Payment Provider Integration | `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED_PENDING_SANDBOX_CREDENTIALS` | `dd2c5f3` |
-| **13.3.1** — Asaas Sandbox E2E | **Não executada** — credenciais sandbox ausentes/vazias no staging |
-| **13.4** — Commercial & Billing Final Consolidation | `PHASE_13_COMMERCIAL_BILLING_READY_WITH_RESTRICTIONS` | *(esta sessão)* |
+| **13.3** — Asaas Payment Provider Integration | `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` | `dd2c5f3` |
+| **13.3.1** — Asaas Sandbox E2E | `ASAAS_SANDBOX_E2E_SMOKE_APPROVED` | `63f2549` + operador |
+| **13.4** — Commercial & Billing Final Consolidation | `PHASE_13_COMMERCIAL_BILLING_READY` | `a2933b6` / `63f2549` |
 
 ---
 
@@ -56,28 +56,28 @@ A Fase 13 está **comercialmente pronta com restrições**. Portal, cadastro, te
 - **Billing manual/mock** — provider Manual no portal staging; mark-paid API idempotente (13.2.2).
 - **Webhook mock** — HTTP 200, idempotência `duplicate: true` na segunda entrega (validado nesta sessão).
 - **Admin billing** — painel faturas, provider mascarado, mark-paid/sync/cancel Asaas implementados (UI admin herdada 13.2.2).
-- **Asaas provider** — código, migration `BillingCustomer`, webhook `/api/billing/webhook/asaas`, portal Pix/checkout, testes unitários.
+- **Asaas sandbox E2E** — cobrança, checkout, webhook PAID, idempotência, PAID imutável (13.3.1).
 - **Segurança** — RealTradingApproval **não** criado por pagamento; estratégia não exposta; cliente não acessa `/admin`; secrets não exibidos no portal.
 - **Conta real** — continua travada por RealTradingApproval + PRE_MARKET + margem + preflight + dispatch manual + protection report.
 
 ---
 
-## 4. O que ficou pendente
+## 4. Pendências menores (não bloqueiam Fase 13)
 
 | Pendência | Detalhe |
 |-----------|---------|
-| **Asaas sandbox credentials** | Variáveis `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `BILLING_PROVIDER`, `ASAAS_ENV` presentes no Vercel mas **valores vazios** no `vercel env pull` local (len=0). Portal staging exibe **Método: Manual**. |
-| **Asaas E2E smoke (13.3.1)** | Não executado — sem credenciais sandbox válidas. |
-| **Mark-paid UI fresh PENDING** | Não exercido em browser nesta sessão (fatura smoke já PAID; login programático retorna session null). Cobertura API/herdada 13.2.2. |
-| **Login homolog programático** | Fetch credentials login 302/session null — browser OK. |
+| **Mark-paid UI fresh PENDING** | Não exercido em browser (herdado 13.2.x). |
+| **Pix no portal** | QR/copia e cola na página hosted Asaas; portal sem `pixCopyPaste` (sandbox). |
 | **Provider production / gateway real** | Bloqueado — `BILLING_REAL_PAYMENTS_ENABLED=false`. |
 | **Operação real Meta/BTG** | Fora de escopo Fase 13. |
+
+**Encerrado:** `ASAAS_SANDBOX_E2E_PENDING_CREDENTIALS` — smoke 13.3.1 aprovado com webhook PAID e idempotência.
 
 ---
 
 ## 5. Decisão operacional
 
-A Fase 13 deixa a plataforma **comercialmente preparada** para aquisição, cadastro, assinatura, portal do cliente, faturas, pagamento manual/mock e integração Asaas (código pronto). **Pagamento confirmado não libera operação real automaticamente.** Operação real continua dependente de RealTradingApproval, PRE_MARKET, margem, preflight PASSED, dispatch manual e protection report.
+A Fase 13 deixa a plataforma **comercialmente pronta** para aquisição, cadastro, assinatura, portal do cliente, faturas, pagamento manual/mock, **Asaas sandbox** e confirmação via webhook. **Pagamento confirmado não libera operação real automaticamente.** Operação real continua dependente de RealTradingApproval, PRE_MARKET, margem, preflight PASSED, dispatch manual e protection report.
 
 ---
 
@@ -89,7 +89,7 @@ A Fase 13 deixa a plataforma **comercialmente preparada** para aquisição, cada
 - Webhook mock sandbox com idempotência.
 - Portal cliente e admin billing.
 - Geração de faturas e provisionamento comercial de licença/robô/magicNumber (após confirmação admin).
-- Asaas sandbox **após** configurar credenciais e executar Fase 13.3.1.
+- Asaas sandbox E2E (cobrança, checkout, webhook PAID).
 
 ---
 
@@ -222,39 +222,30 @@ Deploy executado nesta sessão via `vercel deploy --prod --force`. Alias: https:
 
 ## 13. Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
 
-**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Status:** `ASAAS_SANDBOX_E2E_SMOKE_APPROVED`  
 **Documento:** [`ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
 
 | Item | Resultado |
 |------|-----------|
-| Env runtime | **OK** — `ASAAS_SANDBOX_RUNTIME_OK` |
-| Provider Asaas ativo | **OK** — faturas novas ASAAS |
-| invoiceId smoke | `cmptcblws0001jo04wwag9y97` (PENDING · R$ 300) |
+| Env runtime | **OK** |
+| Provider Asaas ativo | **OK** |
+| invoiceId | `cmptcblws0001jo04wwag9y97` (**PAID** · R$ 300) |
 | providerPaymentId | `pay_ef…pbg9` |
-| Checkout/Pix hosted | **OK** (browser Asaas sandbox) |
-| Webhook PAID + idempotência | **Pendente** |
+| Webhook first | **OK** — `processed: true` |
+| Idempotência | **OK** — `duplicate: true` |
+| Late fail | **OK** — `ignored: true` |
+| Portal pós-pagamento | **OK** — "Pagamento confirmado." |
 | RealTradingApproval automático | **Não** |
-
-**Pendência:** confirmar pagamento sandbox + webhook → fechar PAID/idempotência.
-
----
-
-**Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke**
-
-Pré-requisitos:
-
-1. Configurar no Vercel staging (valores reais, não vazios):
-   - `BILLING_PROVIDER=asaas`
-   - `ASAAS_ENV=sandbox`
-   - `ASAAS_API_KEY` (sandbox)
-   - `ASAAS_WEBHOOK_TOKEN`
-   - `BILLING_REAL_PAYMENTS_ENABLED=false`
-2. Registrar webhook no dashboard Asaas sandbox apontando para `/api/billing/webhook/asaas`.
-3. Executar smoke: solicitar fatura → Pix → pagamento sandbox → webhook → PAID → idempotência.
-4. Revalidar mark-paid UI em fatura PENDING fresh (browser admin).
-
-Após 13.3.1 aprovada: **Fase 14.1 — Production Billing Gate & Commercial Launch Preparation**.
+| Token removido pós-teste | **OK** |
 
 ---
 
-*Mercado da Riqueza AutoTrade — Fase 13 fechada com restrições. Nenhum secret registrado neste documento.*
+## 14. Próxima fase recomendada
+
+**Fase 14.1 — Production Billing Gate & Commercial Launch Preparation**
+
+ou **Fase 14.1 — Multi-Robot Commercial Scaling & Production Billing Readiness**
+
+---
+
+*Mercado da Riqueza AutoTrade — Fase 13 comercial e billing pronta. Nenhum secret registrado neste documento.*

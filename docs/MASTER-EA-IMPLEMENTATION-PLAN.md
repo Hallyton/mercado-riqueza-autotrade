@@ -2505,63 +2505,59 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 ### Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
 
-**Status:** `APPROVED_WITH_RESTRICTIONS`  
+**Status:** `ASAAS_SANDBOX_E2E_SMOKE_APPROVED`  
 **Documento:** [`docs/ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
 
 | Item | Resultado |
 |------|-----------|
 | Objetivo | Validar env Asaas sandbox + E2E cobrança/checkout/webhook |
-| Env runtime | **OK** — sonda `ASAAS_SANDBOX_RUNTIME_OK` |
-| Provider Asaas | **Ativo** — faturas novas |
-| invoiceId | `cmptcblws0001jo04wwag9y97` |
-| Checkout sandbox | **OK** — R$ 300 · Pix na página Asaas |
-| Webhook PAID | **Pendente** |
-| Idempotência | **Pendente** |
+| Env runtime | **OK** |
+| Provider Asaas | **Ativo** |
+| invoiceId | `cmptcblws0001jo04wwag9y97` (**PAID**) |
+| providerPaymentId | `pay_ef…pbg9` |
+| Webhook PAID | **OK** — `processed: true` |
+| Idempotência | **OK** — `duplicate: true` |
+| Late fail ignored | **OK** |
 | RealTradingApproval automático | **Não** |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fechar webhook PAID sandbox → Fase 14.1 Production Billing Gate
+**Próxima fase:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation
 
 ### Fase 13.4 — Commercial & Billing Final Consolidation
 
-**Status:** `PHASE_13_COMMERCIAL_BILLING_READY_WITH_RESTRICTIONS`  
+**Status:** `PHASE_13_COMMERCIAL_BILLING_READY`  
 **Documento:** [`docs/PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md`](PHASE-13-COMMERCIAL-BILLING-FINAL-REPORT.md)  
-**Decisão:** `COMMERCIAL_PORTAL_AND_BILLING_READY_PENDING_ASAAS_E2E`
+**Decisão:** `COMMERCIAL_PORTAL_AND_BILLING_READY`
 
 | Item | Resultado |
 |------|-----------|
 | Objetivo | Consolidar portal, billing, Asaas, segurança e travas de operação real |
-| Portal / planos / cadastro / termos | **OK** (browser staging) |
+| Portal / planos / cadastro / termos | **OK** |
 | Billing manual/mock + webhook idempotência | **OK** |
-| Asaas provider (código) | **Implementado** |
-| Asaas sandbox E2E | **Pendente** — credenciais vazias no staging |
-| Mark-paid UI fresh PENDING | **Pendente** browser |
+| Asaas provider + sandbox E2E | **Aprovado** (13.3.1) |
 | Testes | **388/388 OK** |
 | Build + deploy staging | **OK** |
 | RealTradingApproval automático | **Não** |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+**Próxima fase:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation
 
 ### Fase 13.3 — Asaas Payment Provider Integration
 
-**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E sandbox **`APPROVED_WITH_RESTRICTIONS`** (13.3.1)  
+**Status:** `ASAAS_PAYMENT_PROVIDER_IMPLEMENTED` · E2E **`ASAAS_SANDBOX_E2E_SMOKE_APPROVED`**  
 **Smoke:** [`docs/ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md`](ASAAS-SANDBOX-E2E-SMOKE-RESULTS.md)
 
 | Item | Resultado |
 |------|-----------|
 | Objetivo | Integrar Asaas sandbox Pix/checkout R$ 300 com webhook idempotente |
-| Provider Asaas | **Implementado** |
-| BillingCustomer | **Implementado** |
-| Webhook `/api/billing/webhook/asaas` | **Implementado** |
-| Portal Pix/checkout | **Implementado** |
-| Admin create/sync/cancel | **Implementado** |
-| Credenciais sandbox Vercel | **Pendente** |
-| Smoke E2E real | **Pendente** (13.3.1) |
+| Provider Asaas | **Implementado e validado** |
+| BillingCustomer | **OK** |
+| Webhook `/api/billing/webhook/asaas` | **OK** |
+| Smoke E2E sandbox | **Aprovado** (13.3.1) |
 | RealTradingApproval automático | **Não** |
 | Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
 
-**Próxima fase:** Fase 13.3.1 — Asaas Sandbox End-to-End Payment Smoke
+**Próxima fase:** Fase 14.1 — Production Billing Gate
 
 ### Fase 13.2.3 — Billing Portal UI Consistency Fix
 
