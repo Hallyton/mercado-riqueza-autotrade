@@ -4,6 +4,8 @@ node_modules/
 .env.staging.pull
 .env.production.tmp
 scripts/homologation/.asaas-e2e-smoke-result.json
+# Vault de estrategia local (nunca versionar)
+ea/mql5/strategy/
 .next/
 dist/
 *.log
