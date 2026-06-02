@@ -235,6 +235,61 @@ describe("Conditional Real Trading Gate — cenários obrigatórios", () => {
     expect(payload).not.toHaveProperty("strategy");
   });
 
+  it("approval + allowlist vazia passa preflight", async () => {
+    mockAllCriteriaPassing();
+    delete process.env.REAL_TRADING_ALLOWED_LICENSE_IDS;
+    const r = await runRealTradePreflight({
+      ...baseInput,
+      requiredMargin: 1000,
+    });
+    expect(r.passed).toBe(true);
+  });
+
+  it("approval + allowlist sem licença bloqueia", async () => {
+    mockAllCriteriaPassing();
+    process.env.REAL_TRADING_ALLOWED_LICENSE_IDS = "other-license";
+    const r = await runRealTradePreflight(baseInput);
+    expect(r.passed).toBe(false);
+    expect(r.reasonCode).toBe(
+      REAL_TRADING_REASONS.LICENSE_NOT_IN_ENV_ALLOWLIST
+    );
+  });
+
+  it("pagamento ativo sem approval bloqueia", async () => {
+    process.env.ENABLE_REAL_TRADING = "true";
+    vi.mocked(prisma.license.findUnique).mockResolvedValue({
+      userId: baseInput.userId,
+      status: LicenseStatus.ACTIVE,
+      haltAllTrading: false,
+      revokedAt: null,
+      subscriptionId: "sub-1",
+      mt5Account: { login: baseInput.accountLogin, server: baseInput.accountServer },
+    } as never);
+    vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
+      status: SubscriptionStatus.ACTIVE,
+      plan: { maxMt5Accounts: 1, maxRobots: 1 },
+    } as never);
+    vi.mocked(prisma.invoice.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.termsAcceptance.findFirst).mockResolvedValue({ id: "t" } as never);
+    vi.mocked(prisma.device.findFirst).mockResolvedValue({ id: "d" } as never);
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.accountSnapshot.findFirst).mockResolvedValue({
+      id: "snap",
+      freeMargin: 99999,
+    } as never);
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({
+      eaStatus: "ONLINE",
+      receivedAt: new Date(),
+    } as never);
+    vi.mocked(prisma.instruction.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.executionProtectionReport.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.realTradePreflight.create).mockResolvedValue({ id: "pf" } as never);
+
+    const r = await runRealTradePreflight(baseInput);
+    expect(r.passed).toBe(false);
+    expect(r.reasonCode).toBe(REAL_TRADING_REASONS.APPROVAL_REQUIRED);
+  });
+
   it("14) bloqueia dispatch automático", async () => {
     mockAllCriteriaPassing();
     const r = await runRealTradePreflight({

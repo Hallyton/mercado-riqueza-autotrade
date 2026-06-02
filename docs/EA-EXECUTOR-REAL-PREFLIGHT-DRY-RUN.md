@@ -46,6 +46,17 @@ Validar o **Real Trade Preflight** (gate REAL controlado) **sem**:
 
 ---
 
+## Allowlist env opcional
+
+`REAL_TRADING_ALLOWED_LICENSE_IDS` é **opcional** e funciona como trava adicional de emergência:
+
+- **Vazia/ausente:** o gate segue com `RealTradingApproval` APPROVED no banco (não é necessário editar Vercel por licença nova).
+- **Preenchida:** a `licenseId` deve estar na lista **e** ter approval APPROVED válido.
+
+Pagamento/assinatura **não** liberam REAL sem approval.
+
+---
+
 ## Resultado PASSED
 
 - `reasonCode`: `REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE`

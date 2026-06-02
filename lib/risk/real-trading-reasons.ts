@@ -3,6 +3,7 @@ export const REAL_TRADING_REASONS = {
   DISABLED: "REAL_TRADING_DISABLED",
   ENV_NOT_ENABLED: "REAL_TRADING_ENV_NOT_ENABLED",
   LICENSE_NOT_ALLOWLISTED: "REAL_TRADING_LICENSE_NOT_ALLOWLISTED",
+  LICENSE_NOT_IN_ENV_ALLOWLIST: "REAL_TRADING_LICENSE_NOT_IN_ENV_ALLOWLIST",
   PAYMENT_NOT_ACTIVE: "REAL_TRADING_PAYMENT_NOT_ACTIVE",
   SUBSCRIPTION_NOT_ACTIVE: "REAL_TRADING_SUBSCRIPTION_NOT_ACTIVE",
   TERMS_NOT_ACCEPTED: "REAL_TRADING_TERMS_NOT_ACCEPTED",
@@ -35,7 +36,9 @@ export const REAL_TRADING_REASON_MESSAGES: Record<RealTradingReasonCode, string>
   REAL_TRADING_ENV_NOT_ENABLED:
     "Conta real bloqueada: ENABLE_REAL_TRADING não está habilitado.",
   REAL_TRADING_LICENSE_NOT_ALLOWLISTED:
-    "Conta real bloqueada: licença sem aprovação manual ativa nem allowlist técnica opcional.",
+    "Conta real bloqueada: licença sem aprovação manual ativa (allowlist env legada).",
+  REAL_TRADING_LICENSE_NOT_IN_ENV_ALLOWLIST:
+    "Conta real bloqueada: licença fora da allowlist opcional REAL_TRADING_ALLOWED_LICENSE_IDS.",
   REAL_TRADING_PAYMENT_NOT_ACTIVE:
     "Conta real bloqueada: pagamento/assinatura comercial não está em dia.",
   REAL_TRADING_SUBSCRIPTION_NOT_ACTIVE:

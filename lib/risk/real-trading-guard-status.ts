@@ -2,6 +2,10 @@ import {
   countActiveManualRealApprovals,
   isRealTradingEnabled,
 } from "@/lib/risk/real-trading-guard";
+import {
+  isEnvLicenseAllowlistConfigured,
+  parseEnvLicenseAllowlist,
+} from "@/lib/risk/real-trading-config";
 
 type EnvSource = Record<string, string | undefined>;
 
@@ -26,13 +30,6 @@ export type RealTradingGuardAdminStatus = {
   warningMessages: string[];
 };
 
-function parseEnvAllowlistLicenseIds(env: EnvSource): string[] {
-  return (
-    env.REAL_TRADING_ALLOWED_LICENSE_IDS?.split(/[,\s;]+/)
-      .map((value) => value.trim())
-      .filter(Boolean) ?? []
-  );
-}
 
 export function maskLicenseId(licenseId: string): string {
   const normalized = licenseId.trim();
@@ -55,10 +52,10 @@ export async function getRealTradingGuardAdminStatus(
   const realTradingEnabled = isRealTradingEnabled(env);
   const enableRealTradingConfigured =
     env.ENABLE_REAL_TRADING != null && env.ENABLE_REAL_TRADING.trim().length > 0;
-  const envAllowlistLicenseIds = parseEnvAllowlistLicenseIds(env);
+  const envAllowlistLicenseIds = parseEnvLicenseAllowlist(env);
   const activeManualApprovalCount = await countActiveManualRealApprovals();
   const manualAllowlistConfigured = activeManualApprovalCount > 0;
-  const envAllowlistConfigured = envAllowlistLicenseIds.length > 0;
+  const envAllowlistConfigured = isEnvLicenseAllowlistConfigured(env);
 
   const allowedLicenseCount =
     activeManualApprovalCount + envAllowlistLicenseIds.length;
@@ -82,6 +79,7 @@ export async function getRealTradingGuardAdminStatus(
     "A execução ainda depende de PRE_MARKET, margem, EA online, preflight PASSED e protection report.",
     "Dispatch automático continua desativado.",
     "Produção real global não está liberada por esta tela.",
+    "Allowlist opcional de licenças no Vercel é trava adicional. Para novas licenças, não é necessário redeploy — crie RealTradingApproval APPROVED.",
   ];
 
   if (

@@ -8,7 +8,6 @@ import {
 import prisma from "@/lib/prisma";
 import {
   evaluateRealTradingGuardAsync,
-  isLicenseAllowedForRealTrading,
   isRealTradingEnabled,
 } from "@/lib/risk/real-trading-guard";
 import { findActiveRealTradingApproval } from "@/lib/risk/real-trading-approval-query";
@@ -23,6 +22,8 @@ import {
 import {
   eaOnlineThresholdMs,
   isAutoDispatchEnabled,
+  isEnvLicenseAllowlistConfigured,
+  isLicenseInEnvAllowlist,
   magicNumberRange,
 } from "@/lib/risk/real-trading-config";
 import {
@@ -268,15 +269,16 @@ export async function runRealTradePreflight(
         )
       : null;
 
+  const envAllowlistConfigured = isEnvLicenseAllowlistConfigured();
   const allowlistOk =
     environment !== TradeMode.REAL ||
-    isLicenseAllowedForRealTrading(input.licenseId) ||
-    Boolean(approval);
+    !envAllowlistConfigured ||
+    isLicenseInEnvAllowlist(input.licenseId);
   pushCheck(
     checks,
     "allowlist",
     allowlistOk,
-    REAL_TRADING_REASONS.LICENSE_NOT_ALLOWLISTED
+    REAL_TRADING_REASONS.LICENSE_NOT_IN_ENV_ALLOWLIST
   );
 
   if (!approval) {

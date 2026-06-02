@@ -9,6 +9,11 @@ import {
   type RealTradingReasonCode,
 } from "@/lib/risk/real-trading-reasons";
 import { findActiveRealTradingApproval } from "@/lib/risk/real-trading-approval-query";
+import {
+  isEnvLicenseAllowlistConfigured,
+  isLicenseInEnvAllowlist,
+  parseEnvLicenseAllowlist,
+} from "@/lib/risk/real-trading-config";
 
 export const REAL_TRADING_DISABLED_CODE = REAL_TRADING_REASONS.DISABLED;
 export const REAL_TRADING_DISABLED_REASON =
@@ -62,12 +67,10 @@ export function isLicenseAllowedForRealTrading(
   licenseId: string,
   env: EnvSource = process.env
 ): boolean {
-  const allowed = env.REAL_TRADING_ALLOWED_LICENSE_IDS?.split(/[,\s;]+/)
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  return allowed?.includes(licenseId) ?? false;
+  return isLicenseInEnvAllowlist(licenseId, env);
 }
+
+export { isEnvLicenseAllowlistConfigured, parseEnvLicenseAllowlist };
 
 function isExplicitRealTradeMode(
   tradeMode: TradeMode | string | null | undefined
@@ -264,6 +267,19 @@ export async function evaluateRealTradingGuardAsync(
     };
   }
 
+  if (
+    isEnvLicenseAllowlistConfigured(env) &&
+    !isLicenseInEnvAllowlist(input.licenseId, env)
+  ) {
+    return {
+      allowed: false,
+      outcome: "BLOCKED",
+      code: REAL_TRADING_REASONS.LICENSE_NOT_IN_ENV_ALLOWLIST,
+      reason:
+        REAL_TRADING_REASON_MESSAGES.REAL_TRADING_LICENSE_NOT_IN_ENV_ALLOWLIST,
+    };
+  }
+
   return {
     allowed: true,
     outcome: "ALLOWED_CONTROLLED_REAL",
@@ -276,6 +292,7 @@ export function toPreflightGuardFlags(env: EnvSource = process.env) {
   return {
     envEnabledOk: isRealTradingEnabled(env),
     envAllowlistOk: (licenseId: string) =>
-      isLicenseAllowedForRealTrading(licenseId, env),
+      !isEnvLicenseAllowlistConfigured(env) ||
+      isLicenseInEnvAllowlist(licenseId, env),
   };
 }

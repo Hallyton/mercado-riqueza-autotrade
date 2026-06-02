@@ -59,8 +59,10 @@ export default async function AdminRealTradingGuardPage() {
           <CardDescription>
             Conta real permanece bloqueada por padrão. Para autorizar uma operação
             real, crie uma aprovação específica por licença, conta, símbolo e
-            magicNumber. A aprovação não envia ordem, não ativa dispatch automático
-            e não substitui o preflight.
+            magicNumber. Para novas licenças, não é necessário alterar variáveis no
+            Vercel — o controle operacional é a RealTradingApproval APPROVED no banco.
+            A aprovação não envia ordem, não ativa dispatch automático e não substitui
+            o preflight.
           </CardDescription>
         </CardHeader>
         <div className="flex flex-wrap gap-3">
@@ -98,7 +100,7 @@ export default async function AdminRealTradingGuardPage() {
         <InfoCard
           label="Allowlist env (opcional)"
           value={status.envAllowlistLicenseCount}
-          hint="REAL_TRADING_ALLOWED_LICENSE_IDS — extra, não substitui approval."
+hint="Opcional/emergencial. Se vazia, basta RealTradingApproval APPROVED."
         />
         <InfoCard
           label="Política padrão"
@@ -115,7 +117,11 @@ export default async function AdminRealTradingGuardPage() {
         <ul className="space-y-2 text-sm">
           <li>Conta real bloqueada por padrão.</li>
           <li>REAL exige master switch + RealTradingApproval APPROVED.</li>
-          <li>Allowlist env é opcional; aprovação manual é o caminho operacional.</li>
+          <li>
+            Allowlist env (REAL_TRADING_ALLOWED_LICENSE_IDS) é opcional — trava
+            adicional quando preenchida; aprovação manual no banco é o caminho
+            operacional.
+          </li>
           <li>Produção real global não liberada por esta tela.</li>
           <li>Dispatch automático desativado.</li>
           <li>DEMO permitido conforme regras existentes.</li>
@@ -151,6 +157,16 @@ export default async function AdminRealTradingGuardPage() {
                   "REAL com approval APPROVED",
                   "Pode seguir para preflight",
                   "Ainda exige snapshot, margem, EA online, SL/TP.",
+                ],
+                [
+                  "REAL + approval + allowlist env vazia",
+                  "Permitido no guard",
+                  "Sem editar Vercel para cada licença nova.",
+                ],
+                [
+                  "REAL + approval + allowlist env sem a licença",
+                  "Bloqueado",
+                  "Trava adicional REAL_TRADING_ALLOWED_LICENSE_IDS.",
                 ],
               ].map(([scenario, result, note]) => (
                 <tr key={scenario} className="border-b border-white/5">

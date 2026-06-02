@@ -166,6 +166,70 @@ describe("Real Trading Guard — async", () => {
     }
   });
 
+  it("approval APPROVED + allowlist env vazia permite", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: baseCtx.accountLogin,
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {
+      ENABLE_REAL_TRADING: "true",
+    });
+    expect(decision.allowed).toBe(true);
+    if (decision.allowed) {
+      expect(decision.code).toBe(REAL_TRADING_REASONS.ALLOWED_BY_MANUAL_APPROVAL);
+    }
+  });
+
+  it("approval APPROVED + allowlist contém licença permite", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: baseCtx.accountLogin,
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {
+      ENABLE_REAL_TRADING: "true",
+      REAL_TRADING_ALLOWED_LICENSE_IDS: "lic-1,other",
+    });
+    expect(decision.allowed).toBe(true);
+  });
+
+  it("approval APPROVED + allowlist sem a licença bloqueia", async () => {
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: baseCtx.accountLogin,
+      accountServer: baseCtx.accountServer,
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+
+    const decision = await evaluateRealTradingGuardAsync(baseCtx, {
+      ENABLE_REAL_TRADING: "true",
+      REAL_TRADING_ALLOWED_LICENSE_IDS: "other-license-only",
+    });
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.code).toBe(
+        REAL_TRADING_REASONS.LICENSE_NOT_IN_ENV_ALLOWLIST
+      );
+    }
+  });
+
   it("maxContracts excedido bloqueia", async () => {
     vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
       id: "appr-1",

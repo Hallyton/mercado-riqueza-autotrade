@@ -34,9 +34,9 @@ Uma instruction em conta **REAL** só é entregue ao EA Executor quando **todos*
 
 | Critério | Implementação |
 |----------|----------------|
-| `ENABLE_REAL_TRADING` | env |
-| Allowlist `REAL_TRADING_ALLOWED_LICENSE_IDS` | env — **não ampla** |
-| `RealTradingApproval` APPROVED + `allowReal` | banco |
+| `ENABLE_REAL_TRADING` | env — master switch global |
+| `RealTradingApproval` APPROVED + `allowReal` | banco — **liberação operacional por cliente** |
+| Allowlist `REAL_TRADING_ALLOWED_LICENSE_IDS` | env — **opcional**; trava adicional quando preenchida |
 | Match userId, licenseId, login, server, symbol, magicNumber | preflight |
 | maxContracts, minFreeMargin, marginBuffer | preflight |
 
@@ -67,7 +67,7 @@ Uma instruction em conta **REAL** só é entregue ao EA Executor quando **todos*
 - Pagamento/assinatura **sozinhos**
 - Licença ativa **sozinha**
 - Config manual **sem** approval + preflight
-- Allowlist **sem** demais critérios
+- Allowlist env **sozinha** (sem RealTradingApproval APPROVED)
 - Cliente definindo `allowReal` ou `magicNumber`
 
 ---

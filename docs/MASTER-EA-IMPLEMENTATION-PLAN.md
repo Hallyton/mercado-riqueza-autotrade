@@ -2523,6 +2523,18 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation
 
+### Fase 14.1.3 — Optional Env Allowlist for Real Trading
+
+**Status:** `REAL_TRADING_ENV_ALLOWLIST_OPTIONAL_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Allowlist env opcional; RealTradingApproval APPROVED é liberação operacional |
+| Master switch | `ENABLE_REAL_TRADING` obrigatório |
+| Allowlist env | `REAL_TRADING_ALLOWED_LICENSE_IDS` — trava adicional quando preenchida |
+| Novas licenças | Sem redeploy Vercel — criar approval no admin |
+| Ordens / dispatch | **Nenhuma** ordem · dispatch **desativado** |
+
 ### Fase 14.1.2 — EA Executor Real Preflight Dry Run
 
 **Status:** `REAL_PREFLIGHT_DRY_RUN_IMPLEMENTED`  
