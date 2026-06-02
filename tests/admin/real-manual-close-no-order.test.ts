@@ -34,6 +34,13 @@ import {
 
 const instructionId = "cmpwldiz6002vlb04igy5692o";
 
+const fullAttestation = {
+  noPendingOrder: true as const,
+  noOpenPosition: true as const,
+  noRiskExposure: true as const,
+  requiresNewPreflight: true as const,
+};
+
 const baseInstruction = {
   id: instructionId,
   source: InstructionSource.REAL_MANUAL,
@@ -60,13 +67,18 @@ const baseInstruction = {
   ],
 };
 
+const noExposure = {
+  hasOpenPosition: false,
+  hasPendingBrokerOrder: false,
+  hasOtherArmedInstruction: false,
+  heartbeatAvailable: false,
+};
+
 describe("real manual close no order", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(prisma.instruction.findUnique).mockResolvedValue(baseInstruction as never);
-    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({
-      reportPayload: { open_positions: [], pending_orders: [] },
-    } as never);
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.instruction.findFirst).mockResolvedValue(null);
     vi.mocked(prisma.$transaction).mockImplementation(async (fn: (tx: typeof prisma) => unknown) =>
       fn(prisma)
@@ -77,22 +89,46 @@ describe("real manual close no order", () => {
     vi.mocked(prisma.executionProtectionReport.update).mockResolvedValue({} as never);
   });
 
-  it("exibe painel quando EXECUTED + REJECTED + PROTECTION_PENDING", () => {
+  it("exibe painel para EXECUTED + REJECTED + PROTECTION_PENDING sem heartbeat", () => {
     const eligibility = evaluateCloseNoOrderEligibility({
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.EXECUTED,
       statusLogs: [],
-      latestExecutionStatus: ExecutionStatus.REJECTED,
-      latestExecutionFilled: false,
-      latestProtectionStatus: ProtectionStatus.PROTECTION_PENDING,
+      executions: [{ status: ExecutionStatus.REJECTED }],
+      protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_PENDING }],
+      exposure: noExposure,
+    });
+    expect(eligibility.canShowClosePanel).toBe(true);
+    expect(eligibility.heartbeatWarning).toContain("Sem heartbeat recente");
+  });
+
+  it("exibe painel para EXECUTED + PROTECTION_PENDING sem registro de execução", () => {
+    const eligibility = evaluateCloseNoOrderEligibility({
+      source: InstructionSource.REAL_MANUAL,
+      currentStatus: OrderLogStatus.EXECUTED,
+      statusLogs: [],
+      executions: [],
+      protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_PENDING }],
+      exposure: noExposure,
+    });
+    expect(eligibility.canShowClosePanel).toBe(true);
+  });
+
+  it("mantém painel visível com heartbeat reportando posição (somente aviso)", () => {
+    const eligibility = evaluateCloseNoOrderEligibility({
+      source: InstructionSource.REAL_MANUAL,
+      currentStatus: OrderLogStatus.EXECUTED,
+      statusLogs: [],
+      executions: [{ status: ExecutionStatus.REJECTED }],
+      protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_PENDING }],
       exposure: {
-        hasOpenPosition: false,
-        hasPendingBrokerOrder: false,
-        hasOtherArmedInstruction: false,
+        ...noExposure,
+        hasOpenPosition: true,
+        heartbeatAvailable: true,
       },
     });
     expect(eligibility.canShowClosePanel).toBe(true);
-    expect(eligibility.canSubmitClose).toBe(true);
+    expect(eligibility.heartbeatWarning).toMatch(/posição aberta/i);
   });
 
   it("não exibe painel quando já ORDER_NOT_PLACED", () => {
@@ -100,14 +136,36 @@ describe("real manual close no order", () => {
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.ORDER_NOT_PLACED,
       statusLogs: [{ status: OrderLogStatus.ORDER_NOT_PLACED, metadata: null }],
-      latestExecutionStatus: ExecutionStatus.REJECTED,
-      latestExecutionFilled: false,
-      latestProtectionStatus: ProtectionStatus.SKIPPED_NO_POSITION,
-      exposure: {
-        hasOpenPosition: false,
-        hasPendingBrokerOrder: false,
-        hasOtherArmedInstruction: false,
-      },
+      executions: [{ status: ExecutionStatus.REJECTED }],
+      protectionReports: [{ protectionStatus: ProtectionStatus.SKIPPED_NO_POSITION }],
+      exposure: noExposure,
+    });
+    expect(eligibility.canShowClosePanel).toBe(false);
+  });
+
+  it("não exibe painel quando há PROTECTION_CONFIRMED", () => {
+    const eligibility = evaluateCloseNoOrderEligibility({
+      source: InstructionSource.REAL_MANUAL,
+      currentStatus: OrderLogStatus.EXECUTED,
+      statusLogs: [],
+      executions: [{ status: ExecutionStatus.REJECTED }],
+      protectionReports: [
+        { protectionStatus: ProtectionStatus.PROTECTION_PENDING },
+        { protectionStatus: ProtectionStatus.PROTECTION_CONFIRMED },
+      ],
+      exposure: noExposure,
+    });
+    expect(eligibility.canShowClosePanel).toBe(false);
+  });
+
+  it("não exibe painel quando há PROTECTION_FAILED", () => {
+    const eligibility = evaluateCloseNoOrderEligibility({
+      source: InstructionSource.REAL_MANUAL,
+      currentStatus: OrderLogStatus.EXECUTED,
+      statusLogs: [],
+      executions: [{ status: ExecutionStatus.REJECTED }],
+      protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_FAILED }],
+      exposure: noExposure,
     });
     expect(eligibility.canShowClosePanel).toBe(false);
   });
@@ -119,31 +177,44 @@ describe("real manual close no order", () => {
         actorId: "admin-1",
         reasonCode: CLOSE_NO_ORDER_REASON_CODE,
         operatorNote: "Nota operacional válida para encerramento.",
+        operatorAttestation: fullAttestation,
         adminConfirmation: "ERRADO",
       })
     ).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("encerra REAL_MANUAL e registra admin action", async () => {
+  it("bloqueia atestação incompleta", async () => {
+    await expect(
+      closeRealManualInstructionNoOrder({
+        instructionId,
+        actorId: "admin-1",
+        reasonCode: CLOSE_NO_ORDER_REASON_CODE,
+        operatorNote: "Nota operacional válida para encerramento.",
+        operatorAttestation: {
+          noPendingOrder: true,
+          noOpenPosition: false,
+          noRiskExposure: true,
+          requiresNewPreflight: true,
+        },
+        adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
+      })
+    ).rejects.toMatchObject({ code: "OPERATOR_ATTESTATION_INCOMPLETE" });
+  });
+
+  it("encerra REAL_MANUAL e registra admin action com atestação", async () => {
     const result = await closeRealManualInstructionNoOrder({
       instructionId,
       actorId: "admin-1",
       reasonCode: CLOSE_NO_ORDER_REASON_CODE,
       operatorNote:
         "Ordem LIMIT não foi apregoada no MT5 por falha/rejeição da bolsa. Nenhuma ordem pendente.",
+      operatorAttestation: fullAttestation,
       adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
     });
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe(OrderLogStatus.ORDER_NOT_PLACED);
-    expect(prisma.instruction.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          currentStatus: OrderLogStatus.ORDER_NOT_PLACED,
-        }),
-      })
-    );
     expect(prisma.executionProtectionReport.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -154,9 +225,31 @@ describe("real manual close no order", () => {
     expect(recordAdminAction).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "real_trading.instruction.close_no_order",
-        targetId: instructionId,
+        metadata: expect.objectContaining({
+          operatorAttestation: fullAttestation,
+          previousStatus: OrderLogStatus.EXECUTED,
+          newStatus: OrderLogStatus.ORDER_NOT_PLACED,
+        }),
       })
     );
+  });
+
+  it("não marca PROTECTION_FAILED nem PROTECTION_CONFIRMED", async () => {
+    await closeRealManualInstructionNoOrder({
+      instructionId,
+      actorId: "admin-1",
+      reasonCode: CLOSE_NO_ORDER_REASON_CODE,
+      operatorNote: "Nota operacional válida para encerramento completa.",
+      operatorAttestation: fullAttestation,
+      adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
+    });
+
+    const updateCalls = vi.mocked(prisma.executionProtectionReport.update).mock.calls;
+    for (const call of updateCalls) {
+      const status = call[0]?.data?.protectionStatus;
+      expect(status).not.toBe(ProtectionStatus.PROTECTION_FAILED);
+      expect(status).not.toBe(ProtectionStatus.PROTECTION_CONFIRMED);
+    }
   });
 
   it("rejeita TEST/HOMOLOGATION", async () => {
@@ -171,6 +264,7 @@ describe("real manual close no order", () => {
         actorId: "admin-1",
         reasonCode: CLOSE_NO_ORDER_REASON_CODE,
         operatorNote: "Nota operacional válida para encerramento.",
+        operatorAttestation: fullAttestation,
         adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
       })
     ).rejects.toMatchObject({ code: "SOURCE_NOT_REAL_MANUAL" });
@@ -189,6 +283,7 @@ describe("real manual close no order", () => {
         actorId: "admin-1",
         reasonCode: CLOSE_NO_ORDER_REASON_CODE,
         operatorNote: "Nota operacional válida para encerramento.",
+        operatorAttestation: fullAttestation,
         adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
       })
     ).rejects.toMatchObject({ code: "REAL_MANUAL_ALREADY_CLOSED" });

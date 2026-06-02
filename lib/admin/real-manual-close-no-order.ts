@@ -17,6 +17,15 @@ export const CLOSE_NO_ORDER_REASON_CODE = "ORDER_NOT_PLACED_EXCHANGE_REJECTED";
 
 export const CLOSE_NO_ORDER_STATUS_EVENT = "CLOSED_NO_ORDER";
 
+export const operatorAttestationSchema = z.object({
+  noPendingOrder: z.literal(true),
+  noOpenPosition: z.literal(true),
+  noRiskExposure: z.literal(true),
+  requiresNewPreflight: z.literal(true),
+});
+
+export type OperatorAttestation = z.infer<typeof operatorAttestationSchema>;
+
 /** Status terminais — não permite novo encerramento. */
 export const REAL_MANUAL_TERMINAL_INSTRUCTION_STATUSES: OrderLogStatus[] = [
   OrderLogStatus.ORDER_NOT_PLACED,
@@ -27,6 +36,7 @@ export const REAL_MANUAL_TERMINAL_INSTRUCTION_STATUSES: OrderLogStatus[] = [
 export const closeNoOrderSchema = z.object({
   reasonCode: z.literal(CLOSE_NO_ORDER_REASON_CODE),
   operatorNote: z.string().min(10).max(2000),
+  operatorAttestation: operatorAttestationSchema,
   adminConfirmation: z.string().min(1),
 });
 
@@ -71,6 +81,22 @@ export function hasClosedNoOrderInLogs(
     }
     return (log.metadata as Record<string, unknown>).event === CLOSE_NO_ORDER_STATUS_EVENT;
   });
+}
+
+export function hasProtectionStatus(
+  reports: { protectionStatus: ProtectionStatus }[],
+  status: ProtectionStatus
+): boolean {
+  return reports.some((r) => r.protectionStatus === status);
+}
+
+export function hasAnyFilledExecution(
+  executions: { status: ExecutionStatus }[]
+): boolean {
+  return executions.some(
+    (e) =>
+      e.status === ExecutionStatus.FILLED || e.status === ExecutionStatus.PARTIAL
+  );
 }
 
 export async function assessLicenseExposureForClose(params: {
@@ -119,12 +145,14 @@ export async function assessLicenseExposureForClose(params: {
     hasOpenPosition: openPositions.length > 0,
     hasPendingBrokerOrder: pendingBrokerOrders.length > 0,
     hasOtherArmedInstruction: Boolean(armedOther),
+    heartbeatAvailable: Boolean(hb),
   };
 }
 
 export type CloseNoOrderEligibility = {
   canShowClosePanel: boolean;
-  canSubmitClose: boolean;
+  /** Aviso quando heartbeat indica exposição — não oculta o painel. */
+  heartbeatWarning: string | null;
   blockReason: string | null;
 };
 
@@ -132,19 +160,19 @@ export function evaluateCloseNoOrderEligibility(input: {
   source: InstructionSource | null;
   currentStatus: OrderLogStatus;
   statusLogs: { metadata: Prisma.JsonValue | null; status: OrderLogStatus }[];
-  latestExecutionStatus: ExecutionStatus | null;
-  latestExecutionFilled: boolean;
-  latestProtectionStatus: ProtectionStatus | null;
+  executions: { status: ExecutionStatus }[];
+  protectionReports: { protectionStatus: ProtectionStatus }[];
   exposure: {
     hasOpenPosition: boolean;
     hasPendingBrokerOrder: boolean;
     hasOtherArmedInstruction: boolean;
+    heartbeatAvailable: boolean;
   };
 }): CloseNoOrderEligibility {
   if (input.source !== InstructionSource.REAL_MANUAL) {
     return {
       canShowClosePanel: false,
-      canSubmitClose: false,
+      heartbeatWarning: null,
       blockReason: "Apenas instructions REAL_MANUAL.",
     };
   }
@@ -152,74 +180,108 @@ export function evaluateCloseNoOrderEligibility(input: {
   if (hasClosedNoOrderInLogs(input.statusLogs)) {
     return {
       canShowClosePanel: false,
-      canSubmitClose: false,
+      heartbeatWarning: null,
       blockReason: "Instruction já encerrada sem ordem apregoada.",
     };
   }
 
-  if (REAL_MANUAL_TERMINAL_INSTRUCTION_STATUSES.includes(input.currentStatus)) {
+  if (input.currentStatus === OrderLogStatus.ORDER_NOT_PLACED) {
     return {
       canShowClosePanel: false,
-      canSubmitClose: false,
+      heartbeatWarning: null,
+      blockReason: "Instruction já está ORDER_NOT_PLACED.",
+    };
+  }
+
+  if (
+    REAL_MANUAL_TERMINAL_INSTRUCTION_STATUSES.includes(input.currentStatus) &&
+    input.currentStatus !== OrderLogStatus.EXECUTED
+  ) {
+    return {
+      canShowClosePanel: false,
+      heartbeatWarning: null,
       blockReason: "Instruction em status final.",
     };
   }
 
-  const protectionPending =
-    input.latestProtectionStatus === ProtectionStatus.PROTECTION_PENDING;
-  const executionRejected =
-    input.latestExecutionStatus === ExecutionStatus.REJECTED ||
-    input.latestExecutionStatus === ExecutionStatus.EXPIRED;
-  const noFill =
-    !input.latestExecutionFilled &&
-    (executionRejected ||
-      input.currentStatus === OrderLogStatus.REJECTED ||
-      input.currentStatus === OrderLogStatus.EXECUTED);
-
-  const operationalMismatch =
-    input.currentStatus === OrderLogStatus.EXECUTED &&
-    executionRejected &&
-    protectionPending;
-
-  const showPanel =
-    protectionPending &&
-    noFill &&
-    (executionRejected || operationalMismatch || input.currentStatus === OrderLogStatus.SENT);
-
-  if (!showPanel) {
+  if (hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_CONFIRMED)) {
     return {
       canShowClosePanel: false,
-      canSubmitClose: false,
-      blockReason:
-        "Encerramento disponível apenas quando proteção está pendente e a ordem não foi apregoada.",
+      heartbeatWarning: null,
+      blockReason: "Proteção já confirmada — encerramento não aplicável.",
     };
   }
 
-  if (input.exposure.hasOpenPosition) {
+  if (hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_FAILED)) {
     return {
-      canShowClosePanel: true,
-      canSubmitClose: false,
-      blockReason: "Há posição aberta reportada pelo EA para este símbolo/magic.",
+      canShowClosePanel: false,
+      heartbeatWarning: null,
+      blockReason: "Proteção em falha — use o fluxo de proteção antes de encerrar.",
     };
+  }
+
+  const protectionPending = hasProtectionStatus(
+    input.protectionReports,
+    ProtectionStatus.PROTECTION_PENDING
+  );
+
+  if (!protectionPending) {
+    return {
+      canShowClosePanel: false,
+      heartbeatWarning: null,
+      blockReason:
+        "Encerramento disponível apenas com relatório de proteção PROTECTION_PENDING.",
+    };
+  }
+
+  const anyFilled = hasAnyFilledExecution(input.executions);
+  const anyRejected = input.executions.some(
+    (e) =>
+      e.status === ExecutionStatus.REJECTED || e.status === ExecutionStatus.EXPIRED
+  );
+
+  const inconsistentState =
+    !anyFilled &&
+    (input.currentStatus === OrderLogStatus.EXECUTED ||
+      input.currentStatus === OrderLogStatus.REJECTED ||
+      input.currentStatus === OrderLogStatus.SENT ||
+      anyRejected ||
+      input.executions.length === 0);
+
+  if (!inconsistentState) {
+    return {
+      canShowClosePanel: false,
+      heartbeatWarning: null,
+      blockReason:
+        "Estado operacional não indica ordem não apregoada (execução preenchida ou status incompatível).",
+    };
+  }
+
+  const warnings: string[] = [];
+  if (input.exposure.hasOpenPosition) {
+    warnings.push(
+      "O último heartbeat reportou posição aberta para este símbolo/magic. Confirme no MT5 antes de atestar."
+    );
   }
   if (input.exposure.hasPendingBrokerOrder) {
-    return {
-      canShowClosePanel: true,
-      canSubmitClose: false,
-      blockReason: "Há ordem pendente ativa no broker para este símbolo/magic.",
-    };
+    warnings.push(
+      "O último heartbeat reportou ordem pendente no broker. Confirme no MT5 antes de atestar."
+    );
   }
   if (input.exposure.hasOtherArmedInstruction) {
-    return {
-      canShowClosePanel: true,
-      canSubmitClose: false,
-      blockReason: "Há outra instruction armada (RECEIVED/SENT) para o mesmo símbolo.",
-    };
+    warnings.push(
+      "Há outra instruction RECEIVED/SENT para o mesmo símbolo — verifique conflito operacional."
+    );
+  }
+  if (!input.exposure.heartbeatAvailable) {
+    warnings.push(
+      "Sem heartbeat recente no sistema — use a atestação manual após verificar o MT5."
+    );
   }
 
   return {
     canShowClosePanel: true,
-    canSubmitClose: true,
+    heartbeatWarning: warnings.length > 0 ? warnings.join(" ") : null,
     blockReason: null,
   };
 }
@@ -229,15 +291,14 @@ export async function getRealManualCloseNoOrderEligibility(instructionId: string
     where: { id: instructionId },
     include: {
       statusLogs: { orderBy: { createdAt: "asc" } },
-      executions: { orderBy: { executedAt: "desc" }, take: 1 },
-      executionProtectionReports: { orderBy: { reportedAt: "desc" }, take: 1 },
+      executions: { orderBy: { executedAt: "desc" } },
+      executionProtectionReports: { orderBy: { reportedAt: "desc" } },
     },
   });
   if (!instruction || instruction.source !== InstructionSource.REAL_MANUAL) {
     return null;
   }
 
-  const latestEx = instruction.executions[0] ?? null;
   const exposure = await assessLicenseExposureForClose({
     licenseId: instruction.licenseId,
     symbol: instruction.symbol,
@@ -249,14 +310,25 @@ export async function getRealManualCloseNoOrderEligibility(instructionId: string
     source: instruction.source,
     currentStatus: instruction.currentStatus,
     statusLogs: instruction.statusLogs,
-    latestExecutionStatus: latestEx?.status ?? null,
-    latestExecutionFilled:
-      latestEx?.status === ExecutionStatus.FILLED ||
-      latestEx?.status === ExecutionStatus.PARTIAL,
-    latestProtectionStatus:
-      instruction.executionProtectionReports[0]?.protectionStatus ?? null,
+    executions: instruction.executions,
+    protectionReports: instruction.executionProtectionReports,
     exposure,
   });
+}
+
+function validateOperatorAttestation(attestation: OperatorAttestation) {
+  if (
+    !attestation.noPendingOrder ||
+    !attestation.noOpenPosition ||
+    !attestation.noRiskExposure ||
+    !attestation.requiresNewPreflight
+  ) {
+    throw new RealManualCloseNoOrderError(
+      "Todas as atestações operacionais são obrigatórias.",
+      "OPERATOR_ATTESTATION_INCOMPLETE",
+      400
+    );
+  }
 }
 
 export async function closeRealManualInstructionNoOrder(input: {
@@ -264,6 +336,7 @@ export async function closeRealManualInstructionNoOrder(input: {
   actorId: string;
   reasonCode: typeof CLOSE_NO_ORDER_REASON_CODE;
   operatorNote: string;
+  operatorAttestation: OperatorAttestation;
   adminConfirmation: string;
   ipAddress?: string | null;
 }) {
@@ -274,6 +347,8 @@ export async function closeRealManualInstructionNoOrder(input: {
       400
     );
   }
+
+  validateOperatorAttestation(input.operatorAttestation);
 
   const instruction = await prisma.instruction.findUnique({
     where: { id: input.instructionId },
@@ -292,11 +367,21 @@ export async function closeRealManualInstructionNoOrder(input: {
     );
   }
 
+  const previousStatus = instruction.currentStatus;
+
   if (instruction.source !== InstructionSource.REAL_MANUAL) {
     throw new RealManualCloseNoOrderError(
       "Apenas instructions REAL_MANUAL podem ser encerradas por este fluxo.",
       "SOURCE_NOT_REAL_MANUAL",
       400
+    );
+  }
+
+  if (hasProtectionStatus(instruction.executionProtectionReports, ProtectionStatus.PROTECTION_CONFIRMED)) {
+    throw new RealManualCloseNoOrderError(
+      "Não é permitido encerrar instruction com proteção confirmada.",
+      "PROTECTION_ALREADY_CONFIRMED",
+      409
     );
   }
 
@@ -308,15 +393,14 @@ export async function closeRealManualInstructionNoOrder(input: {
     );
   }
 
-  if (REAL_MANUAL_TERMINAL_INSTRUCTION_STATUSES.includes(instruction.currentStatus)) {
+  if (instruction.currentStatus === OrderLogStatus.ORDER_NOT_PLACED) {
     throw new RealManualCloseNoOrderError(
-      "Instruction em status final e não pode ser encerrada novamente.",
+      "Instruction já está ORDER_NOT_PLACED.",
       "REAL_MANUAL_ALREADY_CLOSED",
       409
     );
   }
 
-  const latestEx = instruction.executions[0] ?? null;
   const exposure = await assessLicenseExposureForClose({
     licenseId: instruction.licenseId,
     symbol: instruction.symbol,
@@ -328,16 +412,12 @@ export async function closeRealManualInstructionNoOrder(input: {
     source: instruction.source,
     currentStatus: instruction.currentStatus,
     statusLogs: instruction.statusLogs,
-    latestExecutionStatus: latestEx?.status ?? null,
-    latestExecutionFilled:
-      latestEx?.status === ExecutionStatus.FILLED ||
-      latestEx?.status === ExecutionStatus.PARTIAL,
-    latestProtectionStatus:
-      instruction.executionProtectionReports[0]?.protectionStatus ?? null,
+    executions: instruction.executions,
+    protectionReports: instruction.executionProtectionReports,
     exposure,
   });
 
-  if (!eligibility.canSubmitClose) {
+  if (!eligibility.canShowClosePanel) {
     throw new RealManualCloseNoOrderError(
       eligibility.blockReason ??
         "Instruction não elegível para encerramento sem ordem apregoada.",
@@ -346,8 +426,17 @@ export async function closeRealManualInstructionNoOrder(input: {
     );
   }
 
+  if (exposure.hasOtherArmedInstruction) {
+    throw new RealManualCloseNoOrderError(
+      "Há outra instruction armada (RECEIVED/SENT) para o mesmo símbolo.",
+      "OTHER_ARMED_INSTRUCTION",
+      409
+    );
+  }
+
   const operatorNoteRedacted = redactSensitiveMessage(input.operatorNote.trim());
   const now = new Date();
+  const latestEx = instruction.executions[0] ?? null;
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.instruction.update({
@@ -368,6 +457,7 @@ export async function closeRealManualInstructionNoOrder(input: {
           event: CLOSE_NO_ORDER_STATUS_EVENT,
           reasonCode: input.reasonCode,
           operatorNote: operatorNoteRedacted,
+          operatorAttestation: input.operatorAttestation,
           closedByAdminId: input.actorId,
           closedAt: now.toISOString(),
         },
@@ -375,10 +465,16 @@ export async function closeRealManualInstructionNoOrder(input: {
     });
 
     if (latestEx) {
+      const nextExecutionStatus =
+        latestEx.status === ExecutionStatus.REJECTED ||
+        latestEx.status === ExecutionStatus.EXPIRED
+          ? latestEx.status
+          : ExecutionStatus.REJECTED;
+
       await tx.execution.update({
         where: { id: latestEx.id },
         data: {
-          status: ExecutionStatus.REJECTED,
+          status: nextExecutionStatus,
           errorCode: input.reasonCode,
           errorMessage: operatorNoteRedacted,
           executedAt: latestEx.executedAt ?? now,
@@ -431,7 +527,7 @@ export async function closeRealManualInstructionNoOrder(input: {
 
     return {
       instructionStatus: OrderLogStatus.ORDER_NOT_PLACED,
-      executionStatus: ExecutionStatus.REJECTED,
+      executionStatus: latestEx?.status ?? null,
       protectionStatus: ProtectionStatus.SKIPPED_NO_POSITION,
     };
   });
@@ -446,6 +542,10 @@ export async function closeRealManualInstructionNoOrder(input: {
       instructionId: instruction.id,
       reasonCode: input.reasonCode,
       operatorNote: operatorNoteRedacted,
+      operatorAttestation: input.operatorAttestation,
+      previousStatus,
+      newStatus: OrderLogStatus.ORDER_NOT_PLACED,
+      closedAt: now.toISOString(),
       licenseId: instruction.licenseId,
       symbol: instruction.symbol,
       magicNumber: instruction.magicNumber,
@@ -456,11 +556,11 @@ export async function closeRealManualInstructionNoOrder(input: {
     ok: true as const,
     instructionId: instruction.id,
     status: result.instructionStatus,
-    executionStatus: latestEx ? result.executionStatus : null,
+    executionStatus: result.executionStatus,
     protectionStatus: result.protectionStatus,
     reasonCode: input.reasonCode,
     message:
-      "Instruction encerrada sem ordem apregoada. Nenhuma posição aberta e nenhuma exposição de risco registrada.",
+      "Instruction encerrada sem ordem apregoada. Nenhuma posição aberta, nenhuma ordem pendente e nenhuma exposição de risco foram atestadas pelo operador.",
   };
 }
 

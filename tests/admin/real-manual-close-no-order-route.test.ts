@@ -15,7 +15,17 @@ vi.mock("@/lib/admin/real-manual-close-no-order", async (importOriginal) => {
 });
 
 import { POST } from "@/app/api/admin/real-trading/instructions/[instructionId]/close-no-order/route";
-import { CLOSE_NO_ORDER_CONFIRM_PHRASE, CLOSE_NO_ORDER_REASON_CODE } from "@/lib/admin/real-manual-close-no-order";
+import {
+  CLOSE_NO_ORDER_CONFIRM_PHRASE,
+  CLOSE_NO_ORDER_REASON_CODE,
+} from "@/lib/admin/real-manual-close-no-order";
+
+const fullAttestation = {
+  noPendingOrder: true,
+  noOpenPosition: true,
+  noRiskExposure: true,
+  requiresNewPreflight: true,
+};
 
 describe("POST close-no-order", () => {
   beforeEach(() => {
@@ -46,6 +56,7 @@ describe("POST close-no-order", () => {
           reasonCode: CLOSE_NO_ORDER_REASON_CODE,
           operatorNote:
             "Ordem LIMIT não foi apregoada no MT5 por falha/rejeição da bolsa.",
+          operatorAttestation: fullAttestation,
           adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
         }),
       }),

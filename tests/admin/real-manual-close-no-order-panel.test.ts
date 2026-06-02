@@ -15,15 +15,20 @@ describe("RealManualCloseNoOrderPanel UI", () => {
     "utf8"
   );
 
-  it("formulário com confirmação e reason code fixo", () => {
+  it("formulário com atestação manual e confirmação", () => {
     expect(panel).toContain("Encerrar sem ordem apregoada");
     expect(panel).toContain("CLOSE_NO_ORDER_REASON_CODE");
     expect(panel).toContain("CLOSE_NO_ORDER_CONFIRM_PHRASE");
-    expect(panel).toContain("close-no-order");
+    expect(panel).toContain("attest-no-pending-order");
+    expect(panel).toContain("attest-no-open-position");
+    expect(panel).toContain("attest-no-risk-exposure");
+    expect(panel).toContain("attest-requires-new-preflight");
+    expect(panel).toContain("operatorAttestation");
   });
 
-  it("página de detalhe inclui Ações administrativas", () => {
+  it("página de detalhe inclui Ações administrativas e painel", () => {
     expect(detailPage).toContain("Ações administrativas");
     expect(detailPage).toContain("RealManualCloseNoOrderPanel");
+    expect(detailPage).toContain("canShowClosePanel");
   });
 });

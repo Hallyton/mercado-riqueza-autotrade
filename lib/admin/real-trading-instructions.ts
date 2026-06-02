@@ -300,6 +300,7 @@ function sanitizeStatusMetadata(metadata: Prisma.JsonValue | null) {
     "operatorNote",
     "closedByAdminId",
     "closedAt",
+    "operatorAttestation",
   ];
   const out: Record<string, unknown> = {};
   for (const key of allowed) {

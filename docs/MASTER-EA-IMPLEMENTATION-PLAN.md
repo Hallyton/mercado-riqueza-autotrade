@@ -2565,6 +2565,7 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Reason code | `ORDER_NOT_PLACED_EXCHANGE_REJECTED` |
 | UI | `/admin/real-trading/instructions/[instructionId]` |
 | Nova tentativa | Exige novo preflight `PASSED` |
+| Atestacao | Checkboxes MT5 obrigatorios quando heartbeat nao comprova ausencia de exposicao |
 
 ### Fase 14.1.4.1 — Real Manual Dispatch SL/TP Fields
 

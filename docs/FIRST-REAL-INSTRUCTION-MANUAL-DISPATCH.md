@@ -57,6 +57,10 @@ Persistidos em `Instruction.stopLoss` e `Instruction.takeProfit`, entregues ao E
 
 Quando o EA recebe/processa uma `REAL_MANUAL`, mas a ordem nao e aceita/apregoada pelo broker/bolsa e nao ha posicao aberta, a tentativa deve ser encerrada como `ORDER_NOT_PLACED` / execucao `REJECTED`. Protection nao deve ficar pendente nem failed; deve ser marcada como `SKIPPED_NO_POSITION` ou `NOT_APPLICABLE`. Uma nova tentativa exige novo preflight `PASSED`.
 
+## Encerramento por atestacao operacional
+
+Quando o sistema nao consegue inferir automaticamente a ausencia de ordem/posicao, mas o operador verifica no MT5 que nao ha ordem pendente, posicao aberta ou exposicao de risco, o admin pode encerrar a `REAL_MANUAL` como `ORDER_NOT_PLACED` mediante atestacao manual (checkboxes obrigatorios), confirmacao textual e audit log.
+
 - API: `POST /api/admin/real-trading/instructions/[instructionId]/close-no-order`
 - UI: `/admin/real-trading/instructions/[instructionId]` — acao **Encerrar sem ordem apregoada**
 - Confirmacao: `ENCERRAR INSTRUCTION SEM ORDEM APREGOADA`

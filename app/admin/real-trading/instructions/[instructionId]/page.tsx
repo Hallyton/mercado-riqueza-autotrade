@@ -87,7 +87,9 @@ export default async function AdminRealTradingInstructionDetailPage({
         </p>
       </Card>
 
-      {(closeEligibility?.canShowClosePanel || closeReasonCode) && (
+      {(closeEligibility?.canShowClosePanel ||
+        closeReasonCode ||
+        (closeEligibility && !closeEligibility.canShowClosePanel)) && (
         <Card className="border-amber-500/30 p-6" data-testid="admin-actions-card">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-base">Ações administrativas</CardTitle>
@@ -97,12 +99,14 @@ export default async function AdminRealTradingInstructionDetailPage({
               </CardDescription>
             )}
           </CardHeader>
-          {closeEligibility && (
+          {closeEligibility?.canShowClosePanel ? (
             <RealManualCloseNoOrderPanel
               instructionId={instruction.id}
               eligibility={closeEligibility}
             />
-          )}
+          ) : closeEligibility?.blockReason ? (
+            <p className="text-sm text-muted-foreground">{closeEligibility.blockReason}</p>
+          ) : null}
         </Card>
       )}
 
