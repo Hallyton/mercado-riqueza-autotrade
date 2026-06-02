@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InstructionSource } from "@prisma/client";
-import { CloseNoOrderActionPanel } from "@/components/admin/close-no-order-action-panel";
+import { RealTradingAdminActionsPanel } from "@/components/admin/real-trading-admin-actions-panel";
+import { VOID_FALSE_EXECUTION_REASON_CODE } from "@/lib/admin/real-manual-void-false-execution";
 import { getRealTradingInstructionAdminDetail } from "@/lib/admin/real-trading-instructions";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -32,7 +33,8 @@ export default async function AdminRealTradingInstructionDetailPage({
     eaHeartbeat,
     redactedPayload,
     closeEligibility,
-    closeReasonCode,
+    voidEligibility,
+    resolutionReasonCode,
     executions,
     protectionReports,
   } = detail;
@@ -42,7 +44,9 @@ export default async function AdminRealTradingInstructionDetailPage({
 
   const showAdminActions =
     instruction.source === InstructionSource.REAL_MANUAL &&
-    (closeEligibility.showAdminActionsCard || Boolean(closeReasonCode));
+    (closeEligibility.showAdminActionsCard ||
+      voidEligibility.showAdminActionsCard ||
+      Boolean(resolutionReasonCode));
 
   return (
     <div className="space-y-6">
@@ -197,22 +201,31 @@ export default async function AdminRealTradingInstructionDetailPage({
         <Card className="border-amber-500/30 p-6" data-testid="admin-actions-card">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-base">Ações administrativas</CardTitle>
-            {closeReasonCode && (
+            {resolutionReasonCode && (
               <CardDescription>
-                Encerrada · motivo {closeReasonCode}
+                Resolução administrativa · motivo {resolutionReasonCode}
               </CardDescription>
             )}
           </CardHeader>
-          <CloseNoOrderActionPanel
+          <RealTradingAdminActionsPanel
             instructionId={instruction.id}
             source={instruction.source}
             status={instruction.currentStatus}
             executionStatus={latestExecution?.status ?? null}
             protectionStatus={latestProtection?.protectionStatus ?? null}
             canCloseNoOrder={closeEligibility.canCloseNoOrder}
-            eligibility={closeEligibility}
-            reasonCode={closeReasonCode ?? undefined}
+            closeEligibility={closeEligibility}
+            canVoidFalseExecution={voidEligibility.canVoidFalseExecution}
+            voidEligibility={voidEligibility}
+            resolutionReasonCode={resolutionReasonCode}
           />
+          {resolutionReasonCode === VOID_FALSE_EXECUTION_REASON_CODE && (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Instruction: {instruction.currentStatus} · Execução:{" "}
+              {latestExecution?.status ?? "—"} · Proteção:{" "}
+              {latestProtection?.protectionStatus ?? "—"}
+            </p>
+          )}
         </Card>
       )}
     </div>

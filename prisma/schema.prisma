@@ -154,6 +154,7 @@ enum OrderLogStatus {
   IGNORED
   CANCELLED
   ORDER_NOT_PLACED
+  VOIDED_FALSE_EXECUTION
 }
 
 enum ExecutionStatus {
@@ -161,6 +162,7 @@ enum ExecutionStatus {
   PARTIAL
   REJECTED
   EXPIRED
+  VOIDED
 }
 
 enum RiskEventType {

@@ -25,8 +25,8 @@ describe("CloseNoOrderActionPanel UI", () => {
     expect(panel).toContain("close-no-order-error");
   });
 
-  it("página importa e renderiza CloseNoOrderActionPanel após proteção", () => {
-    expect(page).toContain("CloseNoOrderActionPanel");
+  it("página importa painel administrativo após proteção", () => {
+    expect(page).toContain("RealTradingAdminActionsPanel");
     expect(page).toContain("Ações administrativas");
     expect(page).toContain("admin-actions-card");
     expect(page).toContain("canCloseNoOrder");

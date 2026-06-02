@@ -67,6 +67,18 @@ Quando o sistema nao consegue inferir automaticamente a ausencia de ordem/posica
 - Reason code: `ORDER_NOT_PLACED_EXCHANGE_REJECTED`
 - Audit: `real_trading.instruction.close_no_order`
 
+## Anulacao por falso positivo de execucao
+
+Quando o sistema recebe retorno de execucao preenchida, mas o operador confirma no MT5 que a ordem nao foi apregoada, nao ha ordem pendente, nao ha posicao aberta e nao ha exposicao de risco, a instruction deve ser anulada como falso positivo de execucao. O registro nao deve ser apagado fisicamente; deve ser encerrado com audit log e reasonCode `BROKER_EXECUTION_FALSE_POSITIVE`. Nova tentativa exige novo preflight `PASSED`.
+
+- API: `POST /api/admin/real-trading/instructions/[instructionId]/void-false-execution`
+- UI: `/admin/real-trading/instructions/[instructionId]` — acao **Anular falso positivo de execucao**
+- Confirmacao: `ANULAR FALSO POSITIVO DE EXECUCAO`
+- Instruction status: `VOIDED_FALSE_EXECUTION`
+- Execution status: `VOIDED`
+- Protection status: `SKIPPED_NO_POSITION` (nao `PROTECTION_FAILED` nem `PROTECTION_CONFIRMED`)
+- Audit: `real_trading.instruction.void_false_execution`
+
 ## Seguranca operacional
 
 - `requestedContracts` maximo 1 nesta fase.

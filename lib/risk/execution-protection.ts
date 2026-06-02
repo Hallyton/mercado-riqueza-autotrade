@@ -10,6 +10,13 @@ import prisma from "@/lib/prisma";
 import { redactSensitiveMessage } from "@/lib/risk/redact-message";
 import type { EaAuthContext } from "@/lib/ea/auth";
 
+const INSTRUCTION_STATUSES_EXCLUDING_PROTECTION_BLOCK: OrderLogStatus[] = [
+  OrderLogStatus.VOIDED_FALSE_EXECUTION,
+  OrderLogStatus.ORDER_NOT_PLACED,
+  OrderLogStatus.CANCELLED,
+  OrderLogStatus.IGNORED,
+];
+
 export type ExecutionProtectionInput = {
   instruction_id: string;
   execution_id?: string;
@@ -50,6 +57,9 @@ export async function hasPendingProtectionForMagic(
       licenseId,
       magicNumber,
       protectionStatus: ProtectionStatus.PROTECTION_PENDING,
+      instruction: {
+        currentStatus: { notIn: INSTRUCTION_STATUSES_EXCLUDING_PROTECTION_BLOCK },
+      },
     },
     orderBy: { reportedAt: "desc" },
   });
@@ -65,6 +75,7 @@ export async function hasUnresolvedProtectionBlock(
       licenseId,
       magicNumber,
       protectionBlocked: true,
+      currentStatus: { notIn: INSTRUCTION_STATUSES_EXCLUDING_PROTECTION_BLOCK },
     },
   });
   if (blockedInstruction) return true;
@@ -74,6 +85,9 @@ export async function hasUnresolvedProtectionBlock(
       licenseId,
       magicNumber,
       protectionStatus: { in: BLOCKING_STATUSES },
+      instruction: {
+        currentStatus: { notIn: INSTRUCTION_STATUSES_EXCLUDING_PROTECTION_BLOCK },
+      },
     },
     orderBy: { reportedAt: "desc" },
   });

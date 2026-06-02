@@ -8,9 +8,14 @@ import prisma from "@/lib/prisma";
 import { redactSensitiveMessage } from "@/lib/risk/redact-message";
 import {
   buildCloseNoOrderUiForInstruction,
-  extractCloseReasonFromLogs,
   type CloseNoOrderEligibility,
 } from "@/lib/admin/real-manual-close-no-order";
+import {
+  buildVoidFalseExecutionUiForInstruction,
+  VOID_FALSE_EXECUTION_REASON_CODE,
+  type VoidFalseExecutionEligibility,
+} from "@/lib/admin/real-manual-void-false-execution";
+import { CLOSE_NO_ORDER_REASON_CODE } from "@/lib/admin/real-manual-close-no-order";
 
 /** Origens exibidas em Conta real / Instruções reais. */
 export const REAL_TRADING_INSTRUCTION_SOURCES: InstructionSource[] = [
@@ -130,7 +135,7 @@ export async function listRealTradingInstructionsAdmin(
   const closeReasonByInstruction = new Map<string, string | null>();
   for (const id of instructionIds) {
     const logs = closeLogs.filter((l) => l.instructionId === id);
-    closeReasonByInstruction.set(id, extractCloseReasonFromLogs(logs));
+    closeReasonByInstruction.set(id, extractAdminResolutionReasonFromLogs(logs));
   }
 
   return rows.map((row) => ({
@@ -198,7 +203,7 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
     instruction.realTradePreflights[0]?.id ??
     extractPreflightIdFromStatusLogs(instruction.statusLogs);
 
-  const closeEligibility = await buildCloseNoOrderUiForInstruction({
+  const instructionForAdmin = {
     id: instruction.id,
     source: instruction.source,
     licenseId: instruction.licenseId,
@@ -213,8 +218,15 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
       errorCode: ex.errorCode,
     })),
     executionProtectionReports: instruction.executionProtectionReports,
-  });
-  const closeReasonCode = extractCloseReasonFromLogs(instruction.statusLogs);
+  };
+
+  const [closeEligibility, voidEligibility] = await Promise.all([
+    buildCloseNoOrderUiForInstruction(instructionForAdmin),
+    buildVoidFalseExecutionUiForInstruction(instructionForAdmin),
+  ]);
+  const resolutionReasonCode = extractAdminResolutionReasonFromLogs(
+    instruction.statusLogs
+  );
 
   const redactedPayload = {
     source: instruction.source,
@@ -240,7 +252,8 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
     eaHeartbeat: heartbeat,
     redactedPayload,
     closeEligibility,
-    closeReasonCode,
+    voidEligibility,
+    resolutionReasonCode,
     statusHistory: instruction.statusLogs.map((log) => {
       const metadata = sanitizeStatusMetadata(log.metadata);
       const event =
@@ -316,6 +329,11 @@ function sanitizeStatusMetadata(metadata: Prisma.JsonValue | null) {
     "closedByAdminId",
     "closedAt",
     "operatorAttestation",
+    "voidedByAdminId",
+    "voidedAt",
+    "previousInstructionStatus",
+    "previousExecutionStatus",
+    "previousProtectionStatus",
   ];
   const out: Record<string, unknown> = {};
   for (const key of allowed) {
@@ -354,4 +372,26 @@ export function serializeRealTradingInstructionListItem(
   };
 }
 
-export type { CloseNoOrderEligibility };
+export function extractAdminResolutionReasonFromLogs(
+  logs: { metadata: Prisma.JsonValue | null; status: OrderLogStatus }[]
+): string | null {
+  for (let i = logs.length - 1; i >= 0; i--) {
+    const log = logs[i];
+    if (!log.metadata || typeof log.metadata !== "object" || Array.isArray(log.metadata)) {
+      continue;
+    }
+    const meta = log.metadata as Record<string, unknown>;
+    if (typeof meta.reasonCode === "string" && meta.reasonCode.length > 0) {
+      return meta.reasonCode;
+    }
+  }
+  if (logs.some((l) => l.status === OrderLogStatus.VOIDED_FALSE_EXECUTION)) {
+    return VOID_FALSE_EXECUTION_REASON_CODE;
+  }
+  if (logs.some((l) => l.status === OrderLogStatus.ORDER_NOT_PLACED)) {
+    return CLOSE_NO_ORDER_REASON_CODE;
+  }
+  return null;
+}
+
+export type { CloseNoOrderEligibility, VoidFalseExecutionEligibility };

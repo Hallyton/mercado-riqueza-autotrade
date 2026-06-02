@@ -2551,6 +2551,22 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Proteção | `requiresProtectionConfirmation=true` obrigatório |
 | Dispatch automático | **Desativado** |
 
+### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
+
+**Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Anular instruction REAL quando retorno FILLED e falso positivo B3/broker |
+| API | `POST /api/admin/real-trading/instructions/[instructionId]/void-false-execution` |
+| Instruction status | `VOIDED_FALSE_EXECUTION` |
+| Execution status | `VOIDED` |
+| Protection status | `SKIPPED_NO_POSITION` |
+| Reason code | `BROKER_EXECUTION_FALSE_POSITIVE` |
+| UI | `/admin/real-trading/instructions/[instructionId]` — **Anular falso positivo de execucao** |
+| Nova tentativa | Exige novo preflight `PASSED` |
+| Auditoria | Sem hard delete; `AdminAction` + `instructionStatusLog` |
+
 ### Fase 14.1.5.1 — Close REAL_MANUAL Without Placed Order
 
 **Status:** `REAL_MANUAL_CLOSE_NO_ORDER_FLOW_IMPLEMENTED`
