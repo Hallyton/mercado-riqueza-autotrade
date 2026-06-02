@@ -312,7 +312,16 @@ export async function listExecutionProtectionReportsAdmin(take = 50) {
         },
       },
       instruction: {
-        select: { id: true, symbol: true, source: true, accountLogin: true, accountServer: true },
+        select: {
+          id: true,
+          symbol: true,
+          source: true,
+          orderType: true,
+          stopLoss: true,
+          takeProfit: true,
+          accountLogin: true,
+          accountServer: true,
+        },
       },
     },
   });

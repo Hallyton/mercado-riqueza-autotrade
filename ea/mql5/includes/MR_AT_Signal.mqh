@@ -34,6 +34,12 @@ bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
    instr.quantity = MR_AT_JsonGetDouble(obj, "quantity");
    instr.stop_loss = MR_AT_JsonGetDouble(obj, "stop_loss");
    instr.take_profit = MR_AT_JsonGetDouble(obj, "take_profit");
+   double sl_price = MR_AT_JsonGetDouble(obj, "stop_loss_price");
+   double tp_price = MR_AT_JsonGetDouble(obj, "take_profit_price");
+   if(sl_price > 0)
+      instr.stop_loss = sl_price;
+   if(tp_price > 0)
+      instr.take_profit = tp_price;
    instr.expires_at = MR_AT_JsonGetString(obj, "expires_at");
    instr.idempotency_key = MR_AT_JsonGetString(obj, "idempotency_key");
    instr.magic_number = MR_AT_JsonGetInt(obj, "magic_number");
@@ -208,6 +214,14 @@ int MR_AT_FetchAndProcessSignals()
         }
 
       string ctx_err = "";
+      if(instructions[i].stop_loss <= 0 || instructions[i].take_profit <= 0)
+        {
+         string reason = "STOP_LOSS_AND_TAKE_PROFIT_REQUIRED";
+         MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+         MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+         continue;
+        }
+
       if(!MR_AT_ValidateInstructionContext(instructions[i], ctx_err))
         {
          MR_AT_LogError("Signal", "Instrução rejeitada id=" + instructions[i].instruction_id +

@@ -345,12 +345,14 @@ describe("Payload EA sem estratégia", () => {
       orderType: "LIMIT",
       orderPrice: new Decimal(5650.5),
       quantity: new Decimal(1),
-      stopLoss: null,
-      takeProfit: null,
+      stopLoss: new Decimal(5643.5),
+      takeProfit: new Decimal(5660.5),
       expiresAt: new Date(),
       idempotencyKey: "k2",
     });
     expect(payload.order_price).toBe(5650.5);
+    expect(payload.stop_loss_price).toBe(5643.5);
+    expect(payload.take_profit_price).toBe(5660.5);
   });
 });
 

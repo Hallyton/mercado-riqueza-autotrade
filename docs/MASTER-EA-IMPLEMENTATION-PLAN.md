@@ -2551,6 +2551,17 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Proteção | `requiresProtectionConfirmation=true` obrigatório |
 | Dispatch automático | **Desativado** |
 
+### Fase 14.1.4.1 — Real Manual Dispatch SL/TP Fields
+
+**Status:** `REAL_MANUAL_DISPATCH_SL_TP_FIELDS_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| UI | Dois blocos separados em `/admin/real-trading/preflights` |
+| Campos | `orderType`, `orderPrice`, `stopLossPrice`, `takeProfitPrice` |
+| EA payload | `stop_loss_price`, `take_profit_price` |
+| Servidor padrão | `XPMT5-PRD` (via licença vinculada) |
+
 ### Fase 14.1.2 — EA Executor Real Preflight Dry Run
 
 **Status:** `REAL_PREFLIGHT_DRY_RUN_IMPLEMENTED`  

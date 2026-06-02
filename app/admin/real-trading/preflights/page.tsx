@@ -1,17 +1,30 @@
 import { PreflightDryRunPanel } from "@/components/admin/preflight-dry-run-panel";
 import { FirstRealManualDispatchPanel } from "@/components/admin/first-real-manual-dispatch-panel";
+import { REAL_MANUAL_PREFLIGHT_MAX_AGE_MS } from "@/lib/admin/real-manual-dispatch-validation";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { listRealTradePreflightsAdmin } from "@/lib/admin/real-trading-approval";
+import prisma from "@/lib/prisma";
+
+const DEFAULT_LICENSE_ID = "cmptsr44j0005ib0417zkckn6";
 
 export default async function AdminRealTradingPreflightsPage() {
-  const items = await listRealTradePreflightsAdmin(100);
+  const [items, license] = await Promise.all([
+    listRealTradePreflightsAdmin(100),
+    prisma.license.findUnique({
+      where: { id: DEFAULT_LICENSE_ID },
+      include: { mt5Account: true },
+    }),
+  ]);
+
+  const mt5 = license?.mt5Account;
   const now = Date.now();
   const recentPassedDryRuns = items
     .filter(
       (row) =>
         row.source === "DRY_RUN" &&
         row.status === "PASSED" &&
-        now - row.createdAt.getTime() <= 15 * 60 * 1000
+        row.reasonCode === "REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE" &&
+        now - row.createdAt.getTime() <= REAL_MANUAL_PREFLIGHT_MAX_AGE_MS
     )
     .map((row) => ({
       id: row.id,
@@ -29,26 +42,35 @@ export default async function AdminRealTradingPreflightsPage() {
     <div className="space-y-6">
       <Card className="border-gold/20 p-6">
         <CardHeader className="p-0">
-          <CardTitle>Preflights de conta real</CardTitle>
+          <CardTitle>Preflight dry-run (conta real)</CardTitle>
           <CardDescription className="mt-2">
-            PASSED com reason REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE indica liberação
-            condicional. FAILED/BLOCKED: nenhuma instruction REAL é entregue ao EA.
-            Use o dry-run abaixo para validar o gate sem criar instruction.
+            Valida o gate REAL sem criar instruction e sem enviar ordem. O resultado é
+            registrado como DRY_RUN na tabela abaixo.
           </CardDescription>
         </CardHeader>
         <div className="mt-6">
           <PreflightDryRunPanel
-            defaultLicenseId="cmptsr44j0005ib0417zkckn6"
-            defaultAccountLogin="19583778"
-            defaultAccountServer="XPMTS-PRD"
+            defaultLicenseId={license?.id ?? DEFAULT_LICENSE_ID}
+            defaultAccountLogin={mt5?.login ?? "19583778"}
+            defaultAccountServer={mt5?.server ?? "XPMT5-PRD"}
             defaultSymbol="WDON26"
             defaultMagicNumber="910001"
           />
         </div>
-        <div className="mt-6">
-          <FirstRealManualDispatchPanel preflights={recentPassedDryRuns} />
-        </div>
       </Card>
+
+      <Card className="border-gold/20 p-6">
+        <CardHeader className="p-0 pb-4">
+          <CardTitle>Criar instruction REAL manual</CardTitle>
+          <CardDescription className="mt-2">
+            Liberado somente após dry-run PASSED recente (15 minutos). Exige tipo de
+            ordem, Stop Loss e Take Profit. Para LIMIT/STOP, informe também o preço de
+            apregoamento.
+          </CardDescription>
+        </CardHeader>
+        <FirstRealManualDispatchPanel preflights={recentPassedDryRuns} />
+      </Card>
+
       <div className="overflow-x-auto rounded-lg border border-white/10">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-white/10 bg-white/5">

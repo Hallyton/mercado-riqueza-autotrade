@@ -98,11 +98,13 @@ Payload de instrução (somente execução):
 
 Campos `magic_number`, `account_login`, `account_server`, `trade_mode`, `protection_required`, `requires_protection_confirmation`, `requested_contracts` e `source` são usados no **piloto de conta real** (gate condicional aprovado no servidor). O EA Executor **deve** enviar snapshots e confirmar stop/take via `/execution-protection` — sem isso o preflight REAL bloqueia novas entradas.
 
-Regras `order_type` / `order_price`:
+Regras `order_type` / `order_price` / proteção na instruction:
 
 - `MARKET`: `order_price` ausente.
 - `LIMIT` e `STOP`: `order_price` obrigatorio.
+- `stop_loss_price` e `take_profit_price` obrigatorios para `REAL_MANUAL`.
 - O EA nao deve converter `LIMIT/STOP` para mercado como fallback.
+- O EA nao deve executar sem SL/TP validos na instruction.
 
 Exemplo de instrução REAL (sem estratégia):
 

@@ -9,6 +9,11 @@ function fmtDate(d: Date) {
   }).format(d);
 }
 
+function fmtPrice(value: { toString(): string } | null | undefined) {
+  if (value == null) return "—";
+  return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 6 });
+}
+
 export default async function AdminRealTradingProtectionPage() {
   const items = await listExecutionProtectionReportsAdmin(100);
   const latestAt = items[0]?.reportedAt ?? null;
@@ -31,11 +36,14 @@ export default async function AdminRealTradingProtectionPage() {
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Cliente</th>
               <th className="px-4 py-3">Origem</th>
+              <th className="px-4 py-3">Tipo ordem</th>
               <th className="px-4 py-3">Conta</th>
               <th className="px-4 py-3">Instrução</th>
               <th className="px-4 py-3">Magic</th>
-              <th className="px-4 py-3">SL</th>
-              <th className="px-4 py-3">TP</th>
+              <th className="px-4 py-3">SL instr.</th>
+              <th className="px-4 py-3">TP instr.</th>
+              <th className="px-4 py-3">SL conf.</th>
+              <th className="px-4 py-3">TP conf.</th>
               <th className="px-4 py-3">Reportado</th>
             </tr>
           </thead>
@@ -43,13 +51,24 @@ export default async function AdminRealTradingProtectionPage() {
             {items.map((row) => {
               const failed =
                 row.protectionStatus === ProtectionStatus.PROTECTION_FAILED;
+              const isHomologation =
+                row.instruction.source === "TEST" ||
+                row.instruction.source === "HOMOLOGATION";
               const isCurrent =
-                latestAt != null && row.reportedAt.getTime() === latestAt.getTime();
+                latestAt != null &&
+                row.reportedAt.getTime() === latestAt.getTime() &&
+                !isHomologation;
               return (
                 <tr
                   key={row.id}
                   className={`border-b border-white/5 ${
-                    failed ? "bg-red-950/20" : isCurrent ? "bg-gold/5" : ""
+                    failed
+                      ? "bg-red-950/20"
+                      : isCurrent
+                        ? "bg-gold/5"
+                        : isHomologation
+                          ? "opacity-60"
+                          : ""
                   }`}
                 >
                   <td className="px-4 py-3 font-medium">{row.protectionStatus}</td>
@@ -58,12 +77,17 @@ export default async function AdminRealTradingProtectionPage() {
                     {row.instruction.source ?? "—"}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs">
+                    {row.instruction.orderType}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs">
                     {row.accountLogin}@{row.accountServer}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs break-all">
+                  <td className="px-4 py-3 font-mono text-xs break-all select-all">
                     {row.instructionId}
                   </td>
                   <td className="px-4 py-3">{row.magicNumber}</td>
+                  <td className="px-4 py-3">{fmtPrice(row.instruction.stopLoss)}</td>
+                  <td className="px-4 py-3">{fmtPrice(row.instruction.takeProfit)}</td>
                   <td className="px-4 py-3">
                     {row.stopLossPresent ? "Sim" : "Não"}
                   </td>
@@ -76,7 +100,7 @@ export default async function AdminRealTradingProtectionPage() {
             })}
             {items.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-muted-foreground">
+                <td colSpan={12} className="px-4 py-8 text-muted-foreground">
                   Nenhum relatório de proteção.
                 </td>
               </tr>

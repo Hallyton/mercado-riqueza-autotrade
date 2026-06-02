@@ -110,6 +110,8 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(signal).toContain("idempotency_key");
     expect(signal).toContain("Tipo de ordem não suportado:");
     expect(signal).toContain("ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER");
+    expect(signal).toContain("STOP_LOSS_AND_TAKE_PROFIT_REQUIRED");
+    expect(signal).toContain("stop_loss_price");
     expect(constants).toContain("order_price");
     expect(signal).not.toContain("strategy");
   });

@@ -1,6 +1,6 @@
 # First Real Instruction Manual Dispatch
 
-**Status:** `FIRST_REAL_MANUAL_DISPATCH_FLOW_IMPLEMENTED_WITH_ORDER_TYPE`  
+**Status:** `REAL_MANUAL_DISPATCH_SL_TP_FIELDS_IMPLEMENTED`  
 **Branch:** `staging-vps-homologacao`
 
 ## Objetivo
@@ -36,6 +36,22 @@ Criar a primeira instruction REAL controlada **sem usar fila TEST/HOMOLOGATION**
 - `STOP`: exige `orderPrice`.
 
 Para ordens MARKET, nao ha preco de apregoamento. Para ordens LIMIT ou STOP, o administrador deve informar obrigatoriamente o preco ao qual a ordem sera apregoada. O EA Executor deve respeitar o tipo de ordem e nao converter ordens pendentes em execucao a mercado.
+
+## Stop Loss e Take Profit obrigatórios
+
+Toda instruction REAL_MANUAL deve carregar Stop Loss e Take Profit explícitos. O EA Executor não deve executar ordem real sem receber SL/TP válidos. Para ordens LIMIT ou STOP, além de SL/TP, o preço de apregoamento também é obrigatório.
+
+Campos no admin:
+
+- `stopLossPrice` — obrigatório
+- `takeProfitPrice` — obrigatório
+
+Persistidos em `Instruction.stopLoss` e `Instruction.takeProfit`, entregues ao EA como `stop_loss_price` e `take_profit_price` (e `stop_loss` / `take_profit` para compatibilidade).
+
+## UI — dois blocos em /admin/real-trading/preflights
+
+1. **Preflight dry-run** — apenas validação de gate (sem tipo de ordem/SL/TP).
+2. **Criar instruction REAL manual** — liberado somente com dry-run PASSED recente (15 min).
 
 ## Seguranca operacional
 

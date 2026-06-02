@@ -30,6 +30,8 @@ export type EaInstructionPayload = {
   quantity: number;
   stop_loss: number | null;
   take_profit: number | null;
+  stop_loss_price?: number;
+  take_profit_price?: number;
   expires_at: string;
   idempotency_key: string;
   magic_number?: number;
@@ -82,6 +84,12 @@ export function mapInstructionToEaPayload(
     quantity: Number(instruction.quantity),
     stop_loss: toNumber(instruction.stopLoss),
     take_profit: toNumber(instruction.takeProfit),
+    ...(instruction.stopLoss != null
+      ? { stop_loss_price: Number(instruction.stopLoss) }
+      : {}),
+    ...(instruction.takeProfit != null
+      ? { take_profit_price: Number(instruction.takeProfit) }
+      : {}),
     expires_at: instruction.expiresAt.toISOString(),
     idempotency_key: instruction.idempotencyKey,
   };

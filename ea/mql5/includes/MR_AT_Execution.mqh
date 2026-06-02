@@ -199,6 +199,12 @@ bool MR_AT_ExecuteMarketOrder(const MRInstruction &instr, ulong &ticket, string 
       return false;
      }
 
+   if(instr.stop_loss <= 0 || instr.take_profit <= 0)
+     {
+      err_msg = "STOP_LOSS_AND_TAKE_PROFIT_REQUIRED";
+      return false;
+     }
+
    int order_magic = MR_AT_ResolveInstructionMagic(instr);
 
    if(instr.purpose == "EXIT")
@@ -281,6 +287,11 @@ bool MR_AT_ExecutePendingOrder(const MRInstruction &instr, ulong &ticket, string
    if(instr.order_price <= 0)
      {
       err_msg = "ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER";
+      return false;
+     }
+   if(instr.stop_loss <= 0 || instr.take_profit <= 0)
+     {
+      err_msg = "STOP_LOSS_AND_TAKE_PROFIT_REQUIRED";
       return false;
      }
 

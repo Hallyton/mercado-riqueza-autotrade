@@ -11,6 +11,10 @@ import {
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { recordAdminAction } from "@/lib/admin/record-action";
+import {
+  REAL_MANUAL_PREFLIGHT_MAX_AGE_MS,
+  validateRealManualOrderFields,
+} from "@/lib/admin/real-manual-dispatch-validation";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import prisma from "@/lib/prisma";
 import { hasUnresolvedProtectionBlock } from "@/lib/risk/execution-protection";
@@ -23,7 +27,8 @@ import { isAutoDispatchEnabled } from "@/lib/risk/real-trading-config";
 
 export const FIRST_REAL_DISPATCH_CONFIRM_PHRASE =
   "AUTORIZO PRIMEIRA ORDEM REAL";
-const PREFLIGHT_MAX_AGE_MS = 15 * 60 * 1000;
+
+export { REAL_MANUAL_PREFLIGHT_MAX_AGE_MS };
 
 export const createRealManualDispatchSchema = z.object({
   preflightId: z.string().min(1),
@@ -34,6 +39,8 @@ export const createRealManualDispatchSchema = z.object({
   side: z.enum(["BUY", "SELL"]),
   orderType: z.enum(["MARKET", "LIMIT", "STOP"]),
   orderPrice: z.number().positive().optional(),
+  stopLossPrice: z.number().positive(),
+  takeProfitPrice: z.number().positive(),
   requestedContracts: z.number().int().positive(),
   magicNumber: z.number().int().positive(),
   adminConfirmation: z.string().min(1),
@@ -64,6 +71,8 @@ export async function createFirstRealManualInstruction(input: {
   side: "BUY" | "SELL";
   orderType: "MARKET" | "LIMIT" | "STOP";
   orderPrice?: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
   requestedContracts: number;
   magicNumber: number;
   adminConfirmation: string;
@@ -85,24 +94,16 @@ export async function createFirstRealManualInstruction(input: {
     );
   }
 
-  if (input.orderType === "MARKET" && input.orderPrice != null) {
+  const orderValidation = validateRealManualOrderFields({
+    orderType: input.orderType,
+    orderPrice: input.orderPrice ?? null,
+    stopLossPrice: input.stopLossPrice,
+    takeProfitPrice: input.takeProfitPrice,
+  });
+  if (orderValidation) {
     throw new RealManualDispatchError(
-      "Ordem a mercado não deve conter preço de apregoamento.",
-      "ORDER_PRICE_NOT_ALLOWED_FOR_MARKET",
-      400
-    );
-  }
-  if ((input.orderType === "LIMIT" || input.orderType === "STOP") && input.orderPrice == null) {
-    throw new RealManualDispatchError(
-      "Informe o preço de apregoamento para ordens LIMIT ou STOP.",
-      "ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER",
-      400
-    );
-  }
-  if (input.orderPrice != null && (!Number.isFinite(input.orderPrice) || input.orderPrice <= 0)) {
-    throw new RealManualDispatchError(
-      "Preço de apregoamento inválido.",
-      "ORDER_PRICE_INVALID",
+      orderValidation.message,
+      orderValidation.code,
       400
     );
   }
@@ -140,7 +141,7 @@ export async function createFirstRealManualInstruction(input: {
       400
     );
   }
-  if (now.getTime() - preflight.createdAt.getTime() > PREFLIGHT_MAX_AGE_MS) {
+  if (now.getTime() - preflight.createdAt.getTime() > REAL_MANUAL_PREFLIGHT_MAX_AGE_MS) {
     throw new RealManualDispatchError(
       "Preflight expirado. Execute novo dry-run.",
       "PREFLIGHT_EXPIRED",
@@ -259,10 +260,12 @@ export async function createFirstRealManualInstruction(input: {
         side: input.side as InstructionSide,
         orderType: input.orderType as InstructionOrderType,
         orderPrice: input.orderPrice,
+        stopLoss: input.stopLossPrice,
+        takeProfit: input.takeProfitPrice,
         quantity: input.requestedContracts,
         idempotencyKey: buildIdempotencyKey(),
         requestId: `real-manual-${input.actorId.slice(0, 8)}`,
-        expiresAt: new Date(now.getTime() + 15 * 60 * 1000),
+        expiresAt: new Date(now.getTime() + REAL_MANUAL_PREFLIGHT_MAX_AGE_MS),
         source: InstructionSource.REAL_MANUAL,
         currentStatus: OrderLogStatus.RECEIVED,
         magicNumber: input.magicNumber,
@@ -283,6 +286,8 @@ export async function createFirstRealManualInstruction(input: {
           requestedContracts: input.requestedContracts,
           orderType: input.orderType,
           orderPrice: input.orderPrice ?? null,
+          stopLossPrice: input.stopLossPrice,
+          takeProfitPrice: input.takeProfitPrice,
         },
       },
     });
@@ -305,6 +310,8 @@ export async function createFirstRealManualInstruction(input: {
       side: input.side,
       orderType: input.orderType,
       orderPrice: input.orderPrice ?? null,
+      stopLossPrice: input.stopLossPrice,
+      takeProfitPrice: input.takeProfitPrice,
       requestedContracts: input.requestedContracts,
       magicNumber: input.magicNumber,
       protectionRequired: true,
