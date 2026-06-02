@@ -23,6 +23,9 @@ export default async function AdminRealTradingInstructionsPage({
     symbol?: string;
     magicNumber?: string;
     status?: string;
+    batchId?: string;
+    source?: string;
+    clientEmail?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -36,6 +39,10 @@ export default async function AdminRealTradingInstructionsPage({
     accountLogin: params.accountLogin,
     symbol: params.symbol,
     magicNumber,
+    bulkBatchId: params.batchId,
+    clientEmail: params.clientEmail,
+    source: params.source as import("@prisma/client").InstructionSource | undefined,
+    status: params.status as import("@prisma/client").OrderLogStatus | undefined,
     take: 100,
   });
 
@@ -89,6 +96,39 @@ export default async function AdminRealTradingInstructionsPage({
             className="mt-1 w-full rounded border border-white/10 bg-background px-2 py-1.5 font-mono text-xs"
           />
         </label>
+        <label className="block text-sm">
+          <span className="text-muted-foreground">BatchId</span>
+          <input
+            name="batchId"
+            defaultValue={params.batchId ?? ""}
+            className="mt-1 w-full rounded border border-white/10 bg-background px-2 py-1.5 font-mono text-xs"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-muted-foreground">Source</span>
+          <input
+            name="source"
+            defaultValue={params.source ?? ""}
+            placeholder="REAL_MANUAL"
+            className="mt-1 w-full rounded border border-white/10 bg-background px-2 py-1.5 font-mono text-xs"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-muted-foreground">Cliente (e-mail)</span>
+          <input
+            name="clientEmail"
+            defaultValue={params.clientEmail ?? ""}
+            className="mt-1 w-full rounded border border-white/10 bg-background px-2 py-1.5 font-mono text-xs"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-muted-foreground">Status</span>
+          <input
+            name="status"
+            defaultValue={params.status ?? ""}
+            className="mt-1 w-full rounded border border-white/10 bg-background px-2 py-1.5 font-mono text-xs"
+          />
+        </label>
         <div className="sm:col-span-2 lg:col-span-4">
           <button
             type="submit"
@@ -117,6 +157,7 @@ export default async function AdminRealTradingInstructionsPage({
               <th className="px-3 py-3">Contratos</th>
               <th className="px-3 py-3">Magic</th>
               <th className="px-3 py-3">Source</th>
+              <th className="px-3 py-3">BatchId</th>
               <th className="px-3 py-3">Status</th>
               <th className="px-3 py-3">EA</th>
               <th className="px-3 py-3">Execução</th>
@@ -144,6 +185,18 @@ export default async function AdminRealTradingInstructionsPage({
                 <td className="px-3 py-3">{Number(row.quantity)}</td>
                 <td className="px-3 py-3">{row.magicNumber}</td>
                 <td className="px-3 py-3">{row.source}</td>
+                <td className="px-3 py-3 font-mono text-xs">
+                  {row.bulkBatchId ? (
+                    <Link
+                      href={`/admin/real-trading/bulk-dispatch/${row.bulkBatchId}`}
+                      className="text-gold hover:underline"
+                    >
+                      {row.bulkBatchId}
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td className="px-3 py-3">{row.currentStatus}</td>
                 <td className="px-3 py-3">{row.eaHeartbeat?.eaStatus ?? "—"}</td>
                 <td className="px-3 py-3 font-mono text-xs">
@@ -173,7 +226,7 @@ export default async function AdminRealTradingInstructionsPage({
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={23} className="px-3 py-8 text-muted-foreground">
+                <td colSpan={25} className="px-3 py-8 text-muted-foreground">
                   Nenhuma instruction REAL_MANUAL encontrada.
                 </td>
               </tr>

@@ -2567,6 +2567,22 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Protecao | `PROTECTION_CONFIRMED` exige SL inicial; takes via plano avancado |
 | LIMIT/STOP | Sem fallback para MARKET |
 
+### Fase 14.1.7 — REAL_MANUAL Bulk Eligibility & Controlled Dispatch
+
+**Status:** `REAL_MANUAL_BULK_ELIGIBILITY_AND_DISPATCH_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Disparo REAL_MANUAL em lote com preview, selecao manual e confirmacao textual |
+| UI | `/admin/real-trading/bulk-dispatch` + detalhe `[batchId]` |
+| Preview API | `POST /api/admin/real-trading/bulk-dispatch/preview` — nao cria instruction |
+| Execute API | `POST /api/admin/real-trading/bulk-dispatch/execute` — instruction individual por elegivel |
+| Expiracao preview | 5 minutos |
+| Confirmacao | `AUTORIZO DISPARO REAL EM LOTE` + contagem de clientes |
+| Modelos | `RealManualBulkDispatchBatch`, `RealManualBulkDispatchItem`, `Instruction.bulkBatchId` |
+| Idempotencia | `bulk:{batchId}:{licenseId}:...:{managementPlanHash}` |
+| Doc | [`docs/REAL-MANUAL-BULK-DISPATCH.md`](REAL-MANUAL-BULK-DISPATCH.md) |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

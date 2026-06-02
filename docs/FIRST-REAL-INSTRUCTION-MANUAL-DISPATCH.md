@@ -109,3 +109,7 @@ Documento dedicado: [`docs/REAL-MANUAL-ADVANCED-PROTECTION-PLAN.md`](REAL-MANUAL
 - `PROTECTION_FAILED` bloqueia novas ordens do mesmo magic.
 - dispatch automatico permanece desativado.
 - nenhum token/secret/activation code e exposto.
+
+## Disparo em lote (Fase 14.1.7)
+
+Fluxo complementar em `/admin/real-trading/bulk-dispatch`: preview obrigatorio de elegibilidade, selecao manual e confirmacao `AUTORIZO DISPARO REAL EM LOTE`. Cada elegivel recebe instruction REAL_MANUAL individual com o mesmo `managementPlan`. Ver [`docs/REAL-MANUAL-BULK-DISPATCH.md`](REAL-MANUAL-BULK-DISPATCH.md).

@@ -34,6 +34,8 @@ export type ListRealTradingInstructionsFilters = {
   magicNumber?: number;
   source?: InstructionSource;
   status?: OrderLogStatus;
+  bulkBatchId?: string;
+  clientEmail?: string;
   dateFrom?: Date;
   dateTo?: Date;
   take?: number;
@@ -58,6 +60,16 @@ function buildWhere(
       ? { symbol: filters.symbol.trim().toUpperCase() }
       : {}),
     ...(filters.magicNumber != null ? { magicNumber: filters.magicNumber } : {}),
+    ...(filters.bulkBatchId ? { bulkBatchId: filters.bulkBatchId.trim() } : {}),
+    ...(filters.clientEmail
+      ? {
+          license: {
+            user: {
+              email: { contains: filters.clientEmail.trim(), mode: "insensitive" },
+            },
+          },
+        }
+      : {}),
     ...(filters.status ? { currentStatus: filters.status } : {}),
     ...(filters.dateFrom || filters.dateTo
       ? {

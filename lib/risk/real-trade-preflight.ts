@@ -52,6 +52,8 @@ export type RealTradePreflightInput = {
   isAutoDispatch?: boolean;
   /** Simulação admin: persiste preflight DRY_RUN sem instruction. */
   dryRun?: boolean;
+  /** Quando false, executa checagens sem persistir registro (preview em lote). */
+  persist?: boolean;
 };
 
 export type PreflightCheck = {
@@ -148,6 +150,7 @@ export async function runRealTradePreflight(
 ): Promise<RealTradePreflightResult> {
   const checks: PreflightCheck[] = [];
   const dryRun = input.dryRun === true;
+  const persist = input.persist !== false;
   const environment = input.environment ?? TradeMode.REAL;
   const requestedContracts = input.requestedContracts ?? 1;
   const login = normalizeAccount(input.accountLogin);
@@ -440,6 +443,32 @@ export async function runRealTradePreflight(
   const preflightSource = dryRun
     ? RealTradePreflightSource.DRY_RUN
     : RealTradePreflightSource.INSTRUCTION;
+
+  if (!persist) {
+    return {
+      status,
+      passed: status === RealTradePreflightStatus.PASSED,
+      reasonCode,
+      reason,
+      checks,
+      approvalId: approval?.id,
+      accountSnapshotId: snapshotResult.snapshotId,
+      dryRun,
+      source: preflightSource,
+      flags: {
+        marginOk,
+        eaOnline,
+        snapshotOk: snapshotResult.ok,
+        realApprovalOk: Boolean(approval),
+        protectionPreviousOk,
+        deviceOk,
+        accountOk,
+        licenseOk,
+        subscriptionOk,
+        paymentOk,
+      },
+    };
+  }
 
   const record = await prisma.realTradePreflight.create({
     data: {

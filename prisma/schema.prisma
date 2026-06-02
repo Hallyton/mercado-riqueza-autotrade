@@ -254,6 +254,26 @@ enum RealTradePreflightStatus {
 enum RealTradePreflightSource {
   INSTRUCTION
   DRY_RUN
+  BULK_DISPATCH
+}
+
+enum RealManualBulkDispatchBatchStatus {
+  PREVIEW_READY
+  EXECUTING
+  EXECUTED
+  EXPIRED
+  CANCELLED
+  PARTIAL
+}
+
+enum RealManualBulkDispatchItemStatus {
+  ELIGIBLE
+  BLOCKED
+  SELECTED
+  DISPATCHED
+  FAILED
+  SKIPPED
+  BLOCKED_AT_EXECUTE
 }
 
 enum ProtectionMode {
@@ -309,6 +329,8 @@ model User {
   termsAcceptances       TermsAcceptance[]
   robotInstances         RobotInstance[]
   billingCustomers       BillingCustomer[]
+  bulkDispatchBatches    RealManualBulkDispatchBatch[]
+  bulkDispatchItems      RealManualBulkDispatchItem[]
 
   @@index([role])
   @@index([status])
@@ -802,10 +824,12 @@ model Instruction {
   requiresProtectionConfirmation Boolean            @default(false) @map("requires_protection_confirmation")
   protectionBlocked              Boolean            @default(false) @map("protection_blocked")
   managementPlan                 Json?              @map("management_plan")
+  bulkBatchId                    String?            @map("bulk_batch_id")
   createdAt                      DateTime           @default(now()) @map("created_at")
   updatedAt                      DateTime           @updatedAt @map("updated_at")
 
   license                      License                       @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  bulkBatch                    RealManualBulkDispatchBatch?  @relation(fields: [bulkBatchId], references: [id], onDelete: SetNull)
   statusLogs                   InstructionStatusLog[]
   executions                   Execution[]
   masterSignalDispatch         MasterSignalDispatch?
@@ -814,6 +838,7 @@ model Instruction {
 
   @@index([licenseId, currentStatus, createdAt])
   @@index([licenseId, magicNumber])
+  @@index([bulkBatchId])
   @@map("instructions")
 }
 
@@ -1268,4 +1293,68 @@ model TermsAcceptance {
   @@index([userId, documentType])
   @@index([subscriptionId])
   @@map("terms_acceptances")
+}
+
+// ─── REAL_MANUAL bulk dispatch (preview + controlled execute) ─────────────────
+
+model RealManualBulkDispatchBatch {
+  id                 String                            @id @default(cuid())
+  createdByAdminId   String                            @map("created_by_admin_id")
+  status             RealManualBulkDispatchBatchStatus @default(PREVIEW_READY)
+  symbol             String
+  side               InstructionSide
+  orderType          InstructionOrderType              @map("order_type")
+  orderPrice         Decimal?                          @map("order_price") @db.Decimal(18, 6)
+  requestedContracts Int                               @map("requested_contracts")
+  managementPlan     Json                              @map("management_plan")
+  managementPlanHash String                            @map("management_plan_hash")
+  eligibleCount      Int                               @default(0) @map("eligible_count")
+  blockedCount       Int                               @default(0) @map("blocked_count")
+  totalCandidates    Int                               @default(0) @map("total_candidates")
+  expiresAt          DateTime                          @map("expires_at")
+  createdAt          DateTime                          @default(now()) @map("created_at")
+  updatedAt          DateTime                          @updatedAt @map("updated_at")
+
+  createdByAdmin User                          @relation(fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  items          RealManualBulkDispatchItem[]
+  instructions   Instruction[]
+
+  @@index([status, createdAt])
+  @@index([createdByAdminId, createdAt])
+  @@map("real_manual_bulk_dispatch_batches")
+}
+
+model RealManualBulkDispatchItem {
+  id                 String                           @id @default(cuid())
+  batchId            String                           @map("batch_id")
+  userId             String                           @map("user_id")
+  licenseId          String                           @map("license_id")
+  accountLogin       String?                          @map("account_login")
+  accountServer      String?                          @map("account_server")
+  symbol             String
+  magicNumber        Int?                             @map("magic_number")
+  requestedContracts Int                              @map("requested_contracts")
+  status             RealManualBulkDispatchItemStatus
+  reasonCode         String?                          @map("reason_code")
+  reasonDetail       String?                          @map("reason_detail") @db.Text
+  actionHint         String?                          @map("action_hint") @db.Text
+  preflightId        String?                          @map("preflight_id")
+  instructionId      String?                          @map("instruction_id")
+  approvalId         String?                          @map("approval_id")
+  accountSnapshotId  String?                          @map("account_snapshot_id")
+  freeMargin         Decimal?                         @map("free_margin") @db.Decimal(18, 2)
+  maxContracts       Int?                             @map("max_contracts")
+  eaOnline           Boolean?                         @map("ea_online")
+  deviceActiveReal   Boolean?                         @map("device_active_real")
+  heartbeatAt        DateTime?                        @map("heartbeat_at")
+  createdAt          DateTime                         @default(now()) @map("created_at")
+  updatedAt          DateTime                         @updatedAt @map("updated_at")
+
+  batch RealManualBulkDispatchBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user  User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, status])
+  @@index([licenseId])
+  @@unique([batchId, licenseId])
+  @@map("real_manual_bulk_dispatch_items")
 }

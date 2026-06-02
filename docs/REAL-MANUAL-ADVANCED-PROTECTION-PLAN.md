@@ -62,3 +62,7 @@ Reportados via `POST /api/v1/ea/management-events`:
 
 - Criacao: `/admin/real-trading/preflights` — painel **Gestao da operacao**
 - Monitoramento: `/admin/real-trading/instructions` e detalhe com secao **Plano de gestao**
+
+## Disparo em lote
+
+O mesmo `managementPlan` validado e aplicado em lote via `/admin/real-trading/bulk-dispatch` (Fase 14.1.7). Preview nao cria instruction; execute cria uma instruction por cliente com preflight individual. Ver [`docs/REAL-MANUAL-BULK-DISPATCH.md`](REAL-MANUAL-BULK-DISPATCH.md).
