@@ -7,8 +7,8 @@ import {
 import prisma from "@/lib/prisma";
 import { redactSensitiveMessage } from "@/lib/risk/redact-message";
 import {
+  buildCloseNoOrderUiForInstruction,
   extractCloseReasonFromLogs,
-  getRealManualCloseNoOrderEligibility,
   type CloseNoOrderEligibility,
 } from "@/lib/admin/real-manual-close-no-order";
 
@@ -198,7 +198,22 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
     instruction.realTradePreflights[0]?.id ??
     extractPreflightIdFromStatusLogs(instruction.statusLogs);
 
-  const closeEligibility = await getRealManualCloseNoOrderEligibility(instructionId);
+  const closeEligibility = await buildCloseNoOrderUiForInstruction({
+    id: instruction.id,
+    source: instruction.source,
+    licenseId: instruction.licenseId,
+    symbol: instruction.symbol,
+    magicNumber: instruction.magicNumber,
+    currentStatus: instruction.currentStatus,
+    requiresProtectionConfirmation: instruction.requiresProtectionConfirmation,
+    statusLogs: instruction.statusLogs,
+    executions: instruction.executions.map((ex) => ({
+      status: ex.status,
+      brokerTicket: ex.brokerTicket,
+      errorCode: ex.errorCode,
+    })),
+    executionProtectionReports: instruction.executionProtectionReports,
+  });
   const closeReasonCode = extractCloseReasonFromLogs(instruction.statusLogs);
 
   const redactedPayload = {

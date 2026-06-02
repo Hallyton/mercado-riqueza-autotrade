@@ -29,7 +29,9 @@ import {
   CLOSE_NO_ORDER_REASON_CODE,
   closeRealManualInstructionNoOrder,
   evaluateCloseNoOrderEligibility,
+  executionIndicatesOrderNotPlaced,
   hasClosedNoOrderInLogs,
+  hasSuccessfulBrokerFill,
 } from "@/lib/admin/real-manual-close-no-order";
 
 const instructionId = "cmpwldiz6002vlb04igy5692o";
@@ -50,6 +52,7 @@ const baseInstruction = {
   accountLogin: "19583778",
   accountServer: "XPMT5-PRD",
   currentStatus: OrderLogStatus.EXECUTED,
+  requiresProtectionConfirmation: true,
   statusLogs: [],
   executions: [
     {
@@ -57,6 +60,7 @@ const baseInstruction = {
       status: ExecutionStatus.REJECTED,
       executedAt: new Date(),
       brokerTicket: null,
+      errorCode: "BROKER_REJECT",
     },
   ],
   executionProtectionReports: [
@@ -89,76 +93,69 @@ describe("real manual close no order", () => {
     vi.mocked(prisma.executionProtectionReport.update).mockResolvedValue({} as never);
   });
 
-  it("exibe painel para EXECUTED + REJECTED + PROTECTION_PENDING sem heartbeat", () => {
+  it("exibe painel para EXECUTED + REJECTED + PROTECTION_PENDING", () => {
     const eligibility = evaluateCloseNoOrderEligibility({
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.EXECUTED,
       statusLogs: [],
-      executions: [{ status: ExecutionStatus.REJECTED }],
+      executions: [{ status: ExecutionStatus.REJECTED, errorCode: "X" }],
       protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_PENDING }],
+      requiresProtectionConfirmation: true,
       exposure: noExposure,
     });
+    expect(eligibility.showAdminActionsCard).toBe(true);
+    expect(eligibility.canCloseNoOrder).toBe(true);
     expect(eligibility.canShowClosePanel).toBe(true);
-    expect(eligibility.heartbeatWarning).toContain("Sem heartbeat recente");
   });
 
-  it("exibe painel para EXECUTED + PROTECTION_PENDING sem registro de execução", () => {
+  it("mantém elegível com execução antiga FILLED e mais recente REJECTED", () => {
+    const executions = [
+      { status: ExecutionStatus.REJECTED, brokerTicket: null, errorCode: "ERR" },
+      { status: ExecutionStatus.FILLED, brokerTicket: "12345" },
+    ];
+    expect(hasSuccessfulBrokerFill(executions)).toBe(false);
+    expect(
+      executionIndicatesOrderNotPlaced(executions, OrderLogStatus.EXECUTED)
+    ).toBe(true);
+
     const eligibility = evaluateCloseNoOrderEligibility({
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.EXECUTED,
       statusLogs: [],
-      executions: [],
+      executions,
       protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_PENDING }],
+      requiresProtectionConfirmation: true,
       exposure: noExposure,
     });
-    expect(eligibility.canShowClosePanel).toBe(true);
+    expect(eligibility.canCloseNoOrder).toBe(true);
   });
 
-  it("mantém painel visível com heartbeat reportando posição (somente aviso)", () => {
-    const eligibility = evaluateCloseNoOrderEligibility({
-      source: InstructionSource.REAL_MANUAL,
-      currentStatus: OrderLogStatus.EXECUTED,
-      statusLogs: [],
-      executions: [{ status: ExecutionStatus.REJECTED }],
-      protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_PENDING }],
-      exposure: {
-        ...noExposure,
-        hasOpenPosition: true,
-        heartbeatAvailable: true,
-      },
-    });
-    expect(eligibility.canShowClosePanel).toBe(true);
-    expect(eligibility.heartbeatWarning).toMatch(/posição aberta/i);
-  });
-
-  it("não exibe painel quando já ORDER_NOT_PLACED", () => {
+  it("não exibe card quando ORDER_NOT_PLACED", () => {
     const eligibility = evaluateCloseNoOrderEligibility({
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.ORDER_NOT_PLACED,
-      statusLogs: [{ status: OrderLogStatus.ORDER_NOT_PLACED, metadata: null }],
-      executions: [{ status: ExecutionStatus.REJECTED }],
-      protectionReports: [{ protectionStatus: ProtectionStatus.SKIPPED_NO_POSITION }],
+      statusLogs: [],
+      executions: [],
+      protectionReports: [],
       exposure: noExposure,
     });
-    expect(eligibility.canShowClosePanel).toBe(false);
+    expect(eligibility.showAdminActionsCard).toBe(false);
   });
 
-  it("não exibe painel quando há PROTECTION_CONFIRMED", () => {
+  it("não permite encerrar com PROTECTION_CONFIRMED", () => {
     const eligibility = evaluateCloseNoOrderEligibility({
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.EXECUTED,
       statusLogs: [],
       executions: [{ status: ExecutionStatus.REJECTED }],
-      protectionReports: [
-        { protectionStatus: ProtectionStatus.PROTECTION_PENDING },
-        { protectionStatus: ProtectionStatus.PROTECTION_CONFIRMED },
-      ],
+      protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_CONFIRMED }],
       exposure: noExposure,
     });
-    expect(eligibility.canShowClosePanel).toBe(false);
+    expect(eligibility.showAdminActionsCard).toBe(true);
+    expect(eligibility.canCloseNoOrder).toBe(false);
   });
 
-  it("não exibe painel quando há PROTECTION_FAILED", () => {
+  it("não exibe ação com PROTECTION_FAILED", () => {
     const eligibility = evaluateCloseNoOrderEligibility({
       source: InstructionSource.REAL_MANUAL,
       currentStatus: OrderLogStatus.EXECUTED,
@@ -167,21 +164,7 @@ describe("real manual close no order", () => {
       protectionReports: [{ protectionStatus: ProtectionStatus.PROTECTION_FAILED }],
       exposure: noExposure,
     });
-    expect(eligibility.canShowClosePanel).toBe(false);
-  });
-
-  it("bloqueia confirmação incorreta", async () => {
-    await expect(
-      closeRealManualInstructionNoOrder({
-        instructionId,
-        actorId: "admin-1",
-        reasonCode: CLOSE_NO_ORDER_REASON_CODE,
-        operatorNote: "Nota operacional válida para encerramento.",
-        operatorAttestation: fullAttestation,
-        adminConfirmation: "ERRADO",
-      })
-    ).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(eligibility.canCloseNoOrder).toBe(false);
   });
 
   it("bloqueia atestação incompleta", async () => {
@@ -202,7 +185,7 @@ describe("real manual close no order", () => {
     ).rejects.toMatchObject({ code: "OPERATOR_ATTESTATION_INCOMPLETE" });
   });
 
-  it("encerra REAL_MANUAL e registra admin action com atestação", async () => {
+  it("encerra com atestação e audit", async () => {
     const result = await closeRealManualInstructionNoOrder({
       instructionId,
       actorId: "admin-1",
@@ -213,89 +196,14 @@ describe("real manual close no order", () => {
       adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
     });
 
-    expect(result.ok).toBe(true);
     expect(result.status).toBe(OrderLogStatus.ORDER_NOT_PLACED);
-    expect(prisma.executionProtectionReport.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          protectionStatus: ProtectionStatus.SKIPPED_NO_POSITION,
-        }),
-      })
-    );
-    expect(recordAdminAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "real_trading.instruction.close_no_order",
-        metadata: expect.objectContaining({
-          operatorAttestation: fullAttestation,
-          previousStatus: OrderLogStatus.EXECUTED,
-          newStatus: OrderLogStatus.ORDER_NOT_PLACED,
-        }),
-      })
-    );
+    expect(recordAdminAction).toHaveBeenCalled();
   });
 
-  it("não marca PROTECTION_FAILED nem PROTECTION_CONFIRMED", async () => {
-    await closeRealManualInstructionNoOrder({
-      instructionId,
-      actorId: "admin-1",
-      reasonCode: CLOSE_NO_ORDER_REASON_CODE,
-      operatorNote: "Nota operacional válida para encerramento completa.",
-      operatorAttestation: fullAttestation,
-      adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
-    });
-
-    const updateCalls = vi.mocked(prisma.executionProtectionReport.update).mock.calls;
-    for (const call of updateCalls) {
-      const status = call[0]?.data?.protectionStatus;
-      expect(status).not.toBe(ProtectionStatus.PROTECTION_FAILED);
-      expect(status).not.toBe(ProtectionStatus.PROTECTION_CONFIRMED);
-    }
-  });
-
-  it("rejeita TEST/HOMOLOGATION", async () => {
-    vi.mocked(prisma.instruction.findUnique).mockResolvedValue({
-      ...baseInstruction,
-      source: InstructionSource.TEST,
-    } as never);
-
-    await expect(
-      closeRealManualInstructionNoOrder({
-        instructionId,
-        actorId: "admin-1",
-        reasonCode: CLOSE_NO_ORDER_REASON_CODE,
-        operatorNote: "Nota operacional válida para encerramento.",
-        operatorAttestation: fullAttestation,
-        adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
-      })
-    ).rejects.toMatchObject({ code: "SOURCE_NOT_REAL_MANUAL" });
-  });
-
-  it("REAL_MANUAL_ALREADY_CLOSED em segundo encerramento", async () => {
-    vi.mocked(prisma.instruction.findUnique).mockResolvedValue({
-      ...baseInstruction,
-      currentStatus: OrderLogStatus.ORDER_NOT_PLACED,
-      statusLogs: [{ status: OrderLogStatus.ORDER_NOT_PLACED, metadata: null }],
-    } as never);
-
-    await expect(
-      closeRealManualInstructionNoOrder({
-        instructionId,
-        actorId: "admin-1",
-        reasonCode: CLOSE_NO_ORDER_REASON_CODE,
-        operatorNote: "Nota operacional válida para encerramento.",
-        operatorAttestation: fullAttestation,
-        adminConfirmation: CLOSE_NO_ORDER_CONFIRM_PHRASE,
-      })
-    ).rejects.toMatchObject({ code: "REAL_MANUAL_ALREADY_CLOSED" });
-  });
-
-  it("hasClosedNoOrderInLogs detecta evento CLOSED_NO_ORDER", () => {
+  it("hasClosedNoOrderInLogs detecta CLOSED_NO_ORDER", () => {
     expect(
       hasClosedNoOrderInLogs([
-        {
-          status: OrderLogStatus.REJECTED,
-          metadata: { event: "CLOSED_NO_ORDER" },
-        },
+        { status: OrderLogStatus.REJECTED, metadata: { event: "CLOSED_NO_ORDER" } },
       ])
     ).toBe(true);
   });

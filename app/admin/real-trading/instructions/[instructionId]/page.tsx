@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { RealManualCloseNoOrderPanel } from "@/components/admin/real-manual-close-no-order-panel";
+import { InstructionSource } from "@prisma/client";
+import { CloseNoOrderActionPanel } from "@/components/admin/close-no-order-action-panel";
 import { getRealTradingInstructionAdminDetail } from "@/lib/admin/real-trading-instructions";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -32,7 +33,16 @@ export default async function AdminRealTradingInstructionDetailPage({
     redactedPayload,
     closeEligibility,
     closeReasonCode,
+    executions,
+    protectionReports,
   } = detail;
+
+  const latestExecution = executions[0] ?? null;
+  const latestProtection = protectionReports[0] ?? null;
+
+  const showAdminActions =
+    instruction.source === InstructionSource.REAL_MANUAL &&
+    (closeEligibility.showAdminActionsCard || Boolean(closeReasonCode));
 
   return (
     <div className="space-y-6">
@@ -87,29 +97,6 @@ export default async function AdminRealTradingInstructionDetailPage({
         </p>
       </Card>
 
-      {(closeEligibility?.canShowClosePanel ||
-        closeReasonCode ||
-        (closeEligibility && !closeEligibility.canShowClosePanel)) && (
-        <Card className="border-amber-500/30 p-6" data-testid="admin-actions-card">
-          <CardHeader className="p-0 pb-4">
-            <CardTitle className="text-base">Ações administrativas</CardTitle>
-            {closeReasonCode && (
-              <CardDescription>
-                Encerrada · motivo {closeReasonCode}
-              </CardDescription>
-            )}
-          </CardHeader>
-          {closeEligibility?.canShowClosePanel ? (
-            <RealManualCloseNoOrderPanel
-              instructionId={instruction.id}
-              eligibility={closeEligibility}
-            />
-          ) : closeEligibility?.blockReason ? (
-            <p className="text-sm text-muted-foreground">{closeEligibility.blockReason}</p>
-          ) : null}
-        </Card>
-      )}
-
       <Card className="p-6">
         <CardHeader className="p-0 pb-3">
           <CardTitle className="text-base">Payload operacional (redigido)</CardTitle>
@@ -148,9 +135,7 @@ export default async function AdminRealTradingInstructionDetailPage({
                   typeof meta.operatorNote === "string" ? meta.operatorNote : null;
                 return (
                   <>
-                    {reason && (
-                      <p className="mt-1 text-xs">Motivo: {reason}</p>
-                    )}
+                    {reason && <p className="mt-1 text-xs">Motivo: {reason}</p>}
                     {note && (
                       <p className="mt-1 text-xs text-muted-foreground">{note}</p>
                     )}
@@ -167,11 +152,11 @@ export default async function AdminRealTradingInstructionDetailPage({
         <CardHeader className="p-0 pb-3">
           <CardTitle className="text-base">Execuções</CardTitle>
         </CardHeader>
-        {detail.executions.length === 0 ? (
+        {executions.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma execução reportada pelo EA.</p>
         ) : (
           <div className="space-y-2 text-sm">
-            {detail.executions.map((ex) => (
+            {executions.map((ex) => (
               <div key={ex.id} className="rounded border border-white/10 p-3">
                 <p>
                   {ex.status} · {ex.executedAt ? fmtDate(ex.executedAt) : "—"} · ticket{" "}
@@ -191,11 +176,11 @@ export default async function AdminRealTradingInstructionDetailPage({
         <CardHeader className="p-0 pb-3">
           <CardTitle className="text-base">Relatórios de proteção</CardTitle>
         </CardHeader>
-        {detail.protectionReports.length === 0 ? (
+        {protectionReports.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum relatório de proteção.</p>
         ) : (
           <div className="space-y-2 text-sm">
-            {detail.protectionReports.map((r) => (
+            {protectionReports.map((r) => (
               <div key={r.id} className="rounded border border-white/10 p-3">
                 <p>
                   {r.protectionStatus} · SL {r.stopLossPresent ? "Sim" : "Não"} · TP{" "}
@@ -207,6 +192,29 @@ export default async function AdminRealTradingInstructionDetailPage({
           </div>
         )}
       </Card>
+
+      {showAdminActions && (
+        <Card className="border-amber-500/30 p-6" data-testid="admin-actions-card">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-base">Ações administrativas</CardTitle>
+            {closeReasonCode && (
+              <CardDescription>
+                Encerrada · motivo {closeReasonCode}
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CloseNoOrderActionPanel
+            instructionId={instruction.id}
+            source={instruction.source}
+            status={instruction.currentStatus}
+            executionStatus={latestExecution?.status ?? null}
+            protectionStatus={latestProtection?.protectionStatus ?? null}
+            canCloseNoOrder={closeEligibility.canCloseNoOrder}
+            eligibility={closeEligibility}
+            reasonCode={closeReasonCode ?? undefined}
+          />
+        </Card>
+      )}
     </div>
   );
 }

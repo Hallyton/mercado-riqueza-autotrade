@@ -90,13 +90,50 @@ export function hasProtectionStatus(
   return reports.some((r) => r.protectionStatus === status);
 }
 
-export function hasAnyFilledExecution(
-  executions: { status: ExecutionStatus }[]
+export type CloseNoOrderExecutionInput = {
+  status: ExecutionStatus;
+  brokerTicket?: string | null;
+  errorCode?: string | null;
+};
+
+/** Apenas a execução mais recente — evita bloquear por tentativa antiga FILLED. */
+export function hasSuccessfulBrokerFill(
+  executions: CloseNoOrderExecutionInput[]
 ): boolean {
-  return executions.some(
-    (e) =>
-      e.status === ExecutionStatus.FILLED || e.status === ExecutionStatus.PARTIAL
+  const latest = executions[0];
+  if (!latest) return false;
+  return (
+    (latest.status === ExecutionStatus.FILLED ||
+      latest.status === ExecutionStatus.PARTIAL) &&
+    Boolean(latest.brokerTicket?.trim())
   );
+}
+
+export function executionIndicatesOrderNotPlaced(
+  executions: CloseNoOrderExecutionInput[],
+  currentStatus: OrderLogStatus
+): boolean {
+  const latest = executions[0];
+  if (!latest) {
+    return (
+      currentStatus === OrderLogStatus.EXECUTED ||
+      currentStatus === OrderLogStatus.REJECTED ||
+      currentStatus === OrderLogStatus.SENT
+    );
+  }
+  if (
+    latest.status === ExecutionStatus.REJECTED ||
+    latest.status === ExecutionStatus.EXPIRED
+  ) {
+    return true;
+  }
+  if (latest.errorCode?.trim()) {
+    return true;
+  }
+  if (currentStatus === OrderLogStatus.EXECUTED && !latest.brokerTicket?.trim()) {
+    return true;
+  }
+  return !hasSuccessfulBrokerFill(executions);
 }
 
 export async function assessLicenseExposureForClose(params: {
@@ -150,8 +187,11 @@ export async function assessLicenseExposureForClose(params: {
 }
 
 export type CloseNoOrderEligibility = {
+  /** Card “Ações administrativas” visível na página de detalhe. */
+  showAdminActionsCard: boolean;
+  /** Botão/formulário de encerramento habilitado. */
   canShowClosePanel: boolean;
-  /** Aviso quando heartbeat indica exposição — não oculta o painel. */
+  canCloseNoOrder: boolean;
   heartbeatWarning: string | null;
   blockReason: string | null;
 };
@@ -160,8 +200,9 @@ export function evaluateCloseNoOrderEligibility(input: {
   source: InstructionSource | null;
   currentStatus: OrderLogStatus;
   statusLogs: { metadata: Prisma.JsonValue | null; status: OrderLogStatus }[];
-  executions: { status: ExecutionStatus }[];
+  executions: CloseNoOrderExecutionInput[];
   protectionReports: { protectionStatus: ProtectionStatus }[];
+  requiresProtectionConfirmation?: boolean;
   exposure: {
     hasOpenPosition: boolean;
     hasPendingBrokerOrder: boolean;
@@ -169,92 +210,69 @@ export function evaluateCloseNoOrderEligibility(input: {
     heartbeatAvailable: boolean;
   };
 }): CloseNoOrderEligibility {
+  const hideCard = (blockReason: string): CloseNoOrderEligibility => ({
+    showAdminActionsCard: false,
+    canShowClosePanel: false,
+    canCloseNoOrder: false,
+    heartbeatWarning: null,
+    blockReason,
+  });
+
+  const showCardOnly = (blockReason: string): CloseNoOrderEligibility => ({
+    showAdminActionsCard: true,
+    canShowClosePanel: false,
+    canCloseNoOrder: false,
+    heartbeatWarning: null,
+    blockReason,
+  });
   if (input.source !== InstructionSource.REAL_MANUAL) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason: "Apenas instructions REAL_MANUAL.",
-    };
+    return hideCard("Apenas instructions REAL_MANUAL.");
   }
 
   if (hasClosedNoOrderInLogs(input.statusLogs)) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason: "Instruction já encerrada sem ordem apregoada.",
-    };
+    return hideCard("Instruction já encerrada sem ordem apregoada.");
   }
 
   if (input.currentStatus === OrderLogStatus.ORDER_NOT_PLACED) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason: "Instruction já está ORDER_NOT_PLACED.",
-    };
+    return hideCard("Instruction já está ORDER_NOT_PLACED.");
   }
 
   if (
     REAL_MANUAL_TERMINAL_INSTRUCTION_STATUSES.includes(input.currentStatus) &&
     input.currentStatus !== OrderLogStatus.EXECUTED
   ) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason: "Instruction em status final.",
-    };
+    return hideCard("Instruction em status final.");
   }
 
   if (hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_CONFIRMED)) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason: "Proteção já confirmada — encerramento não aplicável.",
-    };
+    return showCardOnly("Proteção já confirmada — encerramento não aplicável.");
   }
 
   if (hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_FAILED)) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason: "Proteção em falha — use o fluxo de proteção antes de encerrar.",
-    };
+    return showCardOnly("Proteção em falha — use o fluxo de proteção antes de encerrar.");
   }
 
-  const protectionPending = hasProtectionStatus(
-    input.protectionReports,
-    ProtectionStatus.PROTECTION_PENDING
-  );
+  const protectionPending =
+    hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_PENDING) ||
+    (input.requiresProtectionConfirmation === true &&
+      !hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_CONFIRMED) &&
+      !hasProtectionStatus(input.protectionReports, ProtectionStatus.PROTECTION_FAILED));
 
   if (!protectionPending) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason:
-        "Encerramento disponível apenas com relatório de proteção PROTECTION_PENDING.",
-    };
+    return showCardOnly(
+      "Encerramento disponível quando há proteção pendente ou confirmação de proteção ainda não resolvida."
+    );
   }
 
-  const anyFilled = hasAnyFilledExecution(input.executions);
-  const anyRejected = input.executions.some(
-    (e) =>
-      e.status === ExecutionStatus.REJECTED || e.status === ExecutionStatus.EXPIRED
+  const orderNotPlaced = executionIndicatesOrderNotPlaced(
+    input.executions,
+    input.currentStatus
   );
 
-  const inconsistentState =
-    !anyFilled &&
-    (input.currentStatus === OrderLogStatus.EXECUTED ||
-      input.currentStatus === OrderLogStatus.REJECTED ||
-      input.currentStatus === OrderLogStatus.SENT ||
-      anyRejected ||
-      input.executions.length === 0);
-
-  if (!inconsistentState) {
-    return {
-      canShowClosePanel: false,
-      heartbeatWarning: null,
-      blockReason:
-        "Estado operacional não indica ordem não apregoada (execução preenchida ou status incompatível).",
-    };
+  if (!orderNotPlaced) {
+    return showCardOnly(
+      "Estado operacional indica execução preenchida no broker — encerramento não aplicável."
+    );
   }
 
   const warnings: string[] = [];
@@ -280,23 +298,38 @@ export function evaluateCloseNoOrderEligibility(input: {
   }
 
   return {
+    showAdminActionsCard: true,
     canShowClosePanel: true,
+    canCloseNoOrder: true,
     heartbeatWarning: warnings.length > 0 ? warnings.join(" ") : null,
     blockReason: null,
   };
 }
 
-export async function getRealManualCloseNoOrderEligibility(instructionId: string) {
-  const instruction = await prisma.instruction.findUnique({
-    where: { id: instructionId },
-    include: {
-      statusLogs: { orderBy: { createdAt: "asc" } },
-      executions: { orderBy: { executedAt: "desc" } },
-      executionProtectionReports: { orderBy: { reportedAt: "desc" } },
-    },
-  });
-  if (!instruction || instruction.source !== InstructionSource.REAL_MANUAL) {
-    return null;
+export type InstructionForCloseNoOrderUi = {
+  id: string;
+  source: InstructionSource | null;
+  licenseId: string;
+  symbol: string;
+  magicNumber: number | null;
+  currentStatus: OrderLogStatus;
+  requiresProtectionConfirmation: boolean;
+  statusLogs: { metadata: Prisma.JsonValue | null; status: OrderLogStatus }[];
+  executions: CloseNoOrderExecutionInput[];
+  executionProtectionReports: { protectionStatus: ProtectionStatus }[];
+};
+
+export async function buildCloseNoOrderUiForInstruction(
+  instruction: InstructionForCloseNoOrderUi
+): Promise<CloseNoOrderEligibility> {
+  if (instruction.source !== InstructionSource.REAL_MANUAL) {
+    return {
+      showAdminActionsCard: false,
+      canShowClosePanel: false,
+      canCloseNoOrder: false,
+      heartbeatWarning: null,
+      blockReason: "Apenas instructions REAL_MANUAL.",
+    };
   }
 
   const exposure = await assessLicenseExposureForClose({
@@ -312,7 +345,39 @@ export async function getRealManualCloseNoOrderEligibility(instructionId: string
     statusLogs: instruction.statusLogs,
     executions: instruction.executions,
     protectionReports: instruction.executionProtectionReports,
+    requiresProtectionConfirmation: instruction.requiresProtectionConfirmation,
     exposure,
+  });
+}
+
+export async function getRealManualCloseNoOrderEligibility(instructionId: string) {
+  const instruction = await prisma.instruction.findUnique({
+    where: { id: instructionId },
+    include: {
+      statusLogs: { orderBy: { createdAt: "asc" } },
+      executions: { orderBy: { executedAt: "desc" } },
+      executionProtectionReports: { orderBy: { reportedAt: "desc" } },
+    },
+  });
+  if (!instruction || instruction.source !== InstructionSource.REAL_MANUAL) {
+    return null;
+  }
+
+  return buildCloseNoOrderUiForInstruction({
+    id: instruction.id,
+    source: instruction.source,
+    licenseId: instruction.licenseId,
+    symbol: instruction.symbol,
+    magicNumber: instruction.magicNumber,
+    currentStatus: instruction.currentStatus,
+    requiresProtectionConfirmation: instruction.requiresProtectionConfirmation,
+    statusLogs: instruction.statusLogs,
+    executions: instruction.executions.map((ex) => ({
+      status: ex.status,
+      brokerTicket: ex.brokerTicket,
+      errorCode: ex.errorCode,
+    })),
+    executionProtectionReports: instruction.executionProtectionReports,
   });
 }
 
@@ -412,16 +477,21 @@ export async function closeRealManualInstructionNoOrder(input: {
     source: instruction.source,
     currentStatus: instruction.currentStatus,
     statusLogs: instruction.statusLogs,
-    executions: instruction.executions,
+    executions: instruction.executions.map((ex) => ({
+      status: ex.status,
+      brokerTicket: ex.brokerTicket,
+      errorCode: ex.errorCode,
+    })),
     protectionReports: instruction.executionProtectionReports,
+    requiresProtectionConfirmation: instruction.requiresProtectionConfirmation,
     exposure,
   });
 
-  if (!eligibility.canShowClosePanel) {
+  if (!eligibility.canCloseNoOrder) {
     throw new RealManualCloseNoOrderError(
       eligibility.blockReason ??
         "Instruction não elegível para encerramento sem ordem apregoada.",
-      "CLOSE_NOT_ELIGIBLE",
+      "INSTRUCTION_NOT_ELIGIBLE_FOR_CLOSE_NO_ORDER",
       400
     );
   }
