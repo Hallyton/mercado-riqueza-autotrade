@@ -7,7 +7,7 @@ import {
 
 vi.mock("@/lib/prisma", () => ({
   default: {
-    realTradePreflight: { findUnique: vi.fn() },
+    realTradePreflight: { findUnique: vi.fn(), update: vi.fn() },
     eaHeartbeat: { findFirst: vi.fn() },
     device: { findFirst: vi.fn() },
     instruction: { create: vi.fn() },
@@ -27,6 +27,9 @@ vi.mock("@/lib/risk/execution-protection", () => ({
 }));
 vi.mock("@/lib/risk/real-trading-config", () => ({
   isAutoDispatchEnabled: vi.fn(() => false),
+}));
+vi.mock("@/lib/admin/real-trading-instructions", () => ({
+  findRealManualInstructionByPreflightId: vi.fn().mockResolvedValue(null),
 }));
 
 import prisma from "@/lib/prisma";

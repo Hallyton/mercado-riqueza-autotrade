@@ -42,9 +42,14 @@ export default async function AdminInstrucoesPage() {
           <CardTitle>Fila interna — teste / homologação</CardTitle>
           <CardDescription>
             Despacho manual para validar o EA. Papéis autorizados: SUPERADMIN e
-            OPS. Registro em admin_actions e audit_logs.
-            Esta fila e exclusiva para TEST/HOMOLOGATION e nao deve ser usada para
-            primeira ordem REAL controlada.
+            OPS. Registro em admin_actions e audit_logs. Esta fila é exclusiva para
+            TEST/HOMOLOGATION — instruções{" "}
+            <span className="font-mono text-gold">REAL_MANUAL</span> não aparecem aqui.
+            Use{" "}
+            <a href="/admin/real-trading/instructions" className="text-gold hover:underline">
+              Conta real / Instruções reais
+            </a>
+            .
           </CardDescription>
         </CardHeader>
 

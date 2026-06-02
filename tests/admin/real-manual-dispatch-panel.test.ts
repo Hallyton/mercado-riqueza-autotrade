@@ -30,6 +30,13 @@ describe("FirstRealManualDispatchPanel UI", () => {
     );
   });
 
+  it("exibe card de sucesso com links para instruções reais e proteção", () => {
+    expect(panel).toContain("REAL_MANUAL_ALREADY_DISPATCHED");
+    expect(panel).toContain("/admin/real-trading/instructions/");
+    expect(panel).toContain("/admin/real-trading/protection");
+    expect(panel).toContain("Abrir em Conta real / Instruções reais");
+  });
+
   it("página separa bloco dry-run e bloco dispatch manual", () => {
     expect(page).toContain("Preflight dry-run (conta real)");
     expect(page).toContain("Criar instruction REAL manual");

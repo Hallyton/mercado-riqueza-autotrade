@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FIRST_REAL_DISPATCH_CONFIRM_PHRASE } from "@/lib/admin/real-manual-dispatch";
@@ -47,6 +48,11 @@ export function FirstRealManualDispatchPanel({
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{
+    instructionId: string;
+    status?: string;
+    alreadyExists?: boolean;
+  } | null>(null);
 
   if (preflights.length === 0) {
     return (
@@ -108,6 +114,7 @@ export function FirstRealManualDispatchPanel({
 
     setBusy(true);
     setMessage(null);
+    setSuccess(null);
     try {
       const res = await fetch("/api/admin/real-trading/dispatch-manual", {
         method: "POST",
@@ -116,12 +123,26 @@ export function FirstRealManualDispatchPanel({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (
+          data.code === "REAL_MANUAL_ALREADY_DISPATCHED" &&
+          data.existingInstructionId
+        ) {
+          setSuccess({
+            instructionId: data.existingInstructionId,
+            status: data.existingStatus,
+            alreadyExists: true,
+          });
+          setMessage("Instruction REAL_MANUAL já existe para este preflight.");
+          return;
+        }
         setMessage(data.error ?? "Falha ao criar instruction REAL.");
         return;
       }
-      setMessage(
-        `Instruction ${data.instructionId?.slice(0, 10)}... criada com source REAL_MANUAL.`
-      );
+      setSuccess({
+        instructionId: data.instructionId,
+        status: data.status,
+      });
+      setMessage(null);
       setConfirm("");
       setOrderPrice("");
       setStopLossPrice("");
@@ -295,6 +316,29 @@ export function FirstRealManualDispatchPanel({
         {busy ? "Criando…" : "Criar instruction REAL manual"}
       </button>
       {message && <p className="text-sm text-amber-200">{message}</p>}
+
+      {success && (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/20 p-4 text-sm space-y-2">
+          <p className="font-medium text-emerald-300">
+            {success.alreadyExists
+              ? "REAL_MANUAL_ALREADY_DISPATCHED"
+              : "Instruction REAL_MANUAL criada com sucesso"}
+          </p>
+          <p className="font-mono text-xs break-all">InstructionId: {success.instructionId}</p>
+          <p>Source: REAL_MANUAL · Status: {success.status ?? "RECEIVED"}</p>
+          <div className="flex flex-wrap gap-3 pt-1">
+            <Link
+              href={`/admin/real-trading/instructions/${success.instructionId}`}
+              className="text-gold hover:underline"
+            >
+              Abrir em Conta real / Instruções reais
+            </Link>
+            <Link href="/admin/real-trading/protection" className="text-gold hover:underline">
+              Abrir Proteção SL/TP
+            </Link>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

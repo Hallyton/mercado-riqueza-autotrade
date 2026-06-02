@@ -23,6 +23,7 @@ import {
   hasPreMarketSnapshotToday,
   isEaExecutorOnline,
 } from "@/lib/risk/real-trade-preflight";
+import { findRealManualInstructionByPreflightId } from "@/lib/admin/real-trading-instructions";
 import { isAutoDispatchEnabled } from "@/lib/risk/real-trading-config";
 
 export const FIRST_REAL_DISPATCH_CONFIRM_PHRASE =
@@ -126,6 +127,17 @@ export async function createFirstRealManualInstruction(input: {
 
   if (!preflight) {
     throw new RealManualDispatchError("Preflight não encontrado.", "PREFLIGHT_NOT_FOUND", 404);
+  }
+
+  const existingForPreflight = await findRealManualInstructionByPreflightId(
+    input.preflightId
+  );
+  if (existingForPreflight) {
+    throw new RealManualDispatchError(
+      "Já existe instruction REAL_MANUAL para este preflight.",
+      "REAL_MANUAL_ALREADY_DISPATCHED",
+      409
+    );
   }
   if (preflight.source !== RealTradePreflightSource.DRY_RUN) {
     throw new RealManualDispatchError(
@@ -290,6 +302,10 @@ export async function createFirstRealManualInstruction(input: {
           takeProfitPrice: input.takeProfitPrice,
         },
       },
+    });
+    await tx.realTradePreflight.update({
+      where: { id: preflight.id },
+      data: { instructionId: created.id },
     });
     return created;
   });

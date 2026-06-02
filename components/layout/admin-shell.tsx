@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/real-trading/approvals", label: "Conta real / Aprovações" },
   { href: "/admin/real-trading/snapshots", label: "Conta real / Snapshots" },
   { href: "/admin/real-trading/preflights", label: "Conta real / Preflights" },
+  { href: "/admin/real-trading/instructions", label: "Conta real / Instruções reais" },
   { href: "/admin/real-trading/protection", label: "Conta real / Proteção SL/TP" },
 ];
 
