@@ -24,6 +24,11 @@ Validar o **Real Trade Preflight** (gate REAL controlado) **sem**:
 3. Clicar **Executar preflight dry-run**
 4. Ler resultado: `PASSED` / `FAILED` / `BLOCKED`, `reasonCode`, flags (margem, EA, snapshot, approval, device, etc.)
 
+### Proximo passo seguro
+
+Quando o dry-run retornar `PASSED`, o proximo passo e usar o painel de **First Real Manual Dispatch** em `/admin/real-trading/preflights` para criar uma instruction `REAL_MANUAL`.  
+Nao usar `/admin/instrucoes` (fila TEST/HOMOLOGATION) para a primeira ordem real.
+
 ### Endpoint
 
 `POST /api/admin/real-trading/preflight-dry-run`
@@ -62,6 +67,7 @@ Pagamento/assinatura **não** liberam REAL sem approval.
 - `reasonCode`: `REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE`
 - Mensagem UI: critérios OK no dry-run
 - **Não** cria instruction — texto: *Pronto para criar instruction manual real*
+- A criacao de instruction real passa a exigir `orderType` e `orderPrice` para `LIMIT/STOP`.
 
 ---
 

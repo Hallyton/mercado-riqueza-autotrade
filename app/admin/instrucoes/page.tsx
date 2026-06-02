@@ -43,6 +43,8 @@ export default async function AdminInstrucoesPage() {
           <CardDescription>
             Despacho manual para validar o EA. Papéis autorizados: SUPERADMIN e
             OPS. Registro em admin_actions e audit_logs.
+            Esta fila e exclusiva para TEST/HOMOLOGATION e nao deve ser usada para
+            primeira ordem REAL controlada.
           </CardDescription>
         </CardHeader>
 

@@ -24,6 +24,7 @@ struct MRInstruction
    string            symbol;
    string            side;          // BUY | SELL
    string            order_type;    // MARKET | LIMIT
+   double            order_price;   // obrigatorio para LIMIT/STOP
    double            quantity;
    double            stop_loss;
    double            take_profit;

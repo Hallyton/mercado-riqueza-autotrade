@@ -112,6 +112,7 @@ enum InstructionSource {
   TEST
   HOMOLOGATION
   MASTER_SIGNAL
+  REAL_MANUAL
 }
 
 /**
@@ -781,6 +782,7 @@ model Instruction {
   symbol         String
   side           InstructionSide
   orderType      InstructionOrderType @map("order_type")
+  orderPrice     Decimal?             @map("order_price") @db.Decimal(18, 6)
   quantity       Decimal              @db.Decimal(18, 6)
   stopLoss       Decimal?             @map("stop_loss") @db.Decimal(18, 6)
   takeProfit     Decimal?             @map("take_profit") @db.Decimal(18, 6)

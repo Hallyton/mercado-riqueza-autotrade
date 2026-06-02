@@ -305,8 +305,15 @@ export async function listExecutionProtectionReportsAdmin(take = 50) {
     take,
     orderBy: { reportedAt: "desc" },
     include: {
-      license: { select: { id: true } },
-      instruction: { select: { id: true, symbol: true } },
+      license: {
+        select: {
+          id: true,
+          user: { select: { email: true } },
+        },
+      },
+      instruction: {
+        select: { id: true, symbol: true, source: true, accountLogin: true, accountServer: true },
+      },
     },
   });
 }

@@ -263,6 +263,89 @@ bool MR_AT_ExecuteMarketOrder(const MRInstruction &instr, ulong &ticket, string 
   }
 
 //+------------------------------------------------------------------+
+bool MR_AT_ExecutePendingOrder(const MRInstruction &instr, ulong &ticket, string &err_msg)
+  {
+   ticket = 0;
+   err_msg = "";
+
+   if(!MR_AT_SymbolReady(instr.symbol))
+     {
+      err_msg = "Símbolo indisponível: " + instr.symbol;
+      return false;
+     }
+   if(!MR_AT_CanExecuteInstruction(instr))
+     {
+      err_msg = "Execução bloqueada pelo servidor (licença/assinatura)";
+      return false;
+     }
+   if(instr.order_price <= 0)
+     {
+      err_msg = "ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER";
+      return false;
+     }
+
+   int order_magic = MR_AT_ResolveInstructionMagic(instr);
+   double volume = MR_AT_NormalizeVolume(instr.symbol, instr.quantity);
+   if(volume <= 0)
+     {
+      err_msg = "Volume inválido";
+      return false;
+     }
+
+   ENUM_ORDER_TYPE order_type = ORDER_TYPE_BUY_LIMIT;
+   if(instr.order_type == "LIMIT")
+      order_type = (instr.side == "BUY") ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT;
+   else if(instr.order_type == "STOP")
+      order_type = (instr.side == "BUY") ? ORDER_TYPE_BUY_STOP : ORDER_TYPE_SELL_STOP;
+   else
+     {
+      err_msg = "ORDER_TYPE_INVALID";
+      return false;
+     }
+
+   MqlTradeRequest request = {};
+   MqlTradeResult  result = {};
+   request.action       = TRADE_ACTION_PENDING;
+   request.symbol       = instr.symbol;
+   request.volume       = volume;
+   request.type         = order_type;
+   request.price        = NormalizeDouble(instr.order_price, (int)SymbolInfoInteger(instr.symbol, SYMBOL_DIGITS));
+   request.deviation    = 20;
+   request.magic        = order_magic;
+   request.comment      = "MR_AT:" + instr.instruction_id;
+   request.type_time    = ORDER_TIME_SPECIFIED;
+   request.expiration   = TimeCurrent() + 900;
+
+   if(instr.stop_loss > 0)
+      request.sl = NormalizeDouble(instr.stop_loss, (int)SymbolInfoInteger(instr.symbol, SYMBOL_DIGITS));
+   if(instr.take_profit > 0)
+      request.tp = NormalizeDouble(instr.take_profit, (int)SymbolInfoInteger(instr.symbol, SYMBOL_DIGITS));
+
+   if(g_debug_mode)
+     {
+      MR_AT_LogInfo("Execution",
+         "DEBUG_MODE — ordem pendente NÃO enviada: " + instr.order_type + " " +
+         instr.side + " " + instr.symbol + " price=" + DoubleToString(instr.order_price, _Digits) +
+         " id=" + instr.instruction_id);
+      return true;
+     }
+
+   if(!OrderSend(request, result))
+     {
+      err_msg = "OrderSend pendente falhou retcode=" + IntegerToString((int)result.retcode) +
+                " " + result.comment;
+      return false;
+     }
+   if(result.retcode != TRADE_RETCODE_DONE && result.retcode != TRADE_RETCODE_PLACED)
+     {
+      err_msg = "Retcode=" + IntegerToString((int)result.retcode) + " " + result.comment;
+      return false;
+     }
+   ticket = result.order;
+   return true;
+  }
+
+//+------------------------------------------------------------------+
 void MR_AT_ProcessInstruction(const MRInstruction &instr)
   {
    MR_AT_LogInfo("Execution", "Processando " + instr.instruction_id + " " +
@@ -271,7 +354,11 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
 
    ulong ticket = 0;
    string err = "";
-   bool ok = MR_AT_ExecuteMarketOrder(instr, ticket, err);
+   bool ok = false;
+   if(instr.order_type == "MARKET")
+      ok = MR_AT_ExecuteMarketOrder(instr, ticket, err);
+   else
+      ok = MR_AT_ExecutePendingOrder(instr, ticket, err);
 
    if(g_debug_mode)
      {
@@ -295,6 +382,13 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
 
    if(ok && ticket > 0)
      {
+      if(instr.order_type == "LIMIT" || instr.order_type == "STOP")
+        {
+         MR_AT_ReportExecution(instr.instruction_id, "PARTIAL", IntegerToString((long)ticket),
+                               0, 0, "", "", magic, instr.symbol);
+         MR_AT_LogInfo("Execution", "Ordem pendente posicionada ticket=" + IntegerToString((long)ticket));
+         return;
+        }
       double fill_price = 0;
       if(PositionSelect(instr.symbol))
          fill_price = PositionGetDouble(POSITION_PRICE_OPEN);

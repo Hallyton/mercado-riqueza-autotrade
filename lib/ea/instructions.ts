@@ -26,6 +26,7 @@ export type EaInstructionPayload = {
   symbol: string;
   side: string;
   order_type: string;
+  order_price?: number;
   quantity: number;
   stop_loss: number | null;
   take_profit: number | null;
@@ -56,6 +57,7 @@ export function mapInstructionToEaPayload(
     symbol: string;
     side: string;
     orderType: string;
+    orderPrice?: Prisma.Decimal | null;
     quantity: Prisma.Decimal;
     stopLoss: Prisma.Decimal | null;
     takeProfit: Prisma.Decimal | null;
@@ -74,6 +76,9 @@ export function mapInstructionToEaPayload(
     symbol: instruction.symbol,
     side: instruction.side,
     order_type: instruction.orderType,
+    ...(instruction.orderPrice != null
+      ? { order_price: Number(instruction.orderPrice) }
+      : {}),
     quantity: Number(instruction.quantity),
     stop_loss: toNumber(instruction.stopLoss),
     take_profit: toNumber(instruction.takeProfit),
@@ -166,6 +171,7 @@ type InstructionRow = {
   symbol: string;
   side: string;
   orderType: string;
+  orderPrice: Prisma.Decimal | null;
   quantity: Prisma.Decimal;
   stopLoss: Prisma.Decimal | null;
   takeProfit: Prisma.Decimal | null;
@@ -243,6 +249,31 @@ async function evaluateInstructionDeliverability(
   const tradeMode = options?.tradeMode ?? null;
   if (tradeMode !== TradeMode.REAL) {
     return { deliver: true };
+  }
+
+  if (instruction.source === "TEST") {
+    return {
+      deliver: false,
+      reason: "Instruction TEST nao permitida para device REAL.",
+      code: "TEST_INSTRUCTION_NOT_ALLOWED_IN_REAL",
+    };
+  }
+  if (instruction.source === "HOMOLOGATION") {
+    return {
+      deliver: false,
+      reason: "Instruction HOMOLOGATION nao permitida para device REAL.",
+      code: "HOMOLOGATION_INSTRUCTION_NOT_ALLOWED_IN_REAL",
+    };
+  }
+  if (
+    instruction.source !== "REAL_MANUAL" &&
+    instruction.source !== "MASTER_SIGNAL"
+  ) {
+    return {
+      deliver: false,
+      reason: "Source de instruction invalida para tradeMode REAL.",
+      code: "REAL_SOURCE_NOT_ALLOWED",
+    };
   }
 
   if (instruction.magicNumber == null) {

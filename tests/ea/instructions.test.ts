@@ -162,6 +162,46 @@ describe("Sinal recebido", () => {
     expect(prisma.instruction.findMany).not.toHaveBeenCalled();
     delete process.env.ENABLE_REAL_TRADING;
   });
+
+  it("em tradeMode REAL, ignora instruções TEST/HOMOLOGATION", async () => {
+    process.env.ENABLE_REAL_TRADING = "true";
+    vi.mocked(prisma.eaHeartbeat.findFirst).mockResolvedValue({ tradeMode: TradeMode.REAL } as never);
+    vi.mocked(prisma.realTradingApproval.findFirst).mockResolvedValue({
+      id: "appr-1",
+      status: "APPROVED",
+      allowReal: true,
+      accountLogin: "123",
+      accountServer: "Broker-Demo",
+      symbol: "WDOM26",
+      magicNumber: 910001,
+      maxContracts: 1,
+    } as never);
+    vi.mocked(prisma.instruction.findMany).mockResolvedValue([
+      {
+        id: "inst-test",
+        purpose: InstructionPurpose.ENTRY,
+        symbol: "WDOM26",
+        side: "BUY",
+        orderType: "MARKET",
+        orderPrice: null,
+        quantity: new Decimal(1),
+        stopLoss: null,
+        takeProfit: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        idempotencyKey: "key-r1",
+        currentStatus: OrderLogStatus.RECEIVED,
+        magicNumber: 910001,
+        accountLogin: "123",
+        accountServer: "Broker-Demo",
+        requiresProtectionConfirmation: true,
+        protectionBlocked: false,
+        source: "TEST",
+      },
+    ] as never);
+
+    const result = await pullInstructionsForEa(ctx as never);
+    expect(result).toEqual([]);
+  });
 });
 
 describe("Ordem ignorada", () => {
@@ -294,6 +334,23 @@ describe("Payload EA sem estratégia", () => {
         "take_profit",
       ].sort()
     );
+  });
+
+  it("inclui order_price para ordens LIMIT/STOP", () => {
+    const payload = mapInstructionToEaPayload({
+      id: "x-limit",
+      purpose: InstructionPurpose.ENTRY,
+      symbol: "WDON26",
+      side: "BUY",
+      orderType: "LIMIT",
+      orderPrice: new Decimal(5650.5),
+      quantity: new Decimal(1),
+      stopLoss: null,
+      takeProfit: null,
+      expiresAt: new Date(),
+      idempotencyKey: "k2",
+    });
+    expect(payload.order_price).toBe(5650.5);
   });
 });
 

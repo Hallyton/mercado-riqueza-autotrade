@@ -2,8 +2,16 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { listExecutionProtectionReportsAdmin } from "@/lib/admin/real-trading-approval";
 import { ProtectionStatus } from "@prisma/client";
 
+function fmtDate(d: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(d);
+}
+
 export default async function AdminRealTradingProtectionPage() {
   const items = await listExecutionProtectionReportsAdmin(100);
+  const latestAt = items[0]?.reportedAt ?? null;
 
   return (
     <div className="space-y-6">
@@ -12,7 +20,7 @@ export default async function AdminRealTradingProtectionPage() {
           <CardTitle>Relatórios de proteção (SL/TP)</CardTitle>
           <CardDescription className="mt-2">
             Stop e take obrigatórios em conta real. PROTECTION_FAILED bloqueia novas
-            ordens (REAL_TRADING_PROTECTION_NOT_CONFIRMED). Erros são redigidos.
+            ordens do mesmo magic. Registros mais recentes aparecem primeiro.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -21,6 +29,9 @@ export default async function AdminRealTradingProtectionPage() {
           <thead className="border-b border-white/10 bg-white/5">
             <tr>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Cliente</th>
+              <th className="px-4 py-3">Origem</th>
+              <th className="px-4 py-3">Conta</th>
               <th className="px-4 py-3">Instrução</th>
               <th className="px-4 py-3">Magic</th>
               <th className="px-4 py-3">SL</th>
@@ -32,14 +43,25 @@ export default async function AdminRealTradingProtectionPage() {
             {items.map((row) => {
               const failed =
                 row.protectionStatus === ProtectionStatus.PROTECTION_FAILED;
+              const isCurrent =
+                latestAt != null && row.reportedAt.getTime() === latestAt.getTime();
               return (
                 <tr
                   key={row.id}
-                  className={`border-b border-white/5 ${failed ? "bg-red-950/20" : ""}`}
+                  className={`border-b border-white/5 ${
+                    failed ? "bg-red-950/20" : isCurrent ? "bg-gold/5" : ""
+                  }`}
                 >
                   <td className="px-4 py-3 font-medium">{row.protectionStatus}</td>
+                  <td className="px-4 py-3">{row.license.user.email}</td>
                   <td className="px-4 py-3 font-mono text-xs">
-                    {row.instructionId.slice(0, 12)}…
+                    {row.instruction.source ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs">
+                    {row.accountLogin}@{row.accountServer}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs break-all">
+                    {row.instructionId}
                   </td>
                   <td className="px-4 py-3">{row.magicNumber}</td>
                   <td className="px-4 py-3">
@@ -48,15 +70,13 @@ export default async function AdminRealTradingProtectionPage() {
                   <td className="px-4 py-3">
                     {row.takeProfitPresent ? "Sim" : "Não"}
                   </td>
-                  <td className="px-4 py-3">
-                    {row.reportedAt.toISOString().slice(0, 19)}
-                  </td>
+                  <td className="px-4 py-3">{fmtDate(row.reportedAt)}</td>
                 </tr>
               );
             })}
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-muted-foreground">
+                <td colSpan={9} className="px-4 py-8 text-muted-foreground">
                   Nenhum relatório de proteção.
                 </td>
               </tr>

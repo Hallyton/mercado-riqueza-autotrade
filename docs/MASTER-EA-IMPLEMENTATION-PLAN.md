@@ -2535,6 +2535,22 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Novas licenças | Sem redeploy Vercel — criar approval no admin |
 | Ordens / dispatch | **Nenhuma** ordem · dispatch **desativado** |
 
+### Fase 14.1.4 — First Real Instruction Manual Dispatch
+
+**Status:** `FIRST_REAL_MANUAL_DISPATCH_FLOW_IMPLEMENTED_WITH_ORDER_TYPE`  
+**Documento:** [`docs/FIRST-REAL-INSTRUCTION-MANUAL-DISPATCH.md`](FIRST-REAL-INSTRUCTION-MANUAL-DISPATCH.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Criar instruction REAL manual sem usar TEST/HOMOLOGATION |
+| Source | `REAL_MANUAL` |
+| API admin | `POST /api/admin/real-trading/dispatch-manual` |
+| Requisito | Preflight `DRY_RUN` PASSED recente (15 min) |
+| Tipo de ordem | `MARKET` \| `LIMIT` \| `STOP` |
+| Preço | Obrigatório para `LIMIT`/`STOP`; proibido em `MARKET` |
+| Proteção | `requiresProtectionConfirmation=true` obrigatório |
+| Dispatch automático | **Desativado** |
+
 ### Fase 14.1.2 — EA Executor Real Preflight Dry Run
 
 **Status:** `REAL_PREFLIGHT_DRY_RUN_IMPLEMENTED`  

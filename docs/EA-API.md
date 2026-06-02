@@ -83,6 +83,7 @@ Payload de instrução (somente execução):
   "symbol": "PETR4",
   "side": "BUY",
   "order_type": "MARKET",
+  "order_price": 5650.5,
   "quantity": 100,
   "stop_loss": 28.5,
   "take_profit": 30.0,
@@ -97,6 +98,12 @@ Payload de instrução (somente execução):
 
 Campos `magic_number`, `account_login`, `account_server`, `trade_mode`, `protection_required`, `requires_protection_confirmation`, `requested_contracts` e `source` são usados no **piloto de conta real** (gate condicional aprovado no servidor). O EA Executor **deve** enviar snapshots e confirmar stop/take via `/execution-protection` — sem isso o preflight REAL bloqueia novas entradas.
 
+Regras `order_type` / `order_price`:
+
+- `MARKET`: `order_price` ausente.
+- `LIMIT` e `STOP`: `order_price` obrigatorio.
+- O EA nao deve converter `LIMIT/STOP` para mercado como fallback.
+
 Exemplo de instrução REAL (sem estratégia):
 
 ```json
@@ -106,6 +113,7 @@ Exemplo de instrução REAL (sem estratégia):
   "symbol": "WDOM26",
   "side": "BUY",
   "order_type": "MARKET",
+  "order_price": 5650.5,
   "quantity": 1,
   "stop_loss": 128000,
   "take_profit": 129000,
@@ -122,6 +130,8 @@ Exemplo de instrução REAL (sem estratégia):
   "source": "MASTER_SIGNAL"
 }
 ```
+
+Para primeira ordem real manual, a origem e `REAL_MANUAL` (nunca TEST/HOMOLOGATION).
 
 ---
 

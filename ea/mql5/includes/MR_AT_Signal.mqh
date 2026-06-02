@@ -30,6 +30,7 @@ bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
    instr.symbol = MR_AT_JsonGetString(obj, "symbol");
    instr.side = MR_AT_JsonGetString(obj, "side");
    instr.order_type = MR_AT_JsonGetString(obj, "order_type");
+   instr.order_price = MR_AT_JsonGetDouble(obj, "order_price");
    instr.quantity = MR_AT_JsonGetDouble(obj, "quantity");
    instr.stop_loss = MR_AT_JsonGetDouble(obj, "stop_loss");
    instr.take_profit = MR_AT_JsonGetDouble(obj, "take_profit");
@@ -60,6 +61,7 @@ void MR_AT_LogInstructionParsed(const MRInstruction &instr, const int index)
       " symbol=" + instr.symbol +
       " side=" + instr.side +
       " order_type=" + instr.order_type +
+      " order_price=" + DoubleToString(instr.order_price, _Digits) +
       " purpose=" + instr.purpose +
       " quantity=" + DoubleToString(instr.quantity, 8));
   }
@@ -161,9 +163,30 @@ int MR_AT_FetchAndProcessSignals()
    MR_AT_LogInfo("Signal", IntegerToString(n) + " instrução(ões) recebida(s)");
    for(int i = 0; i < n; i++)
      {
-      if(instructions[i].order_type != "MARKET")
+      if(instructions[i].order_type != "MARKET" &&
+         instructions[i].order_type != "LIMIT" &&
+         instructions[i].order_type != "STOP")
         {
-         string reason = "Tipo de ordem não suportado no MVP: " + instructions[i].order_type;
+         string allowed = "MARKET/LIMIT/STOP";
+         string reason = "Tipo de ordem não suportado: " + instructions[i].order_type +
+                         " (permitidos: " + allowed + ")";
+         MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+         MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+         continue;
+        }
+      if(instructions[i].order_type == "LIMIT" || instructions[i].order_type == "STOP")
+        {
+         if(instructions[i].order_price <= 0)
+           {
+            string reason = "ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER";
+            MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+            MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+            continue;
+           }
+        }
+      if(instructions[i].order_type == "MARKET" && instructions[i].order_price > 0)
+        {
+         string reason = "ORDER_PRICE_NOT_ALLOWED_FOR_MARKET";
          MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
          MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
          continue;
@@ -191,6 +214,23 @@ int MR_AT_FetchAndProcessSignals()
                         " — " + ctx_err);
          MR_AT_ReportIgnored(instructions[i].instruction_id, ctx_err);
          continue;
+        }
+      if(MR_AT_InstructionIsReal(instructions[i]))
+        {
+         if(instructions[i].source == "TEST")
+           {
+            string reason = "TEST_INSTRUCTION_NOT_ALLOWED_IN_REAL";
+            MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+            MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+            continue;
+           }
+         if(instructions[i].source == "HOMOLOGATION")
+           {
+            string reason = "HOMOLOGATION_INSTRUCTION_NOT_ALLOWED_IN_REAL";
+            MR_AT_LogInfo("Signal", "Ignorada id=" + instructions[i].instruction_id + " — " + reason);
+            MR_AT_ReportIgnored(instructions[i].instruction_id, reason);
+            continue;
+           }
         }
 
       MR_AT_ProcessInstruction(instructions[i]);

@@ -108,7 +108,9 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(signal).toContain("/api/v1/ea/instructions?login=");
     expect(signal).toContain("instruction_id");
     expect(signal).toContain("idempotency_key");
-    expect(signal).toContain("Tipo de ordem não suportado no MVP");
+    expect(signal).toContain("Tipo de ordem não suportado:");
+    expect(signal).toContain("ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER");
+    expect(constants).toContain("order_price");
     expect(signal).not.toContain("strategy");
   });
 });

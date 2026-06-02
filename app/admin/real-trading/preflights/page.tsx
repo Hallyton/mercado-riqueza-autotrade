@@ -1,9 +1,29 @@
 import { PreflightDryRunPanel } from "@/components/admin/preflight-dry-run-panel";
+import { FirstRealManualDispatchPanel } from "@/components/admin/first-real-manual-dispatch-panel";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { listRealTradePreflightsAdmin } from "@/lib/admin/real-trading-approval";
 
 export default async function AdminRealTradingPreflightsPage() {
   const items = await listRealTradePreflightsAdmin(100);
+  const now = Date.now();
+  const recentPassedDryRuns = items
+    .filter(
+      (row) =>
+        row.source === "DRY_RUN" &&
+        row.status === "PASSED" &&
+        now - row.createdAt.getTime() <= 15 * 60 * 1000
+    )
+    .map((row) => ({
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      licenseId: row.licenseId,
+      accountLogin: row.accountLogin,
+      accountServer: row.accountServer,
+      symbol: row.symbol,
+      magicNumber: row.magicNumber,
+      requestedContracts: row.requestedContracts,
+      reasonCode: row.reasonCode,
+    }));
 
   return (
     <div className="space-y-6">
@@ -24,6 +44,9 @@ export default async function AdminRealTradingPreflightsPage() {
             defaultSymbol="WDON26"
             defaultMagicNumber="910001"
           />
+        </div>
+        <div className="mt-6">
+          <FirstRealManualDispatchPanel preflights={recentPassedDryRuns} />
         </div>
       </Card>
       <div className="overflow-x-auto rounded-lg border border-white/10">
