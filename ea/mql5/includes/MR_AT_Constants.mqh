@@ -38,6 +38,22 @@ struct MRInstruction
    bool              requires_protection_confirmation;
    double            requested_contracts;
    string            source;        // ex.: MASTER_SIGNAL (sem lógica estratégica)
+   bool              has_management_plan;
+   double            mp_initial_sl;
+   bool              mp_t1_enabled;
+   double            mp_t1_price;
+   int               mp_t1_qty;
+   bool              mp_t2_enabled;
+   double            mp_t2_price;
+   int               mp_t2_qty;
+   bool              mp_be_enabled;
+   string            mp_be_trigger;
+   double            mp_be_trigger_price;
+   double            mp_be_offset;
+   bool              mp_ts_enabled;
+   double            mp_ts_trigger_price;
+   double            mp_ts_distance;
+   double            mp_ts_step;
   };
 
 //+------------------------------------------------------------------+

@@ -79,6 +79,29 @@ Quando o sistema recebe retorno de execucao preenchida, mas o operador confirma 
 - Protection status: `SKIPPED_NO_POSITION` (nao `PROTECTION_FAILED` nem `PROTECTION_CONFIRMED`)
 - Audit: `real_trading.instruction.void_false_execution`
 
+## Plano de gestao avancado (REAL_MANUAL)
+
+Toda instruction REAL_MANUAL deve incluir `managementPlan` validado server-side com:
+
+- **SL inicial** obrigatorio (`initialStopLoss`)
+- **Take 1 / Take 2** parciais (quantidade compativel com `requestedContracts`)
+- **Breakeven (BE)** opcional (`TAKE1_FILLED`, `PRICE_REACHED`, `MANUAL_DISABLED`)
+- **Trailing Stop (TS)** opcional (`triggerPrice`, `distance`, `step`)
+
+Limitacao: com **1 contrato**, nao e possivel T1+T2 simultaneos (quantity 1 cada).
+
+Compatibilidade EA:
+
+- `stop_loss_price` recebe `initialStopLoss`
+- `take_profit_price` recebe preco do Take 1 ativo (ou principal)
+- Payload completo em `management_plan` (snake_case)
+
+Eventos de gestao reportados pelo EA via `POST /api/v1/ea/management-events` (`TAKE1_ORDER_PLACED`, `BREAKEVEN_MOVED`, `TRAILING_MOVED`, etc.).
+
+Nova tentativa apos encerramento/anulacao exige novo preflight `PASSED`.
+
+Documento dedicado: [`docs/REAL-MANUAL-ADVANCED-PROTECTION-PLAN.md`](REAL-MANUAL-ADVANCED-PROTECTION-PLAN.md)
+
 ## Seguranca operacional
 
 - `requestedContracts` maximo 1 nesta fase.

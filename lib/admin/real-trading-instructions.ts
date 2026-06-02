@@ -16,6 +16,11 @@ import {
   type VoidFalseExecutionEligibility,
 } from "@/lib/admin/real-manual-void-false-execution";
 import { CLOSE_NO_ORDER_REASON_CODE } from "@/lib/admin/real-manual-close-no-order";
+import {
+  extractManagementEventsFromLogs,
+  formatManagementPlanListSummary,
+  parseManagementPlanFromJson,
+} from "@/lib/admin/real-manual-management-plan";
 
 /** Origens exibidas em Conta real / Instruções reais. */
 export const REAL_TRADING_INSTRUCTION_SOURCES: InstructionSource[] = [
@@ -145,6 +150,9 @@ export async function listRealTradingInstructionsAdmin(
     latestExecution: row.executions[0] ?? null,
     latestProtection: row.executionProtectionReports[0] ?? null,
     closeReasonCode: closeReasonByInstruction.get(row.id) ?? null,
+    managementPlanSummary: formatManagementPlanListSummary(
+      parseManagementPlanFromJson(row.managementPlan)
+    ),
   }));
 }
 
@@ -246,11 +254,16 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
     protectionBlocked: instruction.protectionBlocked,
   };
 
+  const managementPlan = parseManagementPlanFromJson(instruction.managementPlan);
+  const managementEvents = extractManagementEventsFromLogs(instruction.statusLogs);
+
   return {
     instruction,
     preflightId,
     eaHeartbeat: heartbeat,
     redactedPayload,
+    managementPlan,
+    managementEvents,
     closeEligibility,
     voidEligibility,
     resolutionReasonCode,
@@ -334,6 +347,7 @@ function sanitizeStatusMetadata(metadata: Prisma.JsonValue | null) {
     "previousInstructionStatus",
     "previousExecutionStatus",
     "previousProtectionStatus",
+    "managementEvent",
   ];
   const out: Record<string, unknown> = {};
   for (const key of allowed) {
@@ -369,6 +383,7 @@ export function serializeRealTradingInstructionListItem(
     protectionStatus: row.latestProtection?.protectionStatus ?? null,
     preflightId: row.preflightId,
     closeReasonCode: row.closeReasonCode,
+    managementPlanSummary: row.managementPlanSummary,
   };
 }
 

@@ -15,6 +15,12 @@ import {
   REAL_MANUAL_PREFLIGHT_MAX_AGE_MS,
   validateRealManualOrderFields,
 } from "@/lib/admin/real-manual-dispatch-validation";
+import {
+  deriveLegacyPricesFromPlan,
+  managementPlanSchema,
+  validateManagementPlan,
+  type RealManualManagementPlan,
+} from "@/lib/admin/real-manual-management-plan";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import prisma from "@/lib/prisma";
 import { hasUnresolvedProtectionBlock } from "@/lib/risk/execution-protection";
@@ -40,8 +46,7 @@ export const createRealManualDispatchSchema = z.object({
   side: z.enum(["BUY", "SELL"]),
   orderType: z.enum(["MARKET", "LIMIT", "STOP"]),
   orderPrice: z.number().positive().optional(),
-  stopLossPrice: z.number().positive(),
-  takeProfitPrice: z.number().positive(),
+  managementPlan: managementPlanSchema,
   requestedContracts: z.number().int().positive(),
   magicNumber: z.number().int().positive(),
   adminConfirmation: z.string().min(1),
@@ -72,8 +77,7 @@ export async function createFirstRealManualInstruction(input: {
   side: "BUY" | "SELL";
   orderType: "MARKET" | "LIMIT" | "STOP";
   orderPrice?: number;
-  stopLossPrice: number;
-  takeProfitPrice: number;
+  managementPlan: RealManualManagementPlan;
   requestedContracts: number;
   magicNumber: number;
   adminConfirmation: string;
@@ -95,11 +99,29 @@ export async function createFirstRealManualInstruction(input: {
     );
   }
 
+  const planValidation = validateManagementPlan({
+    plan: input.managementPlan,
+    requestedContracts: input.requestedContracts,
+    side: input.side,
+    entryPrice: input.orderPrice ?? null,
+  });
+  if (planValidation) {
+    throw new RealManualDispatchError(
+      planValidation.message,
+      planValidation.code,
+      400
+    );
+  }
+
+  const { stopLossPrice, takeProfitPrice } = deriveLegacyPricesFromPlan(
+    input.managementPlan
+  );
+
   const orderValidation = validateRealManualOrderFields({
     orderType: input.orderType,
     orderPrice: input.orderPrice ?? null,
-    stopLossPrice: input.stopLossPrice,
-    takeProfitPrice: input.takeProfitPrice,
+    stopLossPrice,
+    takeProfitPrice,
   });
   if (orderValidation) {
     throw new RealManualDispatchError(
@@ -272,8 +294,8 @@ export async function createFirstRealManualInstruction(input: {
         side: input.side as InstructionSide,
         orderType: input.orderType as InstructionOrderType,
         orderPrice: input.orderPrice,
-        stopLoss: input.stopLossPrice,
-        takeProfit: input.takeProfitPrice,
+        stopLoss: stopLossPrice,
+        takeProfit: takeProfitPrice,
         quantity: input.requestedContracts,
         idempotencyKey: buildIdempotencyKey(),
         requestId: `real-manual-${input.actorId.slice(0, 8)}`,
@@ -285,6 +307,7 @@ export async function createFirstRealManualInstruction(input: {
         accountServer,
         requiresProtectionConfirmation: true,
         protectionBlocked: false,
+        managementPlan: input.managementPlan,
       },
     });
     await tx.instructionStatusLog.create({
@@ -298,8 +321,9 @@ export async function createFirstRealManualInstruction(input: {
           requestedContracts: input.requestedContracts,
           orderType: input.orderType,
           orderPrice: input.orderPrice ?? null,
-          stopLossPrice: input.stopLossPrice,
-          takeProfitPrice: input.takeProfitPrice,
+          stopLossPrice,
+          takeProfitPrice,
+          managementPlan: input.managementPlan,
         },
       },
     });
@@ -326,8 +350,9 @@ export async function createFirstRealManualInstruction(input: {
       side: input.side,
       orderType: input.orderType,
       orderPrice: input.orderPrice ?? null,
-      stopLossPrice: input.stopLossPrice,
-      takeProfitPrice: input.takeProfitPrice,
+      stopLossPrice,
+      takeProfitPrice,
+      managementPlanVersion: input.managementPlan.version,
       requestedContracts: input.requestedContracts,
       magicNumber: input.magicNumber,
       protectionRequired: true,

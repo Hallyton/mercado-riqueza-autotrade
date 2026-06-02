@@ -7,18 +7,30 @@ describe("FirstRealManualDispatchPanel UI", () => {
     path.join(process.cwd(), "components/admin/first-real-manual-dispatch-panel.tsx"),
     "utf8"
   );
+  const fields = readFileSync(
+    path.join(process.cwd(), "components/admin/real-manual-management-plan-fields.tsx"),
+    "utf8"
+  );
   const page = readFileSync(
     path.join(process.cwd(), "app/admin/real-trading/preflights/page.tsx"),
     "utf8"
   );
 
-  it("form contém orderType, stopLoss e takeProfit", () => {
+  it("form contém gestão T1/T2/BE/TS", () => {
+    expect(fields).toContain('data-testid="management-plan-fields"');
+    expect(fields).toContain('data-testid="initial-stop-loss-field"');
+    expect(fields).toContain('data-testid="take1-enabled"');
+    expect(fields).toContain('data-testid="take2-enabled"');
+    expect(fields).toContain('data-testid="break-even-enabled"');
+    expect(fields).toContain('data-testid="trailing-stop-enabled"');
+    expect(fields).toContain('data-testid="management-plan-summary"');
+  });
+
+  it("form contém orderType e gestão", () => {
     expect(panel).toContain('data-testid="order-type-select"');
-    expect(panel).toContain('data-testid="stop-loss-field"');
-    expect(panel).toContain('data-testid="take-profit-field"');
     expect(panel).toContain('data-testid="order-price-field"');
-    expect(panel).toContain("Stop Loss");
-    expect(panel).toContain("Take Profit");
+    expect(panel).toContain("RealManualManagementPlanFields");
+    expect(fields).toContain("Gestão da operação");
   });
 
   it("mensagem quando não há dry-run recente", () => {

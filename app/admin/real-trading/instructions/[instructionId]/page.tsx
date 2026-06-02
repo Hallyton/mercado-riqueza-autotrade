@@ -35,6 +35,8 @@ export default async function AdminRealTradingInstructionDetailPage({
     closeEligibility,
     voidEligibility,
     resolutionReasonCode,
+    managementPlan,
+    managementEvents,
     executions,
     protectionReports,
   } = detail;
@@ -108,6 +110,73 @@ export default async function AdminRealTradingInstructionDetailPage({
         <pre className="overflow-x-auto rounded border border-white/10 bg-black/30 p-3 text-xs">
           {JSON.stringify(redactedPayload, null, 2)}
         </pre>
+      </Card>
+
+      <Card className="p-6" data-testid="management-plan-card">
+        <CardHeader className="p-0 pb-3">
+          <CardTitle className="text-base">Plano de gestão</CardTitle>
+          <CardDescription>
+            SL inicial, takes parciais, breakeven e trailing stop entregues ao EA.
+          </CardDescription>
+        </CardHeader>
+        {!managementPlan ? (
+          <p className="text-sm text-muted-foreground">
+            Plano de gestão não registrado nesta instruction (legado).
+          </p>
+        ) : (
+          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">SL inicial</dt>
+              <dd>{managementPlan.initialStopLoss}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Take 1</dt>
+              <dd>
+                {managementPlan.takes[0].enabled
+                  ? `${managementPlan.takes[0].price} x ${managementPlan.takes[0].quantity}`
+                  : "desabilitado"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Take 2</dt>
+              <dd>
+                {managementPlan.takes[1].enabled
+                  ? `${managementPlan.takes[1].price} x ${managementPlan.takes[1].quantity}`
+                  : "desabilitado"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Breakeven</dt>
+              <dd>
+                {managementPlan.breakEven.enabled
+                  ? `${managementPlan.breakEven.trigger}${
+                      managementPlan.breakEven.triggerPrice
+                        ? ` @ ${managementPlan.breakEven.triggerPrice}`
+                        : ""
+                    } offset ${managementPlan.breakEven.offset}`
+                  : "desabilitado"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Trailing Stop</dt>
+              <dd>
+                {managementPlan.trailingStop.enabled
+                  ? `gatilho ${managementPlan.trailingStop.triggerPrice} · dist ${managementPlan.trailingStop.distance} · step ${managementPlan.trailingStop.step}`
+                  : "desabilitado"}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {managementEvents.length > 0 && (
+          <div className="mt-4 space-y-1 text-xs">
+            <p className="font-medium text-gold">Eventos de gestão</p>
+            {managementEvents.map((ev, i) => (
+              <p key={i} className="text-muted-foreground">
+                {ev.event} · {fmtDate(ev.createdAt)}
+              </p>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Card className="p-6">

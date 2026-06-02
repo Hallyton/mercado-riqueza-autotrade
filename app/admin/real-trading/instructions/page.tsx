@@ -122,6 +122,7 @@ export default async function AdminRealTradingInstructionsPage({
               <th className="px-3 py-3">Execução</th>
               <th className="px-3 py-3">Proteção</th>
               <th className="px-3 py-3">Motivo</th>
+              <th className="px-3 py-3">Gestão</th>
               <th className="px-3 py-3">PreflightId</th>
               <th className="px-3 py-3">InstructionId</th>
             </tr>
@@ -154,6 +155,9 @@ export default async function AdminRealTradingInstructionsPage({
                 <td className="px-3 py-3 font-mono text-xs">
                   {row.closeReasonCode ?? "—"}
                 </td>
+                <td className="px-3 py-3 font-mono text-xs">
+                  {row.managementPlanSummary ?? "—"}
+                </td>
                 <td className="px-3 py-3 font-mono text-xs break-all">
                   {row.preflightId ?? "—"}
                 </td>
@@ -169,7 +173,7 @@ export default async function AdminRealTradingInstructionsPage({
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={22} className="px-3 py-8 text-muted-foreground">
+                <td colSpan={23} className="px-3 py-8 text-muted-foreground">
                   Nenhuma instruction REAL_MANUAL encontrada.
                 </td>
               </tr>

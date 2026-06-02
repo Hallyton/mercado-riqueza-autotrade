@@ -801,6 +801,7 @@ model Instruction {
   accountServer                  String?            @map("account_server")
   requiresProtectionConfirmation Boolean            @default(false) @map("requires_protection_confirmation")
   protectionBlocked              Boolean            @default(false) @map("protection_blocked")
+  managementPlan                 Json?              @map("management_plan")
   createdAt                      DateTime           @default(now()) @map("created_at")
   updatedAt                      DateTime           @updatedAt @map("updated_at")
 

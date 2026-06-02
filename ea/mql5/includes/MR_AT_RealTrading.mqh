@@ -418,6 +418,26 @@ bool MR_AT_VerifyAndReportProtection(
         }
      }
 
+   if(instr.has_management_plan)
+     {
+      if(sl_ok && instr.mp_t1_enabled)
+        {
+         return MR_AT_ReportExecutionProtection(
+            instr, "PENDING_PROTECTION_ORDERS", "PROTECTION_CONFIRMED", true, true,
+            sl_price, instr.mp_t1_price, IntegerToString((long)entry_ticket));
+        }
+      if(!sl_ok)
+        {
+         string fail_msg = "Stop Loss inicial ausente após entrada";
+         MR_AT_ReportExecutionProtection(
+            instr, "ATTACHED_SL_TP", "PROTECTION_FAILED", false, false,
+            sl_price, tp_price, IntegerToString((long)entry_ticket),
+            "PROTECTION_VERIFY_FAILED", fail_msg);
+         err_msg = fail_msg;
+         return false;
+        }
+     }
+
    if(sl_ok && tp_ok)
      {
       return MR_AT_ReportExecutionProtection(

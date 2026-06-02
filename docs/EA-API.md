@@ -103,6 +103,7 @@ Regras `order_type` / `order_price` / proteção na instruction:
 - `MARKET`: `order_price` ausente.
 - `LIMIT` e `STOP`: `order_price` obrigatorio.
 - `stop_loss_price` e `take_profit_price` obrigatorios para `REAL_MANUAL`.
+- `management_plan` (opcional legado ausente; **obrigatorio** em novos dispatches REAL_MANUAL admin) contem SL inicial, takes T1/T2, breakeven e trailing stop.
 - O EA nao deve converter `LIMIT/STOP` para mercado como fallback.
 - O EA nao deve executar sem SL/TP validos na instruction.
 

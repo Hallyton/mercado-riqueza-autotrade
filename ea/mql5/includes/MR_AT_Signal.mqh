@@ -24,6 +24,22 @@ bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
    instr.requires_protection_confirmation = false;
    instr.requested_contracts = 0;
    instr.source = "";
+   instr.has_management_plan = false;
+   instr.mp_initial_sl = 0;
+   instr.mp_t1_enabled = false;
+   instr.mp_t1_price = 0;
+   instr.mp_t1_qty = 0;
+   instr.mp_t2_enabled = false;
+   instr.mp_t2_price = 0;
+   instr.mp_t2_qty = 0;
+   instr.mp_be_enabled = false;
+   instr.mp_be_trigger = "";
+   instr.mp_be_trigger_price = 0;
+   instr.mp_be_offset = 0;
+   instr.mp_ts_enabled = false;
+   instr.mp_ts_trigger_price = 0;
+   instr.mp_ts_distance = 0;
+   instr.mp_ts_step = 0;
 
    instr.instruction_id = MR_AT_JsonGetString(obj, "instruction_id");
    instr.purpose = MR_AT_JsonGetString(obj, "purpose");
@@ -51,6 +67,32 @@ bool MR_AT_ParseInstructionObject(const string obj, MRInstruction &instr)
       MR_AT_JsonGetBool(obj, "requires_protection_confirmation");
    instr.requested_contracts = MR_AT_JsonGetDouble(obj, "requested_contracts");
    instr.source = MR_AT_JsonGetString(obj, "source");
+
+   int mp_key = StringFind(obj, "\"management_plan\"");
+   if(mp_key >= 0)
+     {
+      int mp_start = StringFind(obj, "{", mp_key);
+      if(mp_start >= 0)
+        {
+         int depth = 0;
+         int mp_end = -1;
+         for(int i = mp_start; i < StringLen(obj); i++)
+           {
+            ushort ch = StringGetCharacter(obj, i);
+            if(ch == '{') depth++;
+            else if(ch == '}')
+              {
+               depth--;
+               if(depth == 0) { mp_end = i; break; }
+              }
+           }
+         if(mp_end > mp_start)
+           {
+            string mp_block = StringSubstr(obj, mp_start, mp_end - mp_start + 1);
+            MR_AT_ParseManagementPlanBlock(mp_block, instr);
+           }
+        }
+     }
 
    if(StringLen(instr.instruction_id) == 0 || StringLen(instr.symbol) == 0)
       return false;

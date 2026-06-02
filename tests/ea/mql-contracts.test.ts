@@ -15,7 +15,8 @@ describe("contratos MQL5 — EA cliente", () => {
   const signal = readMql(path.join("includes", "MR_AT_Signal.mqh"));
   const http = readMql(path.join("includes", "MR_AT_Http.mqh"));
   const realTrading = readMql(path.join("includes", "MR_AT_RealTrading.mqh"));
-  const combinedClient = [executor, constants, execution, signal, realTrading, auth, license, http].join(
+  const management = readMql(path.join("includes", "MR_AT_ManagementPlan.mqh"));
+  const combinedClient = [executor, constants, execution, signal, realTrading, management, auth, license, http].join(
     "\n"
   );
 
@@ -112,6 +113,10 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(signal).toContain("ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER");
     expect(signal).toContain("STOP_LOSS_AND_TAKE_PROFIT_REQUIRED");
     expect(signal).toContain("stop_loss_price");
+    expect(signal).toContain("management_plan");
+    expect(signal).toContain("MR_AT_ParseManagementPlanBlock");
+    expect(combinedClient).toContain("MR_AT_ApplyManagementPlanAfterEntry");
+    expect(combinedClient).toContain("/api/v1/ea/management-events");
     expect(constants).toContain("order_price");
     expect(signal).not.toContain("strategy");
   });

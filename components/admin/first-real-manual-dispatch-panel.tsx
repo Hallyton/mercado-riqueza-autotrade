@@ -5,10 +5,19 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FIRST_REAL_DISPATCH_CONFIRM_PHRASE } from "@/lib/admin/real-manual-dispatch";
 import {
+  createDefaultManagementPlan,
+  type RealManualManagementPlan,
+} from "@/lib/admin/real-manual-management-plan";
+import {
   parseOptionalPositive,
-  slTpDirectionHint,
   validateRealManualOrderFields,
 } from "@/lib/admin/real-manual-dispatch-validation";
+import {
+  ManagementPlanFormState,
+  ManagementPlanSummary,
+  RealManualManagementPlanFields,
+  validateManagementPlanForm,
+} from "@/components/admin/real-manual-management-plan-fields";
 
 export type PreflightOption = {
   id: string;
@@ -43,8 +52,9 @@ export function FirstRealManualDispatchPanel({
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [orderType, setOrderType] = useState<"MARKET" | "LIMIT" | "STOP">("MARKET");
   const [orderPrice, setOrderPrice] = useState("");
-  const [stopLossPrice, setStopLossPrice] = useState("");
-  const [takeProfitPrice, setTakeProfitPrice] = useState("");
+  const [managementPlan, setManagementPlan] = useState<ManagementPlanFormState>(
+    createDefaultManagementPlan()
+  );
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -53,6 +63,8 @@ export function FirstRealManualDispatchPanel({
     status?: string;
     alreadyExists?: boolean;
   } | null>(null);
+
+  const requestedContracts = selected?.requestedContracts ?? 1;
 
   if (preflights.length === 0) {
     return (
@@ -82,14 +94,34 @@ export function FirstRealManualDispatchPanel({
 
     const parsedOrderPrice =
       orderType === "MARKET" ? undefined : parseOptionalPositive(orderPrice);
-    const parsedStop = parseOptionalPositive(stopLossPrice);
-    const parsedTake = parseOptionalPositive(takeProfitPrice);
+
+    const planError = validateManagementPlanForm({
+      plan: managementPlan,
+      requestedContracts,
+      side,
+      entryPrice: parsedOrderPrice,
+    });
+    if (planError) {
+      setMessage(planError);
+      return;
+    }
+
+    const planForSubmit: RealManualManagementPlan = {
+      ...managementPlan,
+      initialStopLoss: managementPlan.initialStopLoss,
+    };
+
+    const stopLossPrice = planForSubmit.initialStopLoss;
+    const takeProfitPrice =
+      (planForSubmit.takes[0].enabled && planForSubmit.takes[0].price) ||
+      (planForSubmit.takes[1].enabled && planForSubmit.takes[1].price) ||
+      stopLossPrice;
 
     const validation = validateRealManualOrderFields({
       orderType,
       orderPrice: parsedOrderPrice ?? null,
-      stopLossPrice: parsedStop ?? null,
-      takeProfitPrice: parsedTake ?? null,
+      stopLossPrice,
+      takeProfitPrice: takeProfitPrice as number,
     });
     if (validation) {
       setMessage(validation.message);
@@ -104,9 +136,8 @@ export function FirstRealManualDispatchPanel({
       symbol: selected.symbol,
       side,
       orderType,
-      stopLossPrice: parsedStop,
-      takeProfitPrice: parsedTake,
-      requestedContracts: 1,
+      managementPlan: planForSubmit,
+      requestedContracts,
       magicNumber: selected.magicNumber,
       adminConfirmation: confirm.trim(),
       ...(parsedOrderPrice != null ? { orderPrice: parsedOrderPrice } : {}),
@@ -145,8 +176,7 @@ export function FirstRealManualDispatchPanel({
       setMessage(null);
       setConfirm("");
       setOrderPrice("");
-      setStopLossPrice("");
-      setTakeProfitPrice("");
+      setManagementPlan(createDefaultManagementPlan());
       router.refresh();
     } catch {
       setMessage("Erro de rede.");
@@ -209,88 +239,74 @@ export function FirstRealManualDispatchPanel({
           </div>
           <div>
             <dt className="text-muted-foreground">Contratos</dt>
-            <dd className="font-mono">1</dd>
+            <dd className="font-mono">{requestedContracts}</dd>
           </div>
         </dl>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="text-muted-foreground">Lado</span>
-          <select
-            className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2"
-            value={side}
-            onChange={(e) => setSide(e.target.value as "BUY" | "SELL")}
-          >
-            <option value="BUY">BUY</option>
-            <option value="SELL">SELL</option>
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="text-muted-foreground">Tipo de ordem</span>
-          <select
-            className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2"
-            value={orderType}
-            onChange={(e) =>
-              setOrderType(e.target.value as "MARKET" | "LIMIT" | "STOP")
-            }
-            data-testid="order-type-select"
-          >
-            <option value="MARKET">MARKET — A mercado</option>
-            <option value="LIMIT">LIMIT — Limitada</option>
-            <option value="STOP">STOP — Stop</option>
-          </select>
-        </label>
-      </div>
-
-      {orderType !== "MARKET" && (
-        <label className="block text-sm" data-testid="order-price-field">
-          <span className="text-muted-foreground">Preço de apregoamento</span>
-          <input
-            className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2 font-mono"
-            value={orderPrice}
-            onChange={(e) => setOrderPrice(e.target.value)}
-            placeholder="Ex.: 5650.5"
-            required
-          />
-          <p className="mt-1 text-xs text-muted-foreground">{ORDER_TYPE_HELP[orderType]}</p>
-        </label>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm" data-testid="stop-loss-field">
-          <span className="text-muted-foreground">Stop Loss</span>
-          <input
-            className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2 font-mono"
-            value={stopLossPrice}
-            onChange={(e) => setStopLossPrice(e.target.value)}
-            placeholder="Ex.: 5643.5"
-            required
-          />
-        </label>
-        <label className="block text-sm" data-testid="take-profit-field">
-          <span className="text-muted-foreground">Take Profit</span>
-          <input
-            className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2 font-mono"
-            value={takeProfitPrice}
-            onChange={(e) => setTakeProfitPrice(e.target.value)}
-            placeholder="Ex.: 5660.5"
-            required
-          />
-        </label>
-      </div>
-
-      <p className="text-xs text-muted-foreground">{slTpDirectionHint(side, entryHintPrice)}</p>
-
-      {(stopLossPrice || takeProfitPrice || orderPrice) && (
-        <div className="rounded border border-gold/20 bg-black/30 p-3 text-xs space-y-1">
-          <p className="font-semibold text-gold">Resumo antes da confirmação</p>
-          <p>Tipo: {orderType} · Lado: {side}</p>
-          {orderType !== "MARKET" && orderPrice && <p>Preço: {orderPrice}</p>}
-          {stopLossPrice && <p>Stop Loss: {stopLossPrice}</p>}
-          {takeProfitPrice && <p>Take Profit: {takeProfitPrice}</p>}
+      <section className="space-y-3">
+        <h4 className="text-sm font-semibold">Ordem de entrada</h4>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="text-muted-foreground">Lado</span>
+            <select
+              className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2"
+              value={side}
+              onChange={(e) => setSide(e.target.value as "BUY" | "SELL")}
+            >
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="text-muted-foreground">Tipo de ordem</span>
+            <select
+              className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2"
+              value={orderType}
+              onChange={(e) =>
+                setOrderType(e.target.value as "MARKET" | "LIMIT" | "STOP")
+              }
+              data-testid="order-type-select"
+            >
+              <option value="MARKET">MARKET — A mercado</option>
+              <option value="LIMIT">LIMIT — Limitada</option>
+              <option value="STOP">STOP — Stop</option>
+            </select>
+          </label>
         </div>
-      )}
+
+        {orderType !== "MARKET" && (
+          <label className="block text-sm" data-testid="order-price-field">
+            <span className="text-muted-foreground">Preço de apregoamento</span>
+            <input
+              className="mt-1 w-full rounded border border-white/10 bg-background px-3 py-2 font-mono"
+              value={orderPrice}
+              onChange={(e) => setOrderPrice(e.target.value)}
+              placeholder="Ex.: 5650.5"
+              required
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {ORDER_TYPE_HELP[orderType]}
+            </p>
+          </label>
+        )}
+      </section>
+
+      <RealManualManagementPlanFields
+        plan={managementPlan}
+        onChange={setManagementPlan}
+        side={side}
+        entryPrice={entryHintPrice}
+        requestedContracts={requestedContracts}
+      />
+
+      <ManagementPlanSummary
+        plan={managementPlan}
+        side={side}
+        orderType={orderType}
+        orderPrice={orderPrice}
+        requestedContracts={requestedContracts}
+      />
 
       <label className="block text-sm">
         <span className="text-muted-foreground">
@@ -315,7 +331,11 @@ export function FirstRealManualDispatchPanel({
       >
         {busy ? "Criando…" : "Criar instruction REAL manual"}
       </button>
-      {message && <p className="text-sm text-amber-200">{message}</p>}
+      {message && (
+        <p className="text-sm text-amber-200" data-testid="dispatch-error-message">
+          {message}
+        </p>
+      )}
 
       {success && (
         <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/20 p-4 text-sm space-y-2">

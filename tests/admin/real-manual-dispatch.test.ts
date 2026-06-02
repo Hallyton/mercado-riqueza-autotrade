@@ -52,8 +52,26 @@ const baseInput = {
   requestedContracts: 1,
   magicNumber: 910001,
   adminConfirmation: "AUTORIZO PRIMEIRA ORDEM REAL",
-  stopLossPrice: 5643.5,
-  takeProfitPrice: 5660.5,
+  managementPlan: {
+    version: 1 as const,
+    initialStopLoss: 5643.5,
+    takes: [
+      { label: "T1" as const, enabled: true, price: 5660.5, quantity: 1 },
+      { label: "T2" as const, enabled: false, price: null, quantity: 0 },
+    ],
+    breakEven: {
+      enabled: false,
+      trigger: "TAKE1_FILLED" as const,
+      triggerPrice: null,
+      offset: 0,
+    },
+    trailingStop: {
+      enabled: false,
+      triggerPrice: null,
+      distance: null,
+      step: null,
+    },
+  },
 };
 
 describe("real manual dispatch", () => {
@@ -106,6 +124,7 @@ describe("real manual dispatch", () => {
           stopLoss: 5643.5,
           takeProfit: 5660.5,
           requiresProtectionConfirmation: true,
+          managementPlan: baseInput.managementPlan,
         }),
       })
     );
@@ -126,24 +145,33 @@ describe("real manual dispatch", () => {
     expect(prisma.instruction.create).not.toHaveBeenCalled();
   });
 
-  it("bloqueia sem stopLossPrice", async () => {
+  it("bloqueia sem initialStopLoss no plano", async () => {
     await expect(
       createFirstRealManualInstruction({
         ...baseInput,
         orderType: "MARKET",
-        stopLossPrice: undefined as unknown as number,
+        managementPlan: {
+          ...baseInput.managementPlan,
+          initialStopLoss: 0,
+        },
       })
-    ).rejects.toMatchObject({ code: "STOP_LOSS_REQUIRED" });
+    ).rejects.toMatchObject({ code: "INITIAL_STOP_LOSS_REQUIRED" });
   });
 
-  it("bloqueia sem takeProfitPrice", async () => {
+  it("bloqueia T1+T2 com 1 contrato", async () => {
     await expect(
       createFirstRealManualInstruction({
         ...baseInput,
         orderType: "MARKET",
-        takeProfitPrice: undefined as unknown as number,
+        managementPlan: {
+          ...baseInput.managementPlan,
+          takes: [
+            { label: "T1", enabled: true, price: 5660.5, quantity: 1 },
+            { label: "T2", enabled: true, price: 5670, quantity: 1 },
+          ],
+        },
       })
-    ).rejects.toMatchObject({ code: "TAKE_PROFIT_REQUIRED" });
+    ).rejects.toMatchObject({ code: "TAKE_SPLIT_NOT_AVAILABLE_FOR_ONE_CONTRACT" });
   });
 
   it("bloqueia quando preflight diverge", async () => {

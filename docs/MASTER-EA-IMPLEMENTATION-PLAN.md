@@ -2551,6 +2551,22 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Proteção | `requiresProtectionConfirmation=true` obrigatório |
 | Dispatch automático | **Desativado** |
 
+### Fase 14.1.6 — REAL_MANUAL Advanced Protection Plan
+
+**Status:** `REAL_MANUAL_ADVANCED_PROTECTION_PLAN_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Plano completo SL/T1/T2/BE/TS na instruction REAL_MANUAL |
+| Persistencia | `Instruction.managementPlan` (JSON validado) |
+| API dispatch | `POST /api/admin/real-trading/dispatch-manual` + campo `managementPlan` |
+| UI | `/admin/real-trading/preflights` — secao **Gestao da operacao** |
+| Payload EA | `management_plan` + compat `stop_loss_price` / `take_profit_price` |
+| EA MQL5 | `MR_AT_ManagementPlan.mqh` — parsing, takes, BE/TS, eventos |
+| Eventos | `POST /api/v1/ea/management-events` |
+| Protecao | `PROTECTION_CONFIRMED` exige SL inicial; takes via plano avancado |
+| LIMIT/STOP | Sem fallback para MARKET |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

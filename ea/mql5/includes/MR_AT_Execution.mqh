@@ -11,6 +11,7 @@
 #include "MR_AT_Error.mqh"
 #include "MR_AT_Equity.mqh"
 #include "MR_AT_RealTrading.mqh"
+#include "MR_AT_ManagementPlan.mqh"
 
 extern bool g_debug_mode;
 extern bool g_halt_all_trading;
@@ -411,6 +412,7 @@ void MR_AT_ProcessInstruction(const MRInstruction &instr)
          string prot_err = "";
          if(!MR_AT_VerifyAndReportProtection(instr, ticket, prot_err))
             MR_AT_LogError("Execution", prot_err);
+         MR_AT_ApplyManagementPlanAfterEntry(instr);
         }
 
       MR_AT_LogInfo("Execution", "Executada ticket=" + IntegerToString((long)ticket));

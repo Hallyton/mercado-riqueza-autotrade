@@ -190,6 +190,7 @@ void OnTimer()
       MR_AT_EnsurePreMarketSnapshot();
 
    MR_AT_FetchAndProcessSignals();
+   MR_AT_ManagementOnTimer();
    MR_AT_UpdatePanel();
   }
 

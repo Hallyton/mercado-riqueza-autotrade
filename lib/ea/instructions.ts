@@ -19,6 +19,11 @@ import {
   type RealTradingGuardDecision,
 } from "@/lib/risk/real-trading-guard";
 import type { EaAuthContext } from "./auth";
+import {
+  mapManagementPlanToEaPayload,
+  parseManagementPlanFromInstruction,
+} from "@/lib/ea/management-plan";
+import type { EaManagementPlanPayload } from "@/lib/ea/management-plan";
 
 export type EaInstructionPayload = {
   instruction_id: string;
@@ -43,6 +48,7 @@ export type EaInstructionPayload = {
   requested_contracts?: number;
   controlled_real_gate?: boolean;
   source?: string;
+  management_plan?: EaManagementPlanPayload;
 };
 
 function toNumber(value: Prisma.Decimal | null | undefined): number | null {
@@ -70,6 +76,7 @@ export function mapInstructionToEaPayload(
     accountServer?: string | null;
     requiresProtectionConfirmation?: boolean;
     source?: string | null;
+    managementPlan?: Prisma.JsonValue | null;
   }
 ): EaInstructionPayload {
   const payload: EaInstructionPayload = {
@@ -108,6 +115,10 @@ export function mapInstructionToEaPayload(
   }
   if (instruction.source) {
     payload.source = instruction.source;
+  }
+  const plan = parseManagementPlanFromInstruction(instruction.managementPlan);
+  if (plan) {
+    payload.management_plan = mapManagementPlanToEaPayload(plan);
   }
   return payload;
 }
@@ -192,6 +203,7 @@ type InstructionRow = {
   requiresProtectionConfirmation: boolean;
   protectionBlocked: boolean;
   source: string | null;
+  managementPlan: Prisma.JsonValue | null;
 };
 
 async function listDeliverableInstructionCandidates(
