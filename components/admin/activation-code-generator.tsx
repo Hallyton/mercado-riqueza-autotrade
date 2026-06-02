@@ -33,6 +33,9 @@ export function ActivationCodeGenerator({
   expectedAccountLogin,
   expectedAccountServer,
   expectedTradeMode,
+  expectedSymbol,
+  expectedMagicNumber,
+  mt5Linked,
 }: {
   licenseId: string;
   canGenerate: boolean;
@@ -40,6 +43,9 @@ export function ActivationCodeGenerator({
   expectedAccountLogin?: string | null;
   expectedAccountServer?: string | null;
   expectedTradeMode?: string;
+  expectedSymbol?: string | null;
+  expectedMagicNumber?: number | null;
+  mt5Linked?: boolean;
 }) {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -129,25 +135,39 @@ export function ActivationCodeGenerator({
         </p>
       )}
 
-      {(expectedAccountLogin || expectedTradeMode) && (
+      {mt5Linked && (expectedAccountLogin || expectedTradeMode) && (
         <div className="rounded border border-white/10 bg-black/30 p-4 text-sm space-y-2">
           <p className="font-medium">Este código será gerado para:</p>
           <ul className="list-disc pl-5 text-muted-foreground space-y-1">
             <li>
-              Conta esperada:{" "}
+              Conta:{" "}
               <span className="font-mono text-foreground">
                 {expectedAccountLogin ?? "—"}
               </span>
             </li>
             <li>
-              Servidor esperado:{" "}
+              Servidor:{" "}
               <span className="font-mono text-foreground">
                 {expectedAccountServer ?? "—"}
               </span>
             </li>
             <li>
-              Modo esperado:{" "}
+              Modo:{" "}
               <span className="font-mono text-gold">{expectedTradeMode ?? "DEMO"}</span>
+            </li>
+            <li>
+              Símbolo:{" "}
+              <span className="font-mono text-foreground">
+                {expectedSymbol ?? "configurado no EA"}
+              </span>
+            </li>
+            <li>
+              MagicNumber:{" "}
+              <span className="font-mono text-foreground">
+                {expectedMagicNumber != null
+                  ? expectedMagicNumber
+                  : "configurado no vínculo"}
+              </span>
             </li>
           </ul>
           <p className="text-xs text-muted-foreground leading-relaxed">

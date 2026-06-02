@@ -14,6 +14,7 @@ import {
   parseDeviceIdAccount,
   resolveExpectedAccount,
 } from "@/lib/licensing/license-expected-mode";
+import { getLicenseMt5BindingAudit } from "@/lib/admin/license-mt5-account";
 import { maskLicenseId } from "@/lib/risk/real-trading-guard-status";
 
 export const DEVICE_REVOKE_CONFIRM_PHRASE = "REVOGAR DEVICE";
@@ -132,6 +133,8 @@ export async function getLicenseAdminDetail(licenseId: string) {
     };
   });
 
+  const mt5BindingAudit = await getLicenseMt5BindingAudit(licenseId);
+
   const operationalStatus = computeLicenseOperationalStatus({
     license,
     activeDevices: devices
@@ -163,6 +166,13 @@ export async function getLicenseAdminDetail(licenseId: string) {
     maxDevices: license.subscription?.plan.maxDevices ?? 0,
     activeDeviceCount,
     mt5Account: license.mt5Account,
+    mt5Linked: Boolean(license.mt5Account),
+    mt5BindingAudit: mt5BindingAudit
+      ? {
+          changedAt: mt5BindingAudit.changedAt,
+          changedBy: mt5BindingAudit.changedBy,
+        }
+      : null,
     expectedTradeMode: license.expectedTradeMode,
     expectedAccountLogin: license.expectedAccountLogin,
     expectedAccountServer: license.expectedAccountServer,

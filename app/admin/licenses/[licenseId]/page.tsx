@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActivationCodeGenerator } from "@/components/admin/activation-code-generator";
 import { LicenseDeviceManagement } from "@/components/admin/license-device-management";
+import { LicenseMt5AccountCard } from "@/components/admin/license-mt5-account-card";
 import { LicenseOperationalModeCard } from "@/components/admin/license-operational-mode";
 import { LicenseStatus, SubscriptionStatus } from "@prisma/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,9 +125,16 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
         licenseId={detail.licenseId}
         canGenerate={canGenerateCode}
         ineligibleReason={ineligibleReason}
-        expectedAccountLogin={detail.expectedAccount.login}
-        expectedAccountServer={detail.expectedAccount.server}
+        expectedAccountLogin={
+          detail.mt5Account?.login ?? detail.expectedAccount.login
+        }
+        expectedAccountServer={
+          detail.mt5Account?.server ?? detail.expectedAccount.server
+        }
         expectedTradeMode={detail.expectedTradeMode}
+        expectedSymbol={detail.expectedSymbol}
+        expectedMagicNumber={detail.expectedMagicNumber}
+        mt5Linked={detail.mt5Linked}
       />
     </div>
   );

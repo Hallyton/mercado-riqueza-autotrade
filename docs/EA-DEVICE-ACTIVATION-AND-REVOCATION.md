@@ -9,7 +9,9 @@
 
 Cada instalação do **MR_AutoTrade_Executor** em um terminal MT5 gera um **device** (identificado por `deviceId` / VPS). O servidor guarda apenas **hash** do token de autenticação — nunca o `device_token` em claro após a ativação.
 
-Ver também: [`EA-DEVICE-TOKEN-LOCATION-GUIDE.md`](EA-DEVICE-TOKEN-LOCATION-GUIDE.md).
+**Device/VPS não é configurado manualmente no painel admin.** Ele é criado pelo EA após um activation code válido (`POST /api/v1/ea/activate`). O admin vincula a conta MT5 à licença e gera o código; o primeiro heartbeat confirma o device ativo.
+
+Ver também: [`EA-DEVICE-TOKEN-LOCATION-GUIDE.md`](EA-DEVICE-TOKEN-LOCATION-GUIDE.md), [`EA-EXECUTOR-REAL-ACCOUNT-ACTIVATION-FLOW.md`](EA-EXECUTOR-REAL-ACCOUNT-ACTIVATION-FLOW.md).
 
 ---
 
@@ -41,7 +43,8 @@ Ver: [`REAL-TRADEMODE-ACTIVATION-FLOW.md`](REAL-TRADEMODE-ACTIVATION-FLOW.md)
 1. Abrir **Clientes** → `/admin/clientes`
 2. Na licença do cliente, clicar **Gerenciar licença / devices**
 3. Rota: `/admin/licenses/[licenseId]`
-4. **Revogar** o device DEMO antigo (confirmação: `REVOGAR DEVICE`)
+4. **Vincular conta MT5** (card *Conta MT5 vinculada*) — confirmação DEMO ou REAL conforme ambiente
+5. **Revogar** o device DEMO antigo (confirmação: `REVOGAR DEVICE`) — somente se já existir device de homologação
 5. Na licença, seção **Gerar novo código de ativação**:
    - confirmação: `GERAR CODIGO DE ATIVACAO`
    - botão **Gerar código** → código em destaque + **Copiar código** + **Concluir**

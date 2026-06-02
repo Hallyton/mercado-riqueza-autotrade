@@ -2523,6 +2523,20 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation
 
+### Fase 14.1.1 — License MT5 Account Binding for EA Executor
+
+**Status:** `LICENSE_MT5_ACCOUNT_BINDING_IMPLEMENTED`  
+**Documento:** [`docs/EA-EXECUTOR-REAL-ACCOUNT-ACTIVATION-FLOW.md`](EA-EXECUTOR-REAL-ACCOUNT-ACTIVATION-FLOW.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Admin vincula conta MT5 à licença e gera activation code; Device nasce na ativação EA |
+| API | `POST /api/admin/licenses/[licenseId]/mt5-account` |
+| UI | Card *Conta MT5 vinculada* antes do modo esperado |
+| Device manual | **Não** — criado pelo EA após código |
+| RealTradingApproval automático | **Não** |
+| Conta real / ordem real | **Bloqueadas** · dispatch **desativado** |
+
 ### Fase 13.4 — Commercial & Billing Final Consolidation
 
 **Status:** `PHASE_13_COMMERCIAL_BILLING_READY`  

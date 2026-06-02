@@ -194,7 +194,12 @@ export function LicenseDeviceManagement({
             {devices.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-3 py-6 text-muted-foreground">
-                  Nenhum device registrado.
+                  <p>Nenhum device registrado.</p>
+                  <p className="mt-2 text-xs leading-relaxed max-w-xl">
+                    Após gerar o código de ativação e anexar o EA Executor no MT5,
+                    o primeiro heartbeat criará o Device/VPS automaticamente. Não é
+                    necessário criar device manualmente no painel.
+                  </p>
                 </td>
               </tr>
             )}
