@@ -153,6 +153,7 @@ enum OrderLogStatus {
   REJECTED
   IGNORED
   CANCELLED
+  ORDER_NOT_PLACED
 }
 
 enum ExecutionStatus {
@@ -264,6 +265,8 @@ enum ProtectionStatus {
   PROTECTION_FAILED
   PROTECTION_PENDING
   NOT_REQUIRED_FOR_DEBUG
+  NOT_APPLICABLE
+  SKIPPED_NO_POSITION
 }
 
 // ─── Auth (Auth.js adapter) + usuários ───────────────────────────────────────

@@ -6,6 +6,11 @@ import {
 } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { redactSensitiveMessage } from "@/lib/risk/redact-message";
+import {
+  extractCloseReasonFromLogs,
+  getRealManualCloseNoOrderEligibility,
+  type CloseNoOrderEligibility,
+} from "@/lib/admin/real-manual-close-no-order";
 
 /** Origens exibidas em Conta real / Instruções reais. */
 export const REAL_TRADING_INSTRUCTION_SOURCES: InstructionSource[] = [
@@ -113,12 +118,28 @@ export async function listRealTradingInstructionsAdmin(
   );
   const hbByLicense = new Map(heartbeats);
 
+  const instructionIds = rows.map((r) => r.id);
+  const closeLogs =
+    instructionIds.length > 0
+      ? await prisma.instructionStatusLog.findMany({
+          where: { instructionId: { in: instructionIds } },
+          orderBy: { createdAt: "asc" },
+          select: { instructionId: true, status: true, metadata: true },
+        })
+      : [];
+  const closeReasonByInstruction = new Map<string, string | null>();
+  for (const id of instructionIds) {
+    const logs = closeLogs.filter((l) => l.instructionId === id);
+    closeReasonByInstruction.set(id, extractCloseReasonFromLogs(logs));
+  }
+
   return rows.map((row) => ({
     ...row,
     eaHeartbeat: hbByLicense.get(row.licenseId) ?? null,
     preflightId: row.realTradePreflights[0]?.id ?? null,
     latestExecution: row.executions[0] ?? null,
     latestProtection: row.executionProtectionReports[0] ?? null,
+    closeReasonCode: closeReasonByInstruction.get(row.id) ?? null,
   }));
 }
 
@@ -177,6 +198,9 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
     instruction.realTradePreflights[0]?.id ??
     extractPreflightIdFromStatusLogs(instruction.statusLogs);
 
+  const closeEligibility = await getRealManualCloseNoOrderEligibility(instructionId);
+  const closeReasonCode = extractCloseReasonFromLogs(instruction.statusLogs);
+
   const redactedPayload = {
     source: instruction.source,
     purpose: instruction.purpose,
@@ -200,12 +224,25 @@ export async function getRealTradingInstructionAdminDetail(instructionId: string
     preflightId,
     eaHeartbeat: heartbeat,
     redactedPayload,
-    statusHistory: instruction.statusLogs.map((log) => ({
-      status: log.status,
-      message: log.message ? redactSensitiveMessage(log.message) : null,
-      createdAt: log.createdAt,
-      metadata: sanitizeStatusMetadata(log.metadata),
-    })),
+    closeEligibility,
+    closeReasonCode,
+    statusHistory: instruction.statusLogs.map((log) => {
+      const metadata = sanitizeStatusMetadata(log.metadata);
+      const event =
+        metadata &&
+        typeof metadata === "object" &&
+        !Array.isArray(metadata) &&
+        typeof (metadata as Record<string, unknown>).event === "string"
+          ? ((metadata as Record<string, unknown>).event as string)
+          : null;
+      return {
+        status: log.status,
+        event,
+        message: log.message ? redactSensitiveMessage(log.message) : null,
+        createdAt: log.createdAt,
+        metadata,
+      };
+    }),
     executions: instruction.executions.map((ex) => ({
       id: ex.id,
       status: ex.status,
@@ -258,6 +295,11 @@ function sanitizeStatusMetadata(metadata: Prisma.JsonValue | null) {
     "takeProfitPrice",
     "requestedContracts",
     "code",
+    "event",
+    "reasonCode",
+    "operatorNote",
+    "closedByAdminId",
+    "closedAt",
   ];
   const out: Record<string, unknown> = {};
   for (const key of allowed) {
@@ -292,5 +334,8 @@ export function serializeRealTradingInstructionListItem(
     executionStatus: row.latestExecution?.status ?? null,
     protectionStatus: row.latestProtection?.protectionStatus ?? null,
     preflightId: row.preflightId,
+    closeReasonCode: row.closeReasonCode,
   };
 }
+
+export type { CloseNoOrderEligibility };

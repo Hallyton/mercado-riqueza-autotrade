@@ -2551,6 +2551,21 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Proteção | `requiresProtectionConfirmation=true` obrigatório |
 | Dispatch automático | **Desativado** |
 
+### Fase 14.1.5.1 — Close REAL_MANUAL Without Placed Order
+
+**Status:** `REAL_MANUAL_CLOSE_NO_ORDER_FLOW_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Encerrar instruction REAL quando ordem nao apregoada e sem exposicao |
+| API | `POST /api/admin/real-trading/instructions/[instructionId]/close-no-order` |
+| Instruction status | `ORDER_NOT_PLACED` |
+| Execution status | `REJECTED` |
+| Protection status | `SKIPPED_NO_POSITION` / `NOT_APPLICABLE` |
+| Reason code | `ORDER_NOT_PLACED_EXCHANGE_REJECTED` |
+| UI | `/admin/real-trading/instructions/[instructionId]` |
+| Nova tentativa | Exige novo preflight `PASSED` |
+
 ### Fase 14.1.4.1 — Real Manual Dispatch SL/TP Fields
 
 **Status:** `REAL_MANUAL_DISPATCH_SL_TP_FIELDS_IMPLEMENTED`

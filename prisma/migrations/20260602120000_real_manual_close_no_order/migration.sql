@@ -1,0 +1,4 @@
+-- Encerramento administrativo REAL_MANUAL sem ordem apregoada
+ALTER TYPE "OrderLogStatus" ADD VALUE IF NOT EXISTS 'ORDER_NOT_PLACED';
+ALTER TYPE "ProtectionStatus" ADD VALUE IF NOT EXISTS 'NOT_APPLICABLE';
+ALTER TYPE "ProtectionStatus" ADD VALUE IF NOT EXISTS 'SKIPPED_NO_POSITION';

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RealManualCloseNoOrderPanel } from "@/components/admin/real-manual-close-no-order-panel";
 import { getRealTradingInstructionAdminDetail } from "@/lib/admin/real-trading-instructions";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -24,7 +25,14 @@ export default async function AdminRealTradingInstructionDetailPage({
   const detail = await getRealTradingInstructionAdminDetail(instructionId);
   if (!detail) notFound();
 
-  const { instruction, preflightId, eaHeartbeat, redactedPayload } = detail;
+  const {
+    instruction,
+    preflightId,
+    eaHeartbeat,
+    redactedPayload,
+    closeEligibility,
+    closeReasonCode,
+  } = detail;
 
   return (
     <div className="space-y-6">
@@ -79,6 +87,25 @@ export default async function AdminRealTradingInstructionDetailPage({
         </p>
       </Card>
 
+      {(closeEligibility?.canShowClosePanel || closeReasonCode) && (
+        <Card className="border-amber-500/30 p-6" data-testid="admin-actions-card">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-base">Ações administrativas</CardTitle>
+            {closeReasonCode && (
+              <CardDescription>
+                Encerrada · motivo {closeReasonCode}
+              </CardDescription>
+            )}
+          </CardHeader>
+          {closeEligibility && (
+            <RealManualCloseNoOrderPanel
+              instructionId={instruction.id}
+              eligibility={closeEligibility}
+            />
+          )}
+        </Card>
+      )}
+
       <Card className="p-6">
         <CardHeader className="p-0 pb-3">
           <CardTitle className="text-base">Payload operacional (redigido)</CardTitle>
@@ -95,8 +122,37 @@ export default async function AdminRealTradingInstructionDetailPage({
         <div className="space-y-2 text-sm">
           {detail.statusHistory.map((log, i) => (
             <div key={i} className="rounded border border-white/10 bg-black/20 p-3">
-              <p className="font-medium">{log.status}</p>
+              <p className="font-medium">
+                {log.event ?? log.status}
+                {log.event && log.event !== log.status ? (
+                  <span className="text-muted-foreground"> · {log.status}</span>
+                ) : null}
+              </p>
               <p className="text-xs text-muted-foreground">{fmtDate(log.createdAt)}</p>
+              {(() => {
+                if (
+                  !log.metadata ||
+                  typeof log.metadata !== "object" ||
+                  Array.isArray(log.metadata)
+                ) {
+                  return null;
+                }
+                const meta = log.metadata as Record<string, unknown>;
+                const reason =
+                  typeof meta.reasonCode === "string" ? meta.reasonCode : null;
+                const note =
+                  typeof meta.operatorNote === "string" ? meta.operatorNote : null;
+                return (
+                  <>
+                    {reason && (
+                      <p className="mt-1 text-xs">Motivo: {reason}</p>
+                    )}
+                    {note && (
+                      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+                    )}
+                  </>
+                );
+              })()}
               {log.message && <p className="mt-1 text-xs">{log.message}</p>}
             </div>
           ))}

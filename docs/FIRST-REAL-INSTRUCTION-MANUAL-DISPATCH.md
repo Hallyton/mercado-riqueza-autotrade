@@ -53,6 +53,16 @@ Persistidos em `Instruction.stopLoss` e `Instruction.takeProfit`, entregues ao E
 1. **Preflight dry-run** — apenas validação de gate (sem tipo de ordem/SL/TP).
 2. **Criar instruction REAL manual** — liberado somente com dry-run PASSED recente (15 min).
 
+## Encerramento sem ordem apregoada
+
+Quando o EA recebe/processa uma `REAL_MANUAL`, mas a ordem nao e aceita/apregoada pelo broker/bolsa e nao ha posicao aberta, a tentativa deve ser encerrada como `ORDER_NOT_PLACED` / execucao `REJECTED`. Protection nao deve ficar pendente nem failed; deve ser marcada como `SKIPPED_NO_POSITION` ou `NOT_APPLICABLE`. Uma nova tentativa exige novo preflight `PASSED`.
+
+- API: `POST /api/admin/real-trading/instructions/[instructionId]/close-no-order`
+- UI: `/admin/real-trading/instructions/[instructionId]` — acao **Encerrar sem ordem apregoada**
+- Confirmacao: `ENCERRAR INSTRUCTION SEM ORDEM APREGOADA`
+- Reason code: `ORDER_NOT_PLACED_EXCHANGE_REJECTED`
+- Audit: `real_trading.instruction.close_no_order`
+
 ## Seguranca operacional
 
 - `requestedContracts` maximo 1 nesta fase.
