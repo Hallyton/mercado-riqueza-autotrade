@@ -1,5 +1,6 @@
 import {
   AccountSnapshotType,
+  RealTradePreflightSource,
   RealTradePreflightStatus,
   RealTradingApprovalStatus,
   TradeMode,
@@ -48,6 +49,8 @@ export type RealTradePreflightInput = {
   requiredMargin?: number | null;
   environment?: TradeMode;
   isAutoDispatch?: boolean;
+  /** Simulação admin: persiste preflight DRY_RUN sem instruction. */
+  dryRun?: boolean;
 };
 
 export type PreflightCheck = {
@@ -65,6 +68,22 @@ export type RealTradePreflightResult = {
   preflightId?: string;
   approvalId?: string;
   accountSnapshotId?: string;
+  dryRun?: boolean;
+  source?: RealTradePreflightSource;
+  flags?: RealTradePreflightFlags;
+};
+
+export type RealTradePreflightFlags = {
+  marginOk: boolean;
+  eaOnline: boolean;
+  snapshotOk: boolean;
+  realApprovalOk: boolean;
+  protectionPreviousOk: boolean;
+  deviceOk: boolean;
+  accountOk: boolean;
+  licenseOk: boolean;
+  subscriptionOk: boolean;
+  paymentOk: boolean;
 };
 
 function startOfUtcDay(date = new Date()): Date {
@@ -127,6 +146,7 @@ export async function runRealTradePreflight(
   input: RealTradePreflightInput
 ): Promise<RealTradePreflightResult> {
   const checks: PreflightCheck[] = [];
+  const dryRun = input.dryRun === true;
   const environment = input.environment ?? TradeMode.REAL;
   const requestedContracts = input.requestedContracts ?? 1;
   const login = normalizeAccount(input.accountLogin);
@@ -162,7 +182,9 @@ export async function runRealTradePreflight(
       : guardDecision.code
   );
 
-  const autoDispatchOk = !(input.isAutoDispatch && !isAutoDispatchEnabled());
+  const autoDispatchOk =
+    dryRun ||
+    !(input.isAutoDispatch && !isAutoDispatchEnabled());
   pushCheck(
     checks,
     "auto_dispatch",
@@ -413,12 +435,21 @@ export async function runRealTradePreflight(
     ? REAL_TRADING_REASON_MESSAGES[reasonCode]
     : undefined;
 
+  const preflightSource = dryRun
+    ? RealTradePreflightSource.DRY_RUN
+    : RealTradePreflightSource.INSTRUCTION;
+
   const record = await prisma.realTradePreflight.create({
     data: {
       userId: input.userId,
       licenseId: input.licenseId,
-      instructionId: input.instructionId ?? undefined,
-      masterSignalId: input.masterSignalId ?? undefined,
+      source: preflightSource,
+      instructionId: dryRun
+        ? undefined
+        : (input.instructionId ?? undefined),
+      masterSignalId: dryRun
+        ? undefined
+        : (input.masterSignalId ?? undefined),
       accountSnapshotId: snapshotResult.snapshotId,
       accountLogin: login,
       accountServer: server,
@@ -461,5 +492,19 @@ export async function runRealTradePreflight(
     preflightId: record.id,
     approvalId: approval?.id,
     accountSnapshotId: snapshotResult.snapshotId,
+    dryRun,
+    source: preflightSource,
+    flags: {
+      marginOk,
+      eaOnline,
+      snapshotOk: snapshotResult.ok,
+      realApprovalOk: Boolean(approval),
+      protectionPreviousOk,
+      deviceOk,
+      accountOk,
+      licenseOk,
+      subscriptionOk: subscriptionOk ?? false,
+      paymentOk,
+    },
   };
 }

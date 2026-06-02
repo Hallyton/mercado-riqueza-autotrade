@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   LicenseStatus,
+  RealTradePreflightSource,
   RealTradePreflightStatus,
   RealTradingApprovalStatus,
   SubscriptionStatus,
@@ -186,6 +187,24 @@ describe("runRealTradePreflight", () => {
     });
     expect(result.passed).toBe(false);
     expect(result.reasonCode).toBe(REAL_TRADING_REASONS.AUTO_DISPATCH_DISABLED);
+  });
+
+  it("dry-run persiste source DRY_RUN sem instructionId", async () => {
+    mockHappyPath();
+    await runRealTradePreflight({
+      ...baseInput,
+      instructionId: "instr-ignored",
+      dryRun: true,
+    });
+    expect(prisma.realTradePreflight.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          source: RealTradePreflightSource.DRY_RUN,
+          instructionId: undefined,
+          masterSignalId: undefined,
+        }),
+      })
+    );
   });
 });
 

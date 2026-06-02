@@ -1,3 +1,4 @@
+import { PreflightDryRunPanel } from "@/components/admin/preflight-dry-run-panel";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { listRealTradePreflightsAdmin } from "@/lib/admin/real-trading-approval";
 
@@ -12,14 +13,25 @@ export default async function AdminRealTradingPreflightsPage() {
           <CardDescription className="mt-2">
             PASSED com reason REAL_TRADING_ALLOWED_BY_CONTROLLED_GATE indica liberação
             condicional. FAILED/BLOCKED: nenhuma instruction REAL é entregue ao EA.
+            Use o dry-run abaixo para validar o gate sem criar instruction.
           </CardDescription>
         </CardHeader>
+        <div className="mt-6">
+          <PreflightDryRunPanel
+            defaultLicenseId="cmptsr44j0005ib0417zkckn6"
+            defaultAccountLogin="19583778"
+            defaultAccountServer="XPMTS-PRD"
+            defaultSymbol="WDON26"
+            defaultMagicNumber="910001"
+          />
+        </div>
       </Card>
       <div className="overflow-x-auto rounded-lg border border-white/10">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-white/10 bg-white/5">
             <tr>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Origem</th>
               <th className="px-4 py-3">Cliente</th>
               <th className="px-4 py-3">Magic</th>
               <th className="px-4 py-3">Margem</th>
@@ -35,6 +47,7 @@ export default async function AdminRealTradingPreflightsPage() {
             {items.map((row) => (
               <tr key={row.id} className="border-b border-white/5">
                 <td className="px-4 py-3">{row.status}</td>
+                <td className="px-4 py-3 font-mono text-xs">{row.source}</td>
                 <td className="px-4 py-3">{row.user.email}</td>
                 <td className="px-4 py-3">{row.magicNumber}</td>
                 <td className="px-4 py-3">{row.marginOk ? "OK" : "Falha"}</td>
@@ -54,7 +67,7 @@ export default async function AdminRealTradingPreflightsPage() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-muted-foreground">
+                <td colSpan={11} className="px-4 py-8 text-muted-foreground">
                   Nenhum preflight registrado.
                 </td>
               </tr>

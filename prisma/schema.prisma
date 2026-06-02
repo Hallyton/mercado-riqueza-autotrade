@@ -247,6 +247,11 @@ enum RealTradePreflightStatus {
   BLOCKED
 }
 
+enum RealTradePreflightSource {
+  INSTRUCTION
+  DRY_RUN
+}
+
 enum ProtectionMode {
   ATTACHED_SL_TP
   PENDING_PROTECTION_ORDERS
@@ -1193,6 +1198,7 @@ model RealTradePreflight {
   reasonCode            String?                  @map("reason_code")
   status                RealTradePreflightStatus
   reason                String?                  @db.Text
+  source                RealTradePreflightSource @default(INSTRUCTION)
   createdAt             DateTime                 @default(now()) @map("created_at")
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1201,6 +1207,7 @@ model RealTradePreflight {
 
   @@index([licenseId, createdAt])
   @@index([instructionId])
+  @@index([source, createdAt])
   @@map("real_trade_preflights")
 }
 

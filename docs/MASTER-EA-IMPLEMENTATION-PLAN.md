@@ -2523,6 +2523,20 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 **Próxima fase:** Fase 14.1 — Production Billing Gate & Commercial Launch Preparation
 
+### Fase 14.1.2 — EA Executor Real Preflight Dry Run
+
+**Status:** `REAL_PREFLIGHT_DRY_RUN_IMPLEMENTED`  
+**Documento:** [`docs/EA-EXECUTOR-REAL-PREFLIGHT-DRY-RUN.md`](EA-EXECUTOR-REAL-PREFLIGHT-DRY-RUN.md)
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Validar gate REAL no admin sem instruction/ordem |
+| API | `POST /api/admin/real-trading/preflight-dry-run` |
+| UI | Botão dry-run em `/admin/real-trading/preflights` |
+| Registro | `RealTradePreflight.source = DRY_RUN` |
+| Instruction/ordem | **Não** |
+| Dispatch automático | **Desativado** (inalterado) |
+
 ### Fase 14.1.1 — License MT5 Account Binding for EA Executor
 
 **Status:** `LICENSE_MT5_ACCOUNT_BINDING_IMPLEMENTED`  
