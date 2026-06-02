@@ -86,6 +86,22 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
       </Card>
 
       <Card className="p-6">
+        <LicenseMt5AccountCard
+          licenseId={detail.licenseId}
+          linked={detail.mt5Linked}
+          login={detail.mt5Account?.login ?? null}
+          server={detail.mt5Account?.server ?? null}
+          expectedSymbol={detail.expectedSymbol}
+          expectedMagicNumber={detail.expectedMagicNumber}
+          expectedTradeMode={detail.expectedTradeMode}
+          lastChangedAt={
+            detail.mt5BindingAudit?.changedAt.toISOString() ?? null
+          }
+          lastChangedBy={detail.mt5BindingAudit?.changedBy ?? null}
+        />
+      </Card>
+
+      <Card className="p-6">
         <LicenseOperationalModeCard
           licenseId={detail.licenseId}
           expectedTradeMode={detail.expectedTradeMode}
