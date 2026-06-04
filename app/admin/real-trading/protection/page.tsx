@@ -1,5 +1,10 @@
+import Link from "next/link";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { listExecutionProtectionReportsAdmin } from "@/lib/admin/real-trading-approval";
+import {
+  formatManagementPlanListSummary,
+  parseManagementPlanFromJson,
+} from "@/lib/admin/real-manual-management-plan";
 import { ProtectionStatus } from "@prisma/client";
 
 function fmtDate(d: Date) {
@@ -36,12 +41,13 @@ export default async function AdminRealTradingProtectionPage() {
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Cliente</th>
               <th className="px-4 py-3">Origem</th>
+              <th className="px-4 py-3">BatchId</th>
               <th className="px-4 py-3">Tipo ordem</th>
               <th className="px-4 py-3">Conta</th>
               <th className="px-4 py-3">Instrução</th>
               <th className="px-4 py-3">Magic</th>
               <th className="px-4 py-3">SL instr.</th>
-              <th className="px-4 py-3">TP instr.</th>
+              <th className="px-4 py-3">Gestão</th>
               <th className="px-4 py-3">SL conf.</th>
               <th className="px-4 py-3">TP conf.</th>
               <th className="px-4 py-3">Reportado</th>
@@ -76,6 +82,18 @@ export default async function AdminRealTradingProtectionPage() {
                   <td className="px-4 py-3 font-mono text-xs">
                     {row.instruction.source ?? "—"}
                   </td>
+                  <td className="px-4 py-3 font-mono text-xs break-all">
+                    {row.instruction.bulkBatchId ? (
+                      <Link
+                        href={`/admin/real-trading/bulk-dispatch/${row.instruction.bulkBatchId}`}
+                        className="text-gold hover:underline"
+                      >
+                        {row.instruction.bulkBatchId}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs">
                     {row.instruction.orderType}
                   </td>
@@ -87,7 +105,11 @@ export default async function AdminRealTradingProtectionPage() {
                   </td>
                   <td className="px-4 py-3">{row.magicNumber}</td>
                   <td className="px-4 py-3">{fmtPrice(row.instruction.stopLoss)}</td>
-                  <td className="px-4 py-3">{fmtPrice(row.instruction.takeProfit)}</td>
+                  <td className="px-4 py-3 font-mono text-xs">
+                    {formatManagementPlanListSummary(
+                      parseManagementPlanFromJson(row.instruction.managementPlan)
+                    ) ?? "—"}
+                  </td>
                   <td className="px-4 py-3">
                     {row.stopLossPresent ? "Sim" : "Não"}
                   </td>
@@ -100,7 +122,7 @@ export default async function AdminRealTradingProtectionPage() {
             })}
             {items.length === 0 && (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-muted-foreground">
+                <td colSpan={13} className="px-4 py-8 text-muted-foreground">
                   Nenhum relatório de proteção.
                 </td>
               </tr>

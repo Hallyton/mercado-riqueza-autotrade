@@ -22,8 +22,10 @@ describe("real manual bulk dispatch panel", () => {
     expect(panel).toContain("Validar clientes elegíveis");
     expect(panel).toContain("Clientes elegíveis");
     expect(panel).toContain("Clientes bloqueados / regularizar antes do envio");
-    expect(panel).toContain("BULK_DISPATCH_CONFIRM_PHRASE");
-    expect(panel).toContain("bulkDispatchCountConfirmPhrase");
+    expect(panel).toContain("LiveMarketReadinessCard");
+    expect(panel).toContain("LIVE_MARKET_EXECUTE_CHECKLIST_ITEMS");
+    expect(panel).toContain("BULK_DISPATCH_LIVE_AWARENESS_PHRASE");
+    expect(panel).toContain("Checklist final de envio real");
     expect(panel).toContain("Preview expirado");
     expect(panel).toContain("Revalidar elegibilidade");
   });

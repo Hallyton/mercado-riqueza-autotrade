@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import {
+  InstructionOperationalMode,
   InstructionOrderType,
   InstructionPurpose,
   InstructionSide,
@@ -30,9 +31,17 @@ import prisma from "@/lib/prisma";
 import { runRealTradePreflight } from "@/lib/risk/real-trade-preflight";
 import { isAutoDispatchEnabled } from "@/lib/risk/real-trading-config";
 import { isRealTradingEnabled } from "@/lib/risk/real-trading-guard";
+import { LIVE_MARKET_OPERATIONAL_MODE } from "@/lib/admin/live-market-operational-mode";
+import {
+  isLiveMarketChecklistComplete,
+  liveMarketExecuteChecklistSchema,
+} from "@/lib/admin/live-market-execute-checklist";
 
 export const BULK_PREVIEW_EXPIRY_MS = 5 * 60 * 1000;
 export const BULK_DISPATCH_CONFIRM_PHRASE = "AUTORIZO DISPARO REAL EM LOTE";
+
+export const BULK_DISPATCH_LIVE_AWARENESS_PHRASE =
+  "ESTOU CIENTE QUE AS INSTRUCTIONS SERAO BUSCADAS PELOS EAS EM CONTAS REAIS";
 
 export function bulkDispatchCountConfirmPhrase(count: number) {
   return `AUTORIZO DISPARO REAL EM LOTE PARA ${count} CLIENTES`;
@@ -70,6 +79,8 @@ export const bulkExecuteSchema = z.object({
   selectedLicenseIds: z.array(z.string().min(1)).min(1),
   adminConfirmation: z.string().min(1),
   adminConfirmationCount: z.string().min(1),
+  adminConfirmationLiveAwareness: z.string().min(1),
+  liveMarketChecklist: liveMarketExecuteChecklistSchema,
 });
 
 export class RealManualBulkDispatchError extends Error {
@@ -236,6 +247,7 @@ export async function previewRealManualBulkDispatch(input: {
       blockedCount: blocked.length,
       totalCandidates: licenseIds.length,
       expiresAt,
+      operationalMode: InstructionOperationalMode.LIVE_MARKET,
       items: {
         create: [
           ...eligible.map((row) => ({
@@ -293,6 +305,7 @@ export async function previewRealManualBulkDispatch(input: {
   return {
     batchPreviewId: batch.id,
     status: "PREVIEW_READY" as const,
+    operationalMode: LIVE_MARKET_OPERATIONAL_MODE,
     expiresAt: expiresAt.toISOString(),
     summary: {
       totalCandidates: licenseIds.length,
@@ -365,6 +378,7 @@ async function createBulkRealManualInstruction(input: {
         requiresProtectionConfirmation: true,
         protectionBlocked: false,
         managementPlan: input.managementPlan,
+        operationalMode: InstructionOperationalMode.LIVE_MARKET,
       },
     });
     await tx.instructionStatusLog.create({
@@ -376,6 +390,7 @@ async function createBulkRealManualInstruction(input: {
           batchId: input.batchId,
           preflightId: input.preflightId,
           source: InstructionSource.REAL_MANUAL,
+          operationalMode: LIVE_MARKET_OPERATIONAL_MODE,
           protectionRequired: true,
           requiresProtectionConfirmation: true,
         },
@@ -426,6 +441,25 @@ export async function executeRealManualBulkDispatch(input: {
     throw new RealManualBulkDispatchError(
       `Confirmação de contagem inválida. Digite: ${expectedCountPhrase}`,
       "CONFIRMATION_COUNT_MISMATCH",
+      400
+    );
+  }
+
+  if (
+    input.body.adminConfirmationLiveAwareness.trim() !==
+    BULK_DISPATCH_LIVE_AWARENESS_PHRASE
+  ) {
+    throw new RealManualBulkDispatchError(
+      `Confirmação live inválida. Digite: ${BULK_DISPATCH_LIVE_AWARENESS_PHRASE}`,
+      "CONFIRMATION_LIVE_AWARENESS_MISMATCH",
+      400
+    );
+  }
+
+  if (!isLiveMarketChecklistComplete(input.body.liveMarketChecklist)) {
+    throw new RealManualBulkDispatchError(
+      "Checklist final de mercado ao vivo incompleto.",
+      "CHECKLIST_INCOMPLETE",
       400
     );
   }
@@ -502,6 +536,7 @@ export async function executeRealManualBulkDispatch(input: {
   let dispatched = 0;
   let skipped = 0;
   let failed = 0;
+  let blockedAtExecute = 0;
 
   for (const licenseId of input.body.selectedLicenseIds) {
     const item = batch.items.find((i) => i.licenseId === licenseId);
@@ -533,6 +568,7 @@ export async function executeRealManualBulkDispatch(input: {
     const eligibility = await evaluateBulkLicenseEligibility({ licenseId, order });
     if (!eligibility.eligible) {
       skipped += 1;
+      blockedAtExecute += 1;
       await prisma.realManualBulkDispatchItem.update({
         where: { id: item.id },
         data: {
@@ -648,45 +684,54 @@ export async function executeRealManualBulkDispatch(input: {
 
   await recordAdminAction({
     actorId: input.actorId,
-    action: "real_trading.bulk_dispatch_execute",
+    action: "real_trading.bulk_dispatch.execute_live_market",
     targetType: "real_manual_bulk_dispatch_batch",
     targetId: batch.id,
     ipAddress: input.ipAddress,
     metadata: {
-      selected: input.body.selectedLicenseIds.length,
-      dispatched,
-      skipped,
-      failed,
+      batchId: batch.id,
+      selectedCount: input.body.selectedLicenseIds.length,
+      dispatchedCount: dispatched,
+      skippedCount: skipped,
+      blockedAtExecuteCount: blockedAtExecute,
+      failedCount: failed,
+      symbol: batch.symbol,
+      side: batch.side,
+      orderType: batch.orderType,
+      requestedContracts: batch.requestedContracts,
+      managementPlanHash: batch.managementPlanHash,
+      operationalMode: LIVE_MARKET_OPERATIONAL_MODE,
+      adminId: input.actorId,
+      timestamp: new Date().toISOString(),
+      confirmationsProvided: true,
     },
   });
 
   return {
     batchId: batch.id,
     status: finalStatus,
+    operationalMode: LIVE_MARKET_OPERATIONAL_MODE,
     summary: {
       selected: input.body.selectedLicenseIds.length,
       dispatched,
       skipped,
+      blockedAtExecute,
       failed,
+    },
+    message:
+      "Instructions REAL_MANUAL criadas. Acompanhe o recebimento pelos EAs, execução no MT5 e confirmação de proteção.",
+    links: {
+      batch: `/admin/real-trading/bulk-dispatch/${batch.id}`,
+      instructions: `/admin/real-trading/instructions?batchId=${encodeURIComponent(batch.id)}`,
+      protection: "/admin/real-trading/protection",
     },
     items: reportItems,
   };
 }
 
 export async function getRealManualBulkDispatchBatchDetail(batchId: string) {
-  return prisma.realManualBulkDispatchBatch.findUnique({
-    where: { id: batchId },
-    include: {
-      items: { orderBy: { createdAt: "asc" } },
-      createdByAdmin: { select: { email: true, name: true } },
-      instructions: {
-        select: {
-          id: true,
-          licenseId: true,
-          currentStatus: true,
-          createdAt: true,
-        },
-      },
-    },
-  });
+  const { getBulkDispatchBatchLiveTracking } = await import(
+    "@/lib/admin/bulk-dispatch-live-tracking"
+  );
+  return getBulkDispatchBatchLiveTracking(batchId);
 }

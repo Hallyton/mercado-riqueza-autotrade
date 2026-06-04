@@ -96,7 +96,10 @@ Payload de instrução (somente execução):
 }
 ```
 
-Campos `magic_number`, `account_login`, `account_server`, `trade_mode`, `protection_required`, `requires_protection_confirmation`, `requested_contracts` e `source` são usados no **piloto de conta real** (gate condicional aprovado no servidor). O EA Executor **deve** enviar snapshots e confirmar stop/take via `/execution-protection` — sem isso o preflight REAL bloqueia novas entradas.
+Campos `magic_number`, `account_login`, `account_server`, `trade_mode`, `protection_required`, `requires_protection_confirmation`, `requested_contracts`, `source`, `operational_mode` e `bulk_batch_id` são usados no **piloto de conta real** (gate condicional aprovado no servidor). O EA Executor **deve** enviar snapshots e confirmar stop/take via `/execution-protection` — sem isso o preflight REAL bloqueia novas entradas.
+
+- `operational_mode`: sempre `LIVE_MARKET` em dispatches admin REAL_MANUAL (Fase 14.2).
+- `bulk_batch_id`: presente quando instruction originada de disparo em lote.
 
 Regras `order_type` / `order_price` / proteção na instruction:
 
@@ -130,11 +133,13 @@ Exemplo de instrução REAL (sem estratégia):
   "protection_required": true,
   "requested_contracts": 1,
   "controlled_real_gate": true,
-  "source": "MASTER_SIGNAL"
+  "source": "REAL_MANUAL",
+  "operational_mode": "LIVE_MARKET",
+  "bulk_batch_id": "uuid-do-batch"
 }
 ```
 
-Para primeira ordem real manual, a origem e `REAL_MANUAL` (nunca TEST/HOMOLOGATION).
+Para primeira ordem real manual e disparo em lote, a origem é `REAL_MANUAL` com `operational_mode: LIVE_MARKET` (nunca TEST/HOMOLOGATION).
 
 ---
 

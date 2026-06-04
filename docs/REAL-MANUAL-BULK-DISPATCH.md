@@ -1,6 +1,7 @@
 # REAL_MANUAL — Disparo em lote controlado
 
-Status: **REAL_MANUAL_BULK_ELIGIBILITY_AND_DISPATCH_IMPLEMENTED**
+Status: **PHASE_14_REAL_TRADING_OPERATIONAL_READY_FOR_LIVE_MARKET**  
+Modo operacional: **`LIVE_MARKET`** (sempre `source: REAL_MANUAL`)
 
 ## Visão geral
 
@@ -8,6 +9,8 @@ O disparo em lote REAL_MANUAL exige **preview obrigatório** antes de qualquer c
 
 - Rota admin: `/admin/real-trading/bulk-dispatch`
 - Detalhe do batch: `/admin/real-trading/bulk-dispatch/[batchId]`
+- Readiness: `GET /api/admin/real-trading/bulk-dispatch/readiness`
+- Tracking: `GET /api/admin/real-trading/bulk-dispatch/[batchId]/tracking`
 - Preview: `POST /api/admin/real-trading/bulk-dispatch/preview` — **não cria instruction**
 - Execute: `POST /api/admin/real-trading/bulk-dispatch/execute` — cria **uma instruction REAL_MANUAL por cliente** aprovado
 
@@ -19,12 +22,16 @@ O backend **não envia ordem ao broker**. O EA busca instructions via API. Dispa
 2. Clica **Validar clientes elegíveis** → preview com expiração de **5 minutos**.
 3. Revisa tabelas de elegíveis e bloqueados (reason codes + ações de regularização).
 4. Desmarca clientes se necessário (todos elegíveis vêm selecionados por padrão).
-5. Confirma:
+5. Marca **checklist final de envio real** (15 itens).
+6. Confirma:
    - `AUTORIZO DISPARO REAL EM LOTE`
    - `AUTORIZO DISPARO REAL EM LOTE PARA X CLIENTES` (X = selecionados)
-6. Execute revalida cada licença, cria preflight individual (origem `BULK_DISPATCH`) e instruction com `bulkBatchId`.
+   - `ESTOU CIENTE QUE AS INSTRUCTIONS SERAO BUSCADAS PELOS EAS EM CONTAS REAIS`
+7. Execute revalida cada licença, cria preflight individual (origem `BULK_DISPATCH`) e instruction com `bulkBatchId` e `operationalMode: LIVE_MARKET`.
 
 Nova tentativa futura exige **novo preview/preflight**.
+
+Runbook operacional: [`docs/LIVE-MARKET-GO-LIVE-RUNBOOK.md`](LIVE-MARKET-GO-LIVE-RUNBOOK.md)
 
 ## Elegibilidade (preview e revalidação no execute)
 

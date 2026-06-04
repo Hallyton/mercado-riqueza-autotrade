@@ -2583,6 +2583,30 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 | Idempotencia | `bulk:{batchId}:{licenseId}:...:{managementPlanHash}` |
 | Doc | [`docs/REAL-MANUAL-BULK-DISPATCH.md`](REAL-MANUAL-BULK-DISPATCH.md) |
 
+### Fase 14.2 — Live Market Go-Live Readiness
+
+**Status:** `LIVE_MARKET_GO_LIVE_READY_FOR_OPERATOR_CONFIRMATION` → `PHASE_14_REAL_TRADING_OPERATIONAL_READY_FOR_LIVE_MARKET`
+
+| Item | Resultado |
+|------|-----------|
+| Objetivo | Painel final mercado ao vivo: preview obrigatorio, checklist 15 itens, 3 confirmacoes, operationalMode LIVE_MARKET |
+| UI | Card readiness + checklist + tabelas elegiveis/bloqueados + tracker batch |
+| Readiness API | `GET /api/admin/real-trading/bulk-dispatch/readiness` |
+| Tracking API | `GET /api/admin/real-trading/bulk-dispatch/[batchId]/tracking` |
+| operationalMode | `LIVE_MARKET` em batch e instruction (sem TEST/HOMOLOGATION) |
+| Checklist | 15 itens obrigatorios antes de execute |
+| Confirmacao 3 | `ESTOU CIENTE QUE AS INSTRUCTIONS SERAO BUSCADAS PELOS EAS EM CONTAS REAIS` |
+| Audit execute | `real_trading.bulk_dispatch.execute_live_market` |
+| EA payload | `operational_mode`, `bulk_batch_id` |
+| Runbook | [`docs/LIVE-MARKET-GO-LIVE-RUNBOOK.md`](LIVE-MARKET-GO-LIVE-RUNBOOK.md) |
+| Relatorio | [`docs/PHASE-14-REAL-TRADING-OPERATIONAL-READINESS-FINAL-REPORT.md`](PHASE-14-REAL-TRADING-OPERATIONAL-READINESS-FINAL-REPORT.md) |
+
+**Fase 14 consolidada — Real Trading Operational Readiness & Live Market Controlled Dispatch**
+
+**Status:** `PHASE_14_REAL_TRADING_OPERATIONAL_READY_FOR_LIVE_MARKET`
+
+Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WITH_EXTERNAL_LIVE_MARKET_DEPENDENCY`
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

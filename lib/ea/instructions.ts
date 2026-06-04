@@ -45,6 +45,8 @@ export type EaInstructionPayload = {
   requires_protection_confirmation?: boolean;
   protection_required?: boolean;
   trade_mode?: "REAL" | "DEMO";
+  operational_mode?: "LIVE_MARKET";
+  bulk_batch_id?: string;
   requested_contracts?: number;
   controlled_real_gate?: boolean;
   source?: string;
@@ -76,6 +78,8 @@ export function mapInstructionToEaPayload(
     accountServer?: string | null;
     requiresProtectionConfirmation?: boolean;
     source?: string | null;
+    bulkBatchId?: string | null;
+    operationalMode?: string | null;
     managementPlan?: Prisma.JsonValue | null;
   }
 ): EaInstructionPayload {
@@ -115,6 +119,12 @@ export function mapInstructionToEaPayload(
   }
   if (instruction.source) {
     payload.source = instruction.source;
+  }
+  if (instruction.bulkBatchId) {
+    payload.bulk_batch_id = instruction.bulkBatchId;
+  }
+  if (instruction.operationalMode === "LIVE_MARKET") {
+    payload.operational_mode = "LIVE_MARKET";
   }
   const plan = parseManagementPlanFromInstruction(instruction.managementPlan);
   if (plan) {

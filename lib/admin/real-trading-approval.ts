@@ -321,6 +321,8 @@ export async function listExecutionProtectionReportsAdmin(take = 50) {
           takeProfit: true,
           accountLogin: true,
           accountServer: true,
+          bulkBatchId: true,
+          managementPlan: true,
         },
       },
     },

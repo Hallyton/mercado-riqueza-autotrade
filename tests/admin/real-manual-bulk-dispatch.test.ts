@@ -46,12 +46,15 @@ import {
 import { runRealTradePreflight } from "@/lib/risk/real-trade-preflight";
 import {
   BULK_DISPATCH_CONFIRM_PHRASE,
+  BULK_DISPATCH_LIVE_AWARENESS_PHRASE,
   bulkDispatchCountConfirmPhrase,
   buildBulkInstructionIdempotencyKey,
   executeRealManualBulkDispatch,
   hashManagementPlan,
   previewRealManualBulkDispatch,
 } from "@/lib/admin/real-manual-bulk-dispatch";
+import { LIVE_MARKET_EXECUTE_CHECKLIST_ITEMS } from "@/lib/admin/live-market-execute-checklist";
+import { recordAdminAction } from "@/lib/admin/record-action";
 
 const managementPlan = {
   version: 1 as const,
@@ -82,6 +85,27 @@ const previewBody = {
   requestedContracts: 1,
   managementPlan,
 };
+
+function buildLiveChecklist() {
+  return LIVE_MARKET_EXECUTE_CHECKLIST_ITEMS.reduce(
+    (acc, item) => {
+      acc[item.key] = true;
+      return acc;
+    },
+    {} as Record<(typeof LIVE_MARKET_EXECUTE_CHECKLIST_ITEMS)[number]["key"], true>
+  );
+}
+
+function buildExecuteBody(licenseIds: string[]) {
+  return {
+    batchPreviewId: "batch-1",
+    selectedLicenseIds: licenseIds,
+    adminConfirmation: BULK_DISPATCH_CONFIRM_PHRASE,
+    adminConfirmationCount: bulkDispatchCountConfirmPhrase(licenseIds.length),
+    adminConfirmationLiveAwareness: BULK_DISPATCH_LIVE_AWARENESS_PHRASE,
+    liveMarketChecklist: buildLiveChecklist(),
+  };
+}
 
 describe("real manual bulk dispatch preview", () => {
   beforeEach(() => {
@@ -224,25 +248,49 @@ describe("real manual bulk dispatch execute", () => {
 
     const result = await executeRealManualBulkDispatch({
       actorId: "admin-1",
-      body: {
-        batchPreviewId: "batch-1",
-        selectedLicenseIds: ["lic-1"],
-        adminConfirmation: BULK_DISPATCH_CONFIRM_PHRASE,
-        adminConfirmationCount: bulkDispatchCountConfirmPhrase(1),
-      },
+      body: buildExecuteBody(["lic-1"]),
     });
 
     expect(result.summary.dispatched).toBe(1);
+    expect(result.operationalMode).toBe("LIVE_MARKET");
     expect(prisma.instruction.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           source: InstructionSource.REAL_MANUAL,
           bulkBatchId: "batch-1",
+          operationalMode: "LIVE_MARKET",
           managementPlan,
           requiresProtectionConfirmation: true,
         }),
       })
     );
+    expect(recordAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "real_trading.bulk_dispatch.execute_live_market" })
+    );
+  });
+
+  it("bloqueia execute sem checklist completo", async () => {
+    await expect(
+      executeRealManualBulkDispatch({
+        actorId: "admin-1",
+        body: {
+          ...buildExecuteBody(["lic-1"]),
+          liveMarketChecklist: { marketOpen: true } as never,
+        },
+      })
+    ).rejects.toMatchObject({ code: "CHECKLIST_INCOMPLETE" });
+  });
+
+  it("bloqueia execute sem confirmação 3", async () => {
+    await expect(
+      executeRealManualBulkDispatch({
+        actorId: "admin-1",
+        body: {
+          ...buildExecuteBody(["lic-1"]),
+          adminConfirmationLiveAwareness: "ERRADO",
+        },
+      })
+    ).rejects.toMatchObject({ code: "CONFIRMATION_LIVE_AWARENESS_MISMATCH" });
   });
 
   it("não cria instruction para bloqueado no execute", async () => {
@@ -264,12 +312,7 @@ describe("real manual bulk dispatch execute", () => {
 
     const result = await executeRealManualBulkDispatch({
       actorId: "admin-1",
-      body: {
-        batchPreviewId: "batch-1",
-        selectedLicenseIds: ["lic-1"],
-        adminConfirmation: BULK_DISPATCH_CONFIRM_PHRASE,
-        adminConfirmationCount: bulkDispatchCountConfirmPhrase(1),
-      },
+      body: buildExecuteBody(["lic-1"]),
     });
 
     expect(result.summary.skipped).toBe(1);
@@ -317,12 +360,7 @@ describe("real manual bulk dispatch execute", () => {
 
     const result = await executeRealManualBulkDispatch({
       actorId: "admin-1",
-      body: {
-        batchPreviewId: "batch-1",
-        selectedLicenseIds: ["lic-1"],
-        adminConfirmation: BULK_DISPATCH_CONFIRM_PHRASE,
-        adminConfirmationCount: bulkDispatchCountConfirmPhrase(1),
-      },
+      body: buildExecuteBody(["lic-1"]),
     });
 
     expect(result.items[0].instructionId).toBe("inst-existing");

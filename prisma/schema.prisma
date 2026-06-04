@@ -276,6 +276,10 @@ enum RealManualBulkDispatchItemStatus {
   BLOCKED_AT_EXECUTE
 }
 
+enum InstructionOperationalMode {
+  LIVE_MARKET
+}
+
 enum ProtectionMode {
   ATTACHED_SL_TP
   PENDING_PROTECTION_ORDERS
@@ -825,6 +829,7 @@ model Instruction {
   protectionBlocked              Boolean            @default(false) @map("protection_blocked")
   managementPlan                 Json?              @map("management_plan")
   bulkBatchId                    String?            @map("bulk_batch_id")
+  operationalMode                InstructionOperationalMode? @map("operational_mode")
   createdAt                      DateTime           @default(now()) @map("created_at")
   updatedAt                      DateTime           @updatedAt @map("updated_at")
 
@@ -1311,6 +1316,7 @@ model RealManualBulkDispatchBatch {
   eligibleCount      Int                               @default(0) @map("eligible_count")
   blockedCount       Int                               @default(0) @map("blocked_count")
   totalCandidates    Int                               @default(0) @map("total_candidates")
+  operationalMode    InstructionOperationalMode        @default(LIVE_MARKET) @map("operational_mode")
   expiresAt          DateTime                          @map("expires_at")
   createdAt          DateTime                          @default(now()) @map("created_at")
   updatedAt          DateTime                          @updatedAt @map("updated_at")

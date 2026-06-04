@@ -1,4 +1,5 @@
 import {
+  InstructionOperationalMode,
   InstructionOrderType,
   InstructionPurpose,
   InstructionSide,
@@ -11,6 +12,7 @@ import {
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { recordAdminAction } from "@/lib/admin/record-action";
+import { LIVE_MARKET_OPERATIONAL_MODE } from "@/lib/admin/live-market-operational-mode";
 import {
   REAL_MANUAL_PREFLIGHT_MAX_AGE_MS,
   validateRealManualOrderFields,
@@ -308,6 +310,7 @@ export async function createFirstRealManualInstruction(input: {
         requiresProtectionConfirmation: true,
         protectionBlocked: false,
         managementPlan: input.managementPlan,
+        operationalMode: InstructionOperationalMode.LIVE_MARKET,
       },
     });
     await tx.instructionStatusLog.create({
@@ -318,6 +321,7 @@ export async function createFirstRealManualInstruction(input: {
         metadata: {
           preflightId: preflight.id,
           source: InstructionSource.REAL_MANUAL,
+          operationalMode: LIVE_MARKET_OPERATIONAL_MODE,
           requestedContracts: input.requestedContracts,
           orderType: input.orderType,
           orderPrice: input.orderPrice ?? null,

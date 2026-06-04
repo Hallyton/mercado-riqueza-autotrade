@@ -110,6 +110,6 @@ Documento dedicado: [`docs/REAL-MANUAL-ADVANCED-PROTECTION-PLAN.md`](REAL-MANUAL
 - dispatch automatico permanece desativado.
 - nenhum token/secret/activation code e exposto.
 
-## Disparo em lote (Fase 14.1.7)
+## Disparo em lote (Fase 14 — mercado ao vivo)
 
-Fluxo complementar em `/admin/real-trading/bulk-dispatch`: preview obrigatorio de elegibilidade, selecao manual e confirmacao `AUTORIZO DISPARO REAL EM LOTE`. Cada elegivel recebe instruction REAL_MANUAL individual com o mesmo `managementPlan`. Ver [`docs/REAL-MANUAL-BULK-DISPATCH.md`](REAL-MANUAL-BULK-DISPATCH.md).
+Fluxo complementar em `/admin/real-trading/bulk-dispatch`: preview obrigatório, checklist de 15 itens, três confirmações textuais, `operationalMode: LIVE_MARKET`. Cada elegível recebe instruction REAL_MANUAL individual com o mesmo `managementPlan`. Ver [`docs/REAL-MANUAL-BULK-DISPATCH.md`](REAL-MANUAL-BULK-DISPATCH.md) e [`docs/LIVE-MARKET-GO-LIVE-RUNBOOK.md`](LIVE-MARKET-GO-LIVE-RUNBOOK.md).
