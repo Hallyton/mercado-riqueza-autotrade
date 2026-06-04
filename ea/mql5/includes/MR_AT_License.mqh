@@ -22,6 +22,8 @@ extern bool     g_can_manage_open_positions;
 extern bool     g_subscription_active;
 
 //+------------------------------------------------------------------+
+extern bool g_autonomous_strategy_site_enabled;
+
 bool MR_AT_ApplyConfigFromJson(const string json)
   {
    g_halt_new_entries = MR_AT_JsonGetBool(json, "halt_new_entries");
@@ -36,6 +38,9 @@ bool MR_AT_ApplyConfigFromJson(const string json)
    string lic = MR_AT_JsonGetString(json, "license_id");
    if(StringLen(lic) > 0)
       g_license_id = lic;
+
+   g_autonomous_strategy_site_enabled =
+      MR_AT_JsonGetBool(json, "autonomous_strategy_enabled");
 
    return true;
   }

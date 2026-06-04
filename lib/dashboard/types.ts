@@ -80,4 +80,8 @@ export type ClientDashboardData = {
   equityCurve: EquityPoint[];
   benchmark: BenchmarkPoint[];
   history: DashboardHistoryRow[];
+  dailyFinancialRisk: {
+    active: boolean;
+    message: string | null;
+  };
 };

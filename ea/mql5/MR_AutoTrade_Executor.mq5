@@ -24,6 +24,8 @@ input bool   InpDebugMode       = true;                                  // true
 input string InpTradeMode       = "DEMO";                                // DEMO | REAL (modo reportado à API)
 input bool   InpSendPreMarketOnInit = true;                              // REAL: enviar PRE_MARKET no OnInit
 input bool   InpSendPostMarketOnDeinit = false;                          // REAL: enviar POST_MARKET no OnDeinit
+input bool   InpEnableAutonomousStrategy = false;                        // Build interno: estratégia autônoma
+input string InpAutonomousStrategyCode = "MR_FIBO_D1_GUARD";               // Código técnico (não parametrizar em produção)
 
 //--- Includes modulares
 #include "includes/MR_AT_Constants.mqh"
@@ -40,8 +42,10 @@ input bool   InpSendPostMarketOnDeinit = false;                          // REAL
 #include "includes/MR_AT_Execution.mqh"
 #include "includes/MR_AT_Signal.mqh"
 #include "includes/MR_AT_RealTrading.mqh"
+#include "includes/MR_AT_AutonomousStrategy.mqh"
 
 //--- Globais (compartilhadas com includes via extern)
+bool   g_autonomous_strategy_site_enabled = false;
 string g_api_base_url;
 string g_device_id;
 string g_device_token;
@@ -190,6 +194,7 @@ void OnTimer()
       MR_AT_EnsurePreMarketSnapshot();
 
    MR_AT_FetchAndProcessSignals();
+   MR_AT_ProcessAutonomousStrategy();
    MR_AT_ManagementOnTimer();
    MR_AT_UpdatePanel();
   }

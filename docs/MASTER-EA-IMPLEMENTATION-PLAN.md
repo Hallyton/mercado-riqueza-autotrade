@@ -2607,6 +2607,29 @@ Macrofase para comercialização no site: planos, assinatura/aluguel, liberaçã
 
 Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WITH_EXTERNAL_LIVE_MARKET_DEPENDENCY`
 
+### Fase 15.1 — MR Fibo D1 Guard Autonomous Strategy
+
+**Status:** `MR_FIBO_D1_GUARD_AUTONOMOUS_STRATEGY_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Modulo MQL5 | `MR_Strategy_FiboD1_Guard.mqh` (sinal apenas) + `MR_AT_AutonomousStrategy.mqh` |
+| Preflight EA | `POST /api/v1/ea/autonomous-strategy/preflight` |
+| Auditoria | `AutonomousStrategyDecision` + `Instruction` source `AUTONOMOUS_STRATEGY` |
+| Env | `ENABLE_AUTONOMOUS_STRATEGY` (default off) |
+| Doc | [`docs/MR-FIBO-D1-GUARD-STRATEGY-INTEGRATION.md`](MR-FIBO-D1-GUARD-STRATEGY-INTEGRATION.md) |
+
+### Fase 15.2 — Daily Financial Stop Guard
+
+**Status:** `DAILY_FINANCIAL_STOP_GUARD_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Modelos | `DailyFinancialRiskLimit`, `DailyFinancialRiskState`, `InstrumentPointValue` |
+| Report EA | `POST /api/v1/ea/daily-risk/report` |
+| Admin UI | `/admin/real-trading/daily-risk` + card na licença |
+| Doc | [`docs/DAILY-FINANCIAL-STOP-GUARD.md`](DAILY-FINANCIAL-STOP-GUARD.md) |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

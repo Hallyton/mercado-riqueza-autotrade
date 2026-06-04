@@ -17,6 +17,12 @@ export function ClientDashboard({ data }: { data: ClientDashboardData }) {
 
       <StatusOverview data={data} />
 
+      {data.dailyFinancialRisk.message && (
+        <p className="rounded-lg border border-gold/20 bg-gold/5 px-4 py-3 text-sm text-muted-foreground">
+          {data.dailyFinancialRisk.message}
+        </p>
+      )}
+
       <PnlSummary data={data} />
 
       <PositionsAndOrders data={data} />

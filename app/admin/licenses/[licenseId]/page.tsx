@@ -7,13 +7,18 @@ import { LicenseOperationalModeCard } from "@/components/admin/license-operation
 import { LicenseStatus, SubscriptionStatus } from "@prisma/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseStatusBadge } from "@/components/subscription/status-badge";
+import { LicenseDailyRiskCard } from "@/components/admin/license-daily-risk-card";
+import { getDailyRiskSnapshotForLicense } from "@/lib/admin/daily-financial-risk-admin";
 import { getLicenseAdminDetail } from "@/lib/admin/license-devices";
 
 type PageProps = { params: Promise<{ licenseId: string }> };
 
 export default async function AdminLicenseDetailPage({ params }: PageProps) {
   const { licenseId } = await params;
-  const detail = await getLicenseAdminDetail(licenseId);
+  const [detail, dailyRiskSnapshots] = await Promise.all([
+    getLicenseAdminDetail(licenseId),
+    getDailyRiskSnapshotForLicense(licenseId),
+  ]);
   if (!detail) notFound();
 
   const sub = detail.subscription;
@@ -100,6 +105,11 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
           lastChangedBy={detail.mt5BindingAudit?.changedBy ?? null}
         />
       </Card>
+
+      <LicenseDailyRiskCard
+        licenseId={detail.licenseId}
+        snapshots={dailyRiskSnapshots}
+      />
 
       <Card className="p-6">
         <LicenseOperationalModeCard

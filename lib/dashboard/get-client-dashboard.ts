@@ -149,6 +149,7 @@ export async function getClientDashboard(
     dailyToday,
     dailyMonthAgg,
     historyExecutions,
+    dailyRiskLimit,
   ] = await Promise.all([
     licenseId
       ? prisma.eaHeartbeat.findFirst({
@@ -230,6 +231,11 @@ export async function getClientDashboard(
           },
         })
       : [],
+    licenseId
+      ? prisma.dailyFinancialRiskLimit.findFirst({
+          where: { licenseId, enabled: true },
+        })
+      : null,
   ]);
 
   const device = primaryLicense?.devices[0];
@@ -350,5 +356,11 @@ export async function getClientDashboard(
     equityCurve,
     benchmark,
     history,
+    dailyFinancialRisk: {
+      active: Boolean(dailyRiskLimit?.enabled),
+      message: dailyRiskLimit?.enabled
+        ? "Controle de risco diário ativo. Operações podem ser bloqueadas automaticamente ao atingir o limite de risco."
+        : null,
+    },
   };
 }

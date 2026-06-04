@@ -42,6 +42,29 @@ Configuração operacional mínima (sem parâmetros de estratégia):
 - `heartbeat_interval_sec`, `min_ea_version`
 - `exposure_profile` (rótulo comercial)
 - `mt5_account` autorizada
+- `autonomous_strategy_enabled`, `autonomous_strategy_capabilities` (sem parâmetros internos da estratégia)
+
+---
+
+## POST `/autonomous-strategy/preflight`
+
+Autorização server-side antes de entrada gerada localmente pelo EA (estratégia caixa preta).
+
+Body: `strategy_code`, `license_id`, `device_id`, conta MT5, `symbol`, `trade_mode`, `magic_number`, `side`, `order_type`, `requested_contracts`, `planned_management_plan`, `signal_reason`.
+
+Resposta `allowed: true`: `strategy_execution_id`, `instruction_id`, `approved_management_plan`, `daily_financial_stop`.
+
+Resposta `allowed: false`: `reason_code`, `detail`.
+
+Requer `ENABLE_AUTONOMOUS_STRATEGY=true` e estratégia habilitada na licença.
+
+---
+
+## POST `/daily-risk/report`
+
+Atualiza PnL diário para stop financeiro (sem expor lógica ao cliente).
+
+Body: `license_id`, `device_id`, conta, `symbol`, `trade_date`, `realized_pnl`, `open_pnl`.
 
 ---
 

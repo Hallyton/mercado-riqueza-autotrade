@@ -15,6 +15,8 @@ const NAV = [
   { href: "/admin/real-trading/instructions", label: "Conta real / Instruções reais" },
   { href: "/admin/real-trading/bulk-dispatch", label: "Conta real / Disparo em lote" },
   { href: "/admin/real-trading/protection", label: "Conta real / Proteção SL/TP" },
+  { href: "/admin/real-trading/daily-risk", label: "Conta real / Stop diário" },
+  { href: "/admin/real-trading/autonomous-strategy", label: "Conta real / Autônoma" },
 ];
 
 export function AdminShell({

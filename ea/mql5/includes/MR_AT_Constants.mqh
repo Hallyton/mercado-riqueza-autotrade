@@ -4,7 +4,7 @@
 #property strict
 
 #define MR_AT_EA_NAME           "MR_AutoTrade_Executor"
-#define MR_AT_EA_VERSION        "1.0.0"
+#define MR_AT_EA_VERSION        "1.1.0"
 #define MR_AT_EA_MAGIC          20260520
 #define MR_AT_HTTP_TIMEOUT_MS   15000
 #define MR_AT_GV_TOKEN_PREFIX   "MR_AT_TOKEN_"

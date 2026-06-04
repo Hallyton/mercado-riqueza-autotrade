@@ -1,15 +1,43 @@
 import type { EaAuthContext } from "./auth";
 import { getEaOnlineState } from "./auth";
+import { isAutonomousStrategyServerEnabled } from "@/lib/ea/autonomous-strategy-preflight";
 import { getLicenseOperationalFlags } from "@/lib/licensing/service";
+import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
+import prisma from "@/lib/prisma";
 
 const MIN_EA_VERSION = process.env.MIN_EA_VERSION ?? "1.0.0";
 const HEARTBEAT_INTERVAL_SEC = Number(
   process.env.EA_HEARTBEAT_INTERVAL_SEC ?? "30"
 );
 
+async function resolveAutonomousStrategyForLicense(licenseId: string) {
+  const instance = await prisma.robotInstance.findFirst({
+    where: {
+      licenseId,
+      autonomousStrategyEnabled: true,
+      autonomousStrategyCode: { not: null },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      autonomousStrategyCode: true,
+      robotProduct: { select: { strategyCode: true } },
+    },
+  });
+  const code =
+    instance?.autonomousStrategyCode ??
+    instance?.robotProduct?.strategyCode ??
+    null;
+  return code;
+}
+
 export async function buildEaConfigResponse(ctx: EaAuthContext) {
   const flags = await getLicenseOperationalFlags(ctx.license.id);
   const online = getEaOnlineState(ctx.device);
+  const strategyCode = await resolveAutonomousStrategyForLicense(ctx.license.id);
+  const serverAutonomous = isAutonomousStrategyServerEnabled();
+  const licenseAutonomous = Boolean(strategyCode);
+  const autonomousEnabled =
+    serverAutonomous && licenseAutonomous && strategyCode === MR_FIBO_D1_GUARD_CODE;
 
   return {
     min_ea_version: MIN_EA_VERSION,
@@ -31,5 +59,10 @@ export async function buildEaConfigResponse(ctx: EaAuthContext) {
       : null,
     ea_online: online.online,
     last_seen_at: online.lastSeenAt,
+    autonomous_strategy_enabled: autonomousEnabled,
+    autonomous_strategy_code: autonomousEnabled ? strategyCode : null,
+    autonomous_strategy_capabilities: autonomousEnabled
+      ? [MR_FIBO_D1_GUARD_CODE]
+      : [],
   };
 }

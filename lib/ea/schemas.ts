@@ -139,3 +139,66 @@ export const ignoredBodySchema = z.object({
   instruction_id: z.string().min(1),
   reason: z.string().max(500).optional(),
 });
+
+const managementTakeSchema = z.object({
+  label: z.string().max(8).optional(),
+  enabled: z.boolean().optional(),
+  price: z.union([z.number(), z.null()]).optional(),
+  quantity: z.number().int().nonnegative().optional(),
+});
+
+export const eaPlannedManagementPlanSchema = z.object({
+  version: z.number().int().positive().optional(),
+  initial_stop_loss: z.number(),
+  takes: z.array(managementTakeSchema).max(4).optional(),
+  break_even: z
+    .object({
+      enabled: z.boolean().optional(),
+      trigger: z.string().max(64).optional(),
+      trigger_price: z.union([z.number(), z.null()]).optional(),
+      offset: z.number().optional(),
+    })
+    .optional(),
+  trailing_stop: z
+    .object({
+      enabled: z.boolean().optional(),
+      trigger_price: z.union([z.number(), z.null()]).optional(),
+      distance: z.union([z.number(), z.null()]).optional(),
+      step: z.union([z.number(), z.null()]).optional(),
+    })
+    .optional(),
+});
+
+export const autonomousStrategyPreflightBodySchema = z.object({
+  strategy_code: z.string().min(3).max(64),
+  strategy_version: z.string().max(32).default("1.0.0"),
+  license_id: z.string().min(1),
+  device_id: z.string().min(1).max(128),
+  account_login: z.string().min(1).max(64),
+  account_server: z.string().min(1).max(128),
+  symbol: z.string().min(1).max(32),
+  trade_mode: z.enum(["DEMO", "REAL"]),
+  magic_number: z.number().int().positive(),
+  side: z.enum(["BUY", "SELL"]),
+  order_type: z.enum(["MARKET", "LIMIT", "STOP"]),
+  order_price: z.union([z.number(), z.null()]).optional(),
+  requested_contracts: z.number().int().positive().max(100),
+  planned_management_plan: eaPlannedManagementPlanSchema,
+  signal_reason: z.string().max(128).optional(),
+  client_timestamp: z.string().max(64).optional(),
+});
+
+export const dailyRiskReportBodySchema = z.object({
+  license_id: z.string().min(1),
+  device_id: z.string().min(1).max(128),
+  account_login: z.string().min(1).max(64),
+  account_server: z.string().min(1).max(128),
+  symbol: z.string().min(1).max(32),
+  strategy_code: z.string().min(3).max(64).optional(),
+  trade_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  realized_pnl: z.number(),
+  open_pnl: z.number().default(0),
+  balance: z.number().optional(),
+  equity: z.number().optional(),
+  currency: z.string().max(8).optional(),
+});
