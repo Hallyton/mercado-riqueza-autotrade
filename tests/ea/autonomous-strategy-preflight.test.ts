@@ -34,15 +34,15 @@ vi.mock("@/lib/admin/real-manual-bulk-eligibility", () => ({
 
 vi.mock("@/lib/risk/real-trading-config", () => ({
   isAutoDispatchEnabled: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock("@/lib/risk/real-trading-guard", () => ({
   isRealTradingEnabled: vi.fn().mockReturnValue(true),
 }));
 
 import { createDefaultManagementPlan } from "@/lib/admin/real-manual-management-plan";
 import { evaluateBulkLicenseEligibility } from "@/lib/admin/real-manual-bulk-eligibility";
-import {
-  isAutonomousStrategyServerEnabled,
-  runAutonomousStrategyPreflight,
-} from "@/lib/ea/autonomous-strategy-preflight";
+import * as autonomousStrategyPreflight from "@/lib/ea/autonomous-strategy-preflight";
 import { evaluateDailyFinancialStopForEntry } from "@/lib/risk/daily-financial-risk";
 
 vi.mock("@/lib/risk/daily-financial-risk", async (importOriginal) => {
@@ -103,10 +103,12 @@ const baseInput = {
   })(),
 };
 
-describe("autonomous-strategy-preflight", () => {
+const { runAutonomousStrategyPreflight, isAutonomousStrategyServerEnabled } =
+  autonomousStrategyPreflight;
+
+describe.sequential("autonomous-strategy-preflight", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    process.env.ENABLE_AUTONOMOUS_STRATEGY = "true";
+    vi.stubEnv("ENABLE_AUTONOMOUS_STRATEGY", "true");
     prismaMock.robotInstance.findFirst.mockResolvedValue({
       autonomousStrategyCode: "MR_FIBO_D1_GUARD",
       robotProduct: { strategyCode: "MR_FIBO_D1_GUARD" },
@@ -140,14 +142,14 @@ describe("autonomous-strategy-preflight", () => {
   });
 
   it("isAutonomousStrategyServerEnabled reads env", () => {
-    process.env.ENABLE_AUTONOMOUS_STRATEGY = "false";
+    vi.stubEnv("ENABLE_AUTONOMOUS_STRATEGY", "false");
     expect(isAutonomousStrategyServerEnabled()).toBe(false);
-    process.env.ENABLE_AUTONOMOUS_STRATEGY = "true";
+    vi.stubEnv("ENABLE_AUTONOMOUS_STRATEGY", "true");
     expect(isAutonomousStrategyServerEnabled()).toBe(true);
   });
 
   it("blocks when server autonomous disabled", async () => {
-    process.env.ENABLE_AUTONOMOUS_STRATEGY = "false";
+    vi.stubEnv("ENABLE_AUTONOMOUS_STRATEGY", "false");
     const result = await runAutonomousStrategyPreflight(baseCtx as never, baseInput);
     expect(result.allowed).toBe(false);
     expect(result.reason_code).toBe("AUTONOMOUS_STRATEGY_DISABLED");

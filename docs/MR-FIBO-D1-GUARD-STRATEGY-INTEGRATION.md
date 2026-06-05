@@ -32,11 +32,31 @@ Parâmetros Fibo, horários, stops e takes ficam hardcoded no módulo MQL5 (buil
 - `/admin/real-trading/autonomous-strategy` — decisões de preflight.
 - Card na licença `/admin/licenses/[licenseId]`.
 
+## Habilitação da estratégia no RobotInstance
+
+**Caminho admin:** `/admin/licenses/[licenseId]` → card **Estratégia autônoma**.
+
+1. Vincular conta MT5 e provisionar/vincular `RobotInstance`.
+2. Configurar stop financeiro diário (`/admin/real-trading/daily-risk`).
+3. Clicar **Habilitar MR Fibo D1 Guard** e confirmar: `HABILITAR MR FIBO D1 GUARD`.
+4. Audit: `license.autonomous_strategy.enable` / `license.autonomous_strategy.disable`.
+
+**Blockers exibidos no card (sem expor lógica interna):**
+
+- `ROBOT_INSTANCE_MISSING`
+- `MT5_ACCOUNT_NOT_LINKED`
+- `DAILY_FINANCIAL_STOP_NOT_CONFIGURED`
+- `LICENSE_NOT_ACTIVE`
+- `EXPECTED_MAGIC_MISSING`
+- `EXPECTED_SYMBOL_MISSING`
+
+Habilitar no RobotInstance **não envia ordem** — apenas permite que o EA solicite preflight autônomo quando `ENABLE_AUTONOMOUS_STRATEGY=true` e todos os gates estiverem OK.
+
 ## Operador antes de REAL
 
 1. Migrar banco e seed `instrument_point_values` (WDO).
 2. Configurar stop financeiro diário na licença/conta.
-3. Habilitar estratégia na `RobotInstance`.
+3. Habilitar estratégia no card **Estratégia autônoma** da licença.
 4. `ENABLE_AUTONOMOUS_STRATEGY=true` no Vercel.
 5. Aprovação REAL, PRE_MARKET, device REAL, heartbeat.
 6. EA com `InpEnableAutonomousStrategy=true` apenas em build/VPS controlado (não distribuir ao cliente final sem política).

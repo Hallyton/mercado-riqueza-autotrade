@@ -107,6 +107,7 @@ describe("auditoria admin auth e rotas protegidas", () => {
       "app/api/admin/emergency/cancel-orders/route.ts",
       "app/api/admin/instructions/route.ts",
       "app/api/admin/licenses/[licenseId]/activation-code/route.ts",
+      "app/api/admin/licenses/[licenseId]/autonomous-strategy/route.ts",
       "app/api/admin/licenses/[licenseId]/devices/[deviceId]/block/route.ts",
       "app/api/admin/licenses/[licenseId]/devices/[deviceId]/revoke/route.ts",
       "app/api/admin/licenses/[licenseId]/expected-mode/route.ts",

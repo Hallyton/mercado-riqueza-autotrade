@@ -17,8 +17,8 @@ extern string g_license_id;
 extern string g_device_id;
 extern bool   g_can_accept_new_entries;
 extern bool   g_autonomous_strategy_site_enabled;
-extern bool   InpEnableAutonomousStrategy;
-extern string InpAutonomousStrategyCode;
+// InpEnableAutonomousStrategy / InpAutonomousStrategyCode: declarados como input
+// somente em MR_AutoTrade_Executor.mq5 (antes deste include).
 
 static datetime g_last_daily_risk_report = 0;
 static datetime g_last_autonomous_preflight_block_log = 0;

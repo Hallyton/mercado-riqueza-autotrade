@@ -27,3 +27,8 @@
 ## Cliente
 
 Mensagem genérica no dashboard — sem valores de limite nem lógica interna.
+
+## Admin — pré-requisito da estratégia autônoma
+
+O card **Estratégia autônoma** em `/admin/licenses/[licenseId]` exibe blocker
+`DAILY_FINANCIAL_STOP_NOT_CONFIGURED` até existir `DailyFinancialRiskLimit` habilitado.

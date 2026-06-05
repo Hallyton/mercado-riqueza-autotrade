@@ -2618,6 +2618,9 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Auditoria | `AutonomousStrategyDecision` + `Instruction` source `AUTONOMOUS_STRATEGY` |
 | Env | `ENABLE_AUTONOMOUS_STRATEGY` (default off) |
 | Doc | [`docs/MR-FIBO-D1-GUARD-STRATEGY-INTEGRATION.md`](MR-FIBO-D1-GUARD-STRATEGY-INTEGRATION.md) |
+| Admin UI licença | Card **Estratégia autônoma** em `/admin/licenses/[licenseId]` |
+| API admin | `POST /api/admin/licenses/[licenseId]/autonomous-strategy` |
+| Status UI | `ADMIN_AUTONOMOUS_STRATEGY_CARD_IMPLEMENTED` |
 
 ### Fase 15.2 — Daily Financial Stop Guard
 

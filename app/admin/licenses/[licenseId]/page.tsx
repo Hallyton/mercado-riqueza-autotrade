@@ -7,17 +7,20 @@ import { LicenseOperationalModeCard } from "@/components/admin/license-operation
 import { LicenseStatus, SubscriptionStatus } from "@prisma/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LicenseStatusBadge } from "@/components/subscription/status-badge";
+import { LicenseAutonomousStrategyCard } from "@/components/admin/license-autonomous-strategy-card";
 import { LicenseDailyRiskCard } from "@/components/admin/license-daily-risk-card";
 import { getDailyRiskSnapshotForLicense } from "@/lib/admin/daily-financial-risk-admin";
+import { getLicenseAutonomousStrategyAdminView } from "@/lib/admin/license-autonomous-strategy";
 import { getLicenseAdminDetail } from "@/lib/admin/license-devices";
 
 type PageProps = { params: Promise<{ licenseId: string }> };
 
 export default async function AdminLicenseDetailPage({ params }: PageProps) {
   const { licenseId } = await params;
-  const [detail, dailyRiskSnapshots] = await Promise.all([
+  const [detail, dailyRiskSnapshots, autonomousStrategyView] = await Promise.all([
     getLicenseAdminDetail(licenseId),
     getDailyRiskSnapshotForLicense(licenseId),
+    getLicenseAutonomousStrategyAdminView(licenseId),
   ]);
   if (!detail) notFound();
 
@@ -110,6 +113,10 @@ export default async function AdminLicenseDetailPage({ params }: PageProps) {
         licenseId={detail.licenseId}
         snapshots={dailyRiskSnapshots}
       />
+
+      {autonomousStrategyView && (
+        <LicenseAutonomousStrategyCard view={autonomousStrategyView} />
+      )}
 
       <Card className="p-6">
         <LicenseOperationalModeCard
