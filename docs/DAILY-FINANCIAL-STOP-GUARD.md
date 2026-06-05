@@ -32,3 +32,9 @@ Mensagem genérica no dashboard — sem valores de limite nem lógica interna.
 
 O card **Estratégia autônoma** em `/admin/licenses/[licenseId]` exibe blocker
 `DAILY_FINANCIAL_STOP_NOT_CONFIGURED` até existir `DailyFinancialRiskLimit` habilitado.
+
+## Admin — publicação de parâmetros (Fase 15.3)
+
+A tela `/admin/licenses/[licenseId]/strategy-config` também bloqueia **Publicar configuração**
+sem stop diário configurado (mesmo código `DAILY_FINANCIAL_STOP_NOT_CONFIGURED`).
+O grupo 11 da tela linka para `/admin/real-trading/daily-risk` sem duplicar formulário.

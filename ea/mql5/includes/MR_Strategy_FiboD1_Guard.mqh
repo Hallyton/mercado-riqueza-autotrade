@@ -1,27 +1,13 @@
 //+------------------------------------------------------------------+
 //| MR_Strategy_FiboD1_Guard.mqh — lógica Fibo D1 (sinal apenas)       |
-//| Mercado da Riqueza — parâmetros internos hardcoded (caixa preta)  |
+//| Mercado da Riqueza — parâmetros via config publicada pelo site    |
 //+------------------------------------------------------------------+
 #property strict
 
-#define MR_FIBO_GUARD_CODE      "MR_FIBO_D1_GUARD"
-#define MR_FIBO_GUARD_VERSION   "1.0.0"
+#include "MR_FiboD1_Config.mqh"
 
-// Parâmetros internos — não expor como inputs de produção
-static const double MR_FIBO_PERCENT           = 0.20;
-static const double MR_FIBO_STOP_POINTS       = 7.0;
-static const double MR_FIBO_ALVO1_POINTS      = 5.0;
-static const double MR_FIBO_ALVO2_POINTS      = 10.0;
-static const double MR_FIBO_LOTE_TOTAL        = 1.0;
-static const double MR_FIBO_LOTE_ALVO1        = 1.0;
-static const double MR_FIBO_LOTE_ALVO2        = 0.0;
-static const double MR_FIBO_TRAIL_STEP        = 0.5;
-static const double MR_FIBO_TRAIL_DISTANCE    = 1.0;
-static const double MR_FIBO_TICK_OP           = 0.5;
-static const int    MR_FIBO_DIGITS_OP         = 1;
-static const string MR_FIBO_HORARIO_INICIO    = "09:15";
-static const string MR_FIBO_HORARIO_FIM       = "17:30";
-static const int    MR_FIBO_MIN_PREPARACAO    = 1;
+#define MR_FIBO_GUARD_CODE      "MR_FIBO_D1_GUARD"
+#define MR_FIBO_GUARD_VERSION   "1.1.0"
 
 struct MR_StrategySignal
   {
@@ -60,9 +46,22 @@ static double   g_fibo_nivel_venda = 0;
 static datetime g_fibo_dia_operacional = 0;
 static datetime g_fibo_niveis_preparados = 0;
 
+double MR_Fibo_GetLoteTotal()
+  {
+   if(g_mr_fibo_config.loaded && g_mr_fibo_config.loteTotal > 0)
+      return g_mr_fibo_config.loteTotal;
+   return 1.0;
+  }
+
 double MR_Fibo_NormalizePrice(const double price)
   {
-   return NormalizeDouble(MathRound(price / MR_FIBO_TICK_OP) * MR_FIBO_TICK_OP, MR_FIBO_DIGITS_OP);
+   double tick = g_mr_fibo_config.tickOperacionalDolar > 0
+      ? g_mr_fibo_config.tickOperacionalDolar
+      : 0.5;
+   int digits = g_mr_fibo_config.digitosPrecoOperacional >= 0
+      ? g_mr_fibo_config.digitosPrecoOperacional
+      : 1;
+   return NormalizeDouble(MathRound(price / tick) * tick, digits);
   }
 
 double MR_Fibo_GetAskOp()
@@ -111,15 +110,17 @@ datetime MR_Fibo_TodayTimeFromString(const string hhmm)
 bool MR_Fibo_IsEntryTime()
   {
    datetime now = TimeCurrent();
-   datetime start = MR_Fibo_TodayTimeFromString(MR_FIBO_HORARIO_INICIO);
-   datetime end = MR_Fibo_TodayTimeFromString(MR_FIBO_HORARIO_FIM);
+   datetime start = MR_Fibo_TodayTimeFromString(g_mr_fibo_config.horarioInicio);
+   datetime end = MR_Fibo_TodayTimeFromString(g_mr_fibo_config.horarioFimEntradas);
    return (now >= start && now <= end);
   }
 
 bool MR_Fibo_IsPreparationTime()
   {
-   datetime start = MR_Fibo_TodayTimeFromString(MR_FIBO_HORARIO_INICIO);
-   datetime prep = start - MR_FIBO_MIN_PREPARACAO * 60;
+   if(!g_mr_fibo_config.prepararNiveisAntesDaAbertura)
+      return false;
+   datetime start = MR_Fibo_TodayTimeFromString(g_mr_fibo_config.horarioInicio);
+   datetime prep = start - g_mr_fibo_config.minutosAntesParaPreparar * 60;
    datetime now = TimeCurrent();
    return (now >= prep && now < start);
   }
@@ -138,7 +139,7 @@ bool MR_Fibo_CarregarNiveisDiaAnterior()
       return false;
 
    double amplitude = maxAnt - minAnt;
-   double fibo = amplitude * MR_FIBO_PERCENT;
+   double fibo = amplitude * g_mr_fibo_config.percentualFibo;
    g_fibo_max_ant = maxAnt;
    g_fibo_min_ant = minAnt;
    g_fibo_nivel_compra = MR_Fibo_NormalizePrice(minAnt + fibo);
@@ -200,18 +201,18 @@ void MR_Fibo_FillSignalBuy(MR_StrategySignal &sig, const double askOp)
    sig.side = "BUY";
    sig.orderType = "MARKET";
    sig.orderPrice = 0;
-   sig.initialStopLoss = MR_Fibo_NormalizePrice(askOp - MR_FIBO_STOP_POINTS);
-   sig.take1Price = MR_Fibo_NormalizePrice(askOp + MR_FIBO_ALVO1_POINTS);
-   sig.take1Quantity = MR_FIBO_LOTE_ALVO1;
-   sig.take2Price = MR_Fibo_NormalizePrice(askOp + MR_FIBO_ALVO2_POINTS);
-   sig.take2Quantity = MR_FIBO_LOTE_ALVO2;
+   sig.initialStopLoss = MR_Fibo_NormalizePrice(askOp - g_mr_fibo_config.stopPontos);
+   sig.take1Price = MR_Fibo_NormalizePrice(askOp + g_mr_fibo_config.alvo1Pontos);
+   sig.take1Quantity = g_mr_fibo_config.loteAlvo1;
+   sig.take2Price = MR_Fibo_NormalizePrice(askOp + g_mr_fibo_config.alvo2Pontos);
+   sig.take2Quantity = g_mr_fibo_config.loteAlvo2;
    sig.breakEvenEnabled = true;
    sig.breakEvenTrigger = "TAKE1_FILLED";
    sig.breakEvenOffset = 0;
    sig.trailingEnabled = true;
-   sig.trailingTriggerPrice = MR_Fibo_NormalizePrice(askOp + MR_FIBO_ALVO2_POINTS);
-   sig.trailingDistance = MR_FIBO_TRAIL_DISTANCE;
-   sig.trailingStep = MR_FIBO_TRAIL_STEP;
+   sig.trailingTriggerPrice = MR_Fibo_NormalizePrice(askOp + g_mr_fibo_config.alvo2Pontos);
+   sig.trailingDistance = g_mr_fibo_config.trailOffsetPontos;
+   sig.trailingStep = g_mr_fibo_config.trailStepPontos;
    sig.reasonCode = "FIBO_D1_BUY_LEVEL_TOUCH";
   }
 
@@ -223,18 +224,18 @@ void MR_Fibo_FillSignalSell(MR_StrategySignal &sig, const double bidOp)
    sig.side = "SELL";
    sig.orderType = "MARKET";
    sig.orderPrice = 0;
-   sig.initialStopLoss = MR_Fibo_NormalizePrice(bidOp + MR_FIBO_STOP_POINTS);
-   sig.take1Price = MR_Fibo_NormalizePrice(bidOp - MR_FIBO_ALVO1_POINTS);
-   sig.take1Quantity = MR_FIBO_LOTE_ALVO1;
-   sig.take2Price = MR_Fibo_NormalizePrice(bidOp - MR_FIBO_ALVO2_POINTS);
-   sig.take2Quantity = MR_FIBO_LOTE_ALVO2;
+   sig.initialStopLoss = MR_Fibo_NormalizePrice(bidOp + g_mr_fibo_config.stopPontos);
+   sig.take1Price = MR_Fibo_NormalizePrice(bidOp - g_mr_fibo_config.alvo1Pontos);
+   sig.take1Quantity = g_mr_fibo_config.loteAlvo1;
+   sig.take2Price = MR_Fibo_NormalizePrice(bidOp - g_mr_fibo_config.alvo2Pontos);
+   sig.take2Quantity = g_mr_fibo_config.loteAlvo2;
    sig.breakEvenEnabled = true;
    sig.breakEvenTrigger = "TAKE1_FILLED";
    sig.breakEvenOffset = 0;
    sig.trailingEnabled = true;
-   sig.trailingTriggerPrice = MR_Fibo_NormalizePrice(bidOp - MR_FIBO_ALVO2_POINTS);
-   sig.trailingDistance = MR_FIBO_TRAIL_DISTANCE;
-   sig.trailingStep = MR_FIBO_TRAIL_STEP;
+   sig.trailingTriggerPrice = MR_Fibo_NormalizePrice(bidOp - g_mr_fibo_config.alvo2Pontos);
+   sig.trailingDistance = g_mr_fibo_config.trailOffsetPontos;
+   sig.trailingStep = g_mr_fibo_config.trailStepPontos;
    sig.reasonCode = "FIBO_D1_SELL_LEVEL_TOUCH";
   }
 
@@ -243,6 +244,9 @@ bool MR_Fibo_EvaluateSignal(const int magic, MR_StrategySignal &out_signal)
    MR_StrategySignal empty;
    empty.hasSignal = false;
    out_signal = empty;
+
+   if(!g_mr_fibo_config.loaded)
+      return false;
 
    MR_Fibo_ResetDailyIfNeeded();
 

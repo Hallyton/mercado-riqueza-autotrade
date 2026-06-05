@@ -348,6 +348,9 @@ model User {
   billingCustomers       BillingCustomer[]
   bulkDispatchBatches    RealManualBulkDispatchBatch[]
   bulkDispatchItems      RealManualBulkDispatchItem[]
+  strategyRuntimeConfigsCreated   StrategyRuntimeConfig[]        @relation("StrategyRuntimeConfigCreatedBy")
+  strategyRuntimeConfigsPublished StrategyRuntimeConfig[]        @relation("StrategyRuntimeConfigPublishedBy")
+  strategyRuntimeConfigHistory    StrategyRuntimeConfigHistory[] @relation("StrategyRuntimeConfigHistoryActor")
 
   @@index([role])
   @@index([status])
@@ -718,6 +721,7 @@ model License {
   dailyFinancialRiskLimits DailyFinancialRiskLimit[]
   dailyFinancialRiskStates DailyFinancialRiskState[]
   autonomousStrategyDecisions AutonomousStrategyDecision[]
+  strategyRuntimeConfigs     StrategyRuntimeConfig[]
 
   @@index([userId, status])
   @@index([mt5AccountId])
@@ -771,6 +775,7 @@ model RobotInstance {
   license      License?     @relation(fields: [licenseId], references: [id], onDelete: SetNull)
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   robotProduct RobotProduct @relation(fields: [robotProductId], references: [id])
+  strategyRuntimeConfigs StrategyRuntimeConfig[]
 
   @@unique([magicNumber])
   @@index([userId, status])
@@ -1485,4 +1490,60 @@ model AutonomousStrategyDecision {
   @@index([strategyCode, createdAt])
   @@index([decision, createdAt])
   @@map("autonomous_strategy_decisions")
+}
+
+enum StrategyRuntimeConfigStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model StrategyRuntimeConfig {
+  id                 String                      @id @default(cuid())
+  licenseId          String                      @map("license_id")
+  robotInstanceId    String?                     @map("robot_instance_id")
+  strategyCode       String                      @map("strategy_code")
+  version            Int                         @default(1)
+  status             StrategyRuntimeConfigStatus @default(DRAFT)
+  config             Json
+  configHash         String                      @map("config_hash")
+  createdByAdminId   String                      @map("created_by_admin_id")
+  publishedByAdminId String?                     @map("published_by_admin_id")
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @map("updated_at")
+  publishedAt        DateTime?                   @map("published_at")
+  notes              String?                     @db.Text
+
+  license       License        @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  robotInstance RobotInstance? @relation(fields: [robotInstanceId], references: [id], onDelete: SetNull)
+  createdBy     User           @relation("StrategyRuntimeConfigCreatedBy", fields: [createdByAdminId], references: [id], onDelete: Cascade)
+  publishedBy   User?          @relation("StrategyRuntimeConfigPublishedBy", fields: [publishedByAdminId], references: [id], onDelete: SetNull)
+  history       StrategyRuntimeConfigHistory[]
+
+  @@unique([licenseId, strategyCode, version])
+  @@index([licenseId, strategyCode, status])
+  @@index([robotInstanceId])
+  @@map("strategy_runtime_configs")
+}
+
+model StrategyRuntimeConfigHistory {
+  id                      String                      @id @default(cuid())
+  strategyRuntimeConfigId String                      @map("strategy_runtime_config_id")
+  licenseId               String                      @map("license_id")
+  robotInstanceId         String?                     @map("robot_instance_id")
+  strategyCode            String                      @map("strategy_code")
+  version                 Int
+  status                  StrategyRuntimeConfigStatus
+  config                  Json
+  configHash              String                      @map("config_hash")
+  actorAdminId            String                      @map("actor_admin_id")
+  action                  String
+  notes                   String?                     @db.Text
+  createdAt               DateTime                    @default(now()) @map("created_at")
+
+  strategyRuntimeConfig StrategyRuntimeConfig @relation(fields: [strategyRuntimeConfigId], references: [id], onDelete: Cascade)
+  actor                 User                  @relation("StrategyRuntimeConfigHistoryActor", fields: [actorAdminId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, strategyCode, createdAt])
+  @@map("strategy_runtime_config_history")
 }

@@ -182,7 +182,7 @@ bool MR_AT_AutonomousPreflight(const MR_StrategySignal &sig, MRInstruction &inst
    instr.source = "AUTONOMOUS_STRATEGY";
    instr.protection_required = true;
    instr.requires_protection_confirmation = true;
-   instr.requested_contracts = MR_FIBO_LOTE_TOTAL;
+   instr.requested_contracts = (int)MR_Fibo_GetLoteTotal();
    instr.has_management_plan = true;
    instr.mp_initial_sl = sig.initialStopLoss;
    instr.mp_t1_enabled = true;
@@ -211,6 +211,16 @@ void MR_AT_ProcessAutonomousStrategy()
    if(StringLen(InpAutonomousStrategyCode) == 0 ||
       InpAutonomousStrategyCode != MR_FIBO_GUARD_CODE)
       return;
+   if(MR_AT_GetTradeMode() == "REAL" && !MR_Fibo_IsConfigReadyForReal())
+     {
+      static datetime g_last_config_missing_log = 0;
+      if(TimeCurrent() - g_last_config_missing_log > 300)
+        {
+         MR_AT_LogInfo("Autonomous", "STRATEGY_CONFIG_MISSING — aguardando config publicada.");
+         g_last_config_missing_log = TimeCurrent();
+        }
+      return;
+     }
    if(!g_can_accept_new_entries)
       return;
 

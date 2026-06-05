@@ -9,6 +9,7 @@
 #include "MR_AT_Http.mqh"
 #include "MR_AT_Auth.mqh"
 #include "MR_AT_Equity.mqh"
+#include "MR_FiboD1_Config.mqh"
 
 extern string g_api_base_url;
 extern string g_device_id;
@@ -41,6 +42,8 @@ bool MR_AT_ApplyConfigFromJson(const string json)
 
    g_autonomous_strategy_site_enabled =
       MR_AT_JsonGetBool(json, "autonomous_strategy_enabled");
+
+   MR_Fibo_ApplyConfigFromEaResponse(json);
 
    return true;
   }

@@ -105,6 +105,16 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(execution).toContain('MR_AT_ReportExecution(instr.instruction_id, "FILLED", "DEBUG"');
   });
 
+  it("integra config runtime Fibo D1 via site sem inputs de estrategia no executor", () => {
+    const fiboConfig = readMql(path.join("includes", "MR_FiboD1_Config.mqh"));
+    const fiboGuard = readMql(path.join("includes", "MR_Strategy_FiboD1_Guard.mqh"));
+    expect(fiboConfig).toContain("MR_Fibo_ParseConfigFromEaJson");
+    expect(fiboConfig).toContain("STRATEGY_CONFIG_UPDATED");
+    expect(license).toContain("MR_Fibo_ApplyConfigFromEaResponse");
+    expect(fiboGuard).toContain("g_mr_fibo_config");
+    expect(fiboGuard).not.toContain("input ");
+  });
+
   it("pull instructions usa contrato /api/v1/ea/instructions e ignora ordem não suportada", () => {
     expect(signal).toContain("/api/v1/ea/instructions?login=");
     expect(signal).toContain("instruction_id");

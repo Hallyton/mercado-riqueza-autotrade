@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -197,6 +198,11 @@ export function LicenseAutonomousStrategyCard({ view }: { view: AutonomousView }
       )}
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <Link href={`/admin/licenses/${view.licenseId}/strategy-config`}>
+          <Button type="button" variant="outline">
+            Configurar parâmetros
+          </Button>
+        </Link>
         {!pendingAction && (
           <>
             <Button

@@ -42,7 +42,8 @@ Configuração operacional mínima (sem parâmetros de estratégia):
 - `heartbeat_interval_sec`, `min_ea_version`
 - `exposure_profile` (rótulo comercial)
 - `mt5_account` autorizada
-- `autonomous_strategy_enabled`, `autonomous_strategy_capabilities` (sem parâmetros internos da estratégia)
+- `autonomous_strategy_enabled`, `autonomous_strategy_capabilities`
+- Quando estratégia autônoma habilitada e config publicada: `strategy_config_version`, `strategy_config_hash`, `strategy_config` (payload operacional snake_case para o EA — **não** exposto ao portal cliente)
 
 ---
 

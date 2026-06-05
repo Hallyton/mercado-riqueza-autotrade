@@ -2632,6 +2632,21 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Report EA | `POST /api/v1/ea/daily-risk/report` |
 | Admin UI | `/admin/real-trading/daily-risk` + card na licença |
 | Doc | [`docs/DAILY-FINANCIAL-STOP-GUARD.md`](DAILY-FINANCIAL-STOP-GUARD.md) |
+| Integração Fibo | Stop diário obrigatório antes de **publicar** config de parâmetros (Fase 15.3) |
+
+### Fase 15.3 — MR Fibo D1 Guard Admin Inputs Configuration
+
+**Status:** `MR_FIBO_D1_GUARD_ADMIN_INPUTS_CONFIG_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Modelos | `StrategyRuntimeConfig`, `StrategyRuntimeConfigHistory` |
+| Admin UI | `/admin/licenses/[licenseId]/strategy-config` |
+| API admin | `GET/POST .../strategy-config/*` (draft, publish, reset, history, archive) |
+| EA config | `strategy_config_*` em `GET /api/v1/ea/config` |
+| MQL5 | `MR_FiboD1_Config.mqh` + parser; `MR_Strategy_FiboD1_Guard.mqh` usa config do site |
+| Audit | `strategy_config.draft_saved`, `.published`, `.reset_default`, `.archived` |
+| Doc | [`docs/MR-FIBO-D1-GUARD-ADMIN-INPUTS-CONFIG.md`](MR-FIBO-D1-GUARD-ADMIN-INPUTS-CONFIG.md) |
 
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 

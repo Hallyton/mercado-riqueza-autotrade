@@ -15,7 +15,7 @@
 
 - `POST /api/v1/ea/autonomous-strategy/preflight` — autorização server-side (reutiliza elegibilidade REAL_MANUAL bulk + stop financeiro diário).
 - `POST /api/v1/ea/daily-risk/report` — atualiza `DailyFinancialRiskState`.
-- `GET /api/v1/ea/config` — `autonomous_strategy_enabled`, `autonomous_strategy_capabilities`.
+- `GET /api/v1/ea/config` — `autonomous_strategy_enabled`, `autonomous_strategy_capabilities`, `strategy_config_version`, `strategy_config_hash`, `strategy_config` (quando publicada).
 
 ## Variáveis de ambiente
 
@@ -24,7 +24,13 @@
 
 ## Caixa preta
 
-Parâmetros Fibo, horários, stops e takes ficam hardcoded no módulo MQL5 (build interno). Cliente não configura lógica no portal.
+Parâmetros Fibo, horários, stops e takes são configurados **somente no admin** (`/admin/licenses/[licenseId]/strategy-config`) e entregues ao EA via `GET /api/v1/ea/config`. Cliente não configura lógica no portal.
+
+## Configuração admin de parâmetros (Fase 15.3)
+
+- **Tela:** `/admin/licenses/[licenseId]/strategy-config`
+- **Doc:** [`docs/MR-FIBO-D1-GUARD-ADMIN-INPUTS-CONFIG.md`](MR-FIBO-D1-GUARD-ADMIN-INPUTS-CONFIG.md)
+- **Status:** `MR_FIBO_D1_GUARD_ADMIN_INPUTS_CONFIG_IMPLEMENTED`
 
 ## Admin
 
