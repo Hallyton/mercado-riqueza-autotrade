@@ -435,6 +435,92 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
         </FieldRow>
       </GroupCard>
 
+      <GroupCard title="09 — Visual no Gráfico">
+        <FieldRow label="Mostrar linhas no gráfico">
+          <input
+            type="checkbox"
+            checked={config.chartVisual.mostrarLinhasNoGrafico}
+            onChange={(e) =>
+              patchConfig((prev) => ({
+                ...prev,
+                chartVisual: {
+                  ...prev.chartVisual,
+                  mostrarLinhasNoGrafico: e.target.checked,
+                },
+              }))
+            }
+          />
+        </FieldRow>
+        <FieldRow label="Remover objetos antigos">
+          <input
+            type="checkbox"
+            checked={config.chartVisual.removerObjetosAntigos}
+            onChange={(e) =>
+              patchConfig((prev) => ({
+                ...prev,
+                chartVisual: {
+                  ...prev.chartVisual,
+                  removerObjetosAntigos: e.target.checked,
+                },
+              }))
+            }
+          />
+        </FieldRow>
+      </GroupCard>
+
+      <GroupCard title="10 — Painel Administrativo">
+        <FieldRow label="Mostrar painel admin">
+          <input
+            type="checkbox"
+            checked={config.adminPanel.mostrarPainelAdmin}
+            onChange={(e) =>
+              patchConfig((prev) => ({
+                ...prev,
+                adminPanel: {
+                  ...prev.adminPanel,
+                  mostrarPainelAdmin: e.target.checked,
+                },
+              }))
+            }
+          />
+        </FieldRow>
+        <FieldRow label="Painel X">
+          <Input
+            type="number"
+            value={config.adminPanel.painelX}
+            onChange={(e) =>
+              patchConfig((prev) => ({
+                ...prev,
+                adminPanel: { ...prev.adminPanel, painelX: Number(e.target.value) },
+              }))
+            }
+          />
+        </FieldRow>
+        <FieldRow label="Painel Y">
+          <Input
+            type="number"
+            value={config.adminPanel.painelY}
+            onChange={(e) =>
+              patchConfig((prev) => ({
+                ...prev,
+                adminPanel: { ...prev.adminPanel, painelY: Number(e.target.value) },
+              }))
+            }
+          />
+        </FieldRow>
+        <FieldRow label="Cor fundo painel">
+          <Input
+            value={config.adminPanel.corFundoPainel}
+            onChange={(e) =>
+              patchConfig((prev) => ({
+                ...prev,
+                adminPanel: { ...prev.adminPanel, corFundoPainel: e.target.value },
+              }))
+            }
+          />
+        </FieldRow>
+      </GroupCard>
+
       <GroupCard title="11 — Stop financeiro diário">
         {daily ? (
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
