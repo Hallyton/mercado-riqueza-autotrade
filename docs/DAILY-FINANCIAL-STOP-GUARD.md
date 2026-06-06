@@ -24,7 +24,9 @@
 
 `POST /api/v1/ea/daily-risk/report` no timer autônomo (mín. 60s entre envios).
 
-## Cliente
+## Admin
+
+Segunda trava em `POST /api/v1/ea/autonomous-strategy/can-trade` (Fase 15.4) e no centro operacional `/admin/real-trading/fibo-d1-guard`.
 
 Mensagem genérica no dashboard — sem valores de limite nem lógica interna.
 

@@ -44,6 +44,7 @@ export async function processHeartbeat(
       reportPayload: {
         pending_orders: body.pending_orders,
         open_positions: body.open_positions,
+        autonomous_strategy: body.autonomous_strategy ?? null,
       },
     },
   });

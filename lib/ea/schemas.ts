@@ -44,6 +44,39 @@ export const heartbeatBodySchema = z.object({
   positions_hash: z.string().max(128).optional(),
   pending_orders: z.array(pendingOrderSchema).default([]),
   open_positions: z.array(openPositionSchema).default([]),
+  autonomous_strategy: z
+    .object({
+      strategy_code: z.string().max(64).optional(),
+      autonomous_strategy_enabled: z.boolean().optional(),
+      strategy_config_hash: z.string().max(128).optional(),
+      terminal_connected: z.boolean().optional(),
+      auto_trading_allowed: z.boolean().optional(),
+      real_orders_enabled: z.boolean().optional(),
+      last_tick_time: z.string().max(64).optional(),
+      has_open_position: z.boolean().optional(),
+      has_pending_orders: z.boolean().optional(),
+      last_execution_error: z.string().max(256).optional(),
+      last_strategy_decision_reason: z.string().max(128).optional(),
+    })
+    .optional(),
+});
+
+export const autonomousStrategyCanTradeBodySchema = z.object({
+  strategy_code: z.literal("MR_FIBO_D1_GUARD"),
+  license_id: z.string().min(1),
+  device_id: z.string().min(1),
+  account_login: z.string().min(1),
+  account_server: z.string().min(1),
+  symbol: z.string().min(1),
+  trade_mode: z.enum(["DEMO", "REAL"]),
+  magic_number: z.number().int().positive(),
+  side: z.enum(["BUY", "SELL"]),
+  action: z.enum(["ENTRY", "REVERSAL"]),
+  requested_contracts: z.number().int().positive(),
+  estimated_stop_points: z.number().positive(),
+  strategy_config_hash: z.string().max(128).optional().nullable(),
+  client_timestamp: z.string().max(64).optional().nullable(),
+  ea_ready: z.record(z.unknown()).optional().nullable(),
 });
 
 /** Aceita ISO 8601 e formato legado MT5 (2026.05.20 15:30:00). */

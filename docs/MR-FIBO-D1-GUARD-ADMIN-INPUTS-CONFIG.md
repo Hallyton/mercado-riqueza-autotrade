@@ -7,7 +7,12 @@
 
 Permitir que administradores configurem parâmetros operacionais da estratégia **MR Fibo D1 Guard** por licença/RobotInstance, com versionamento, auditoria e entrega segura ao EA Executor — sem expor lógica ao cliente.
 
-## Rota admin
+## Centro operacional (Fase 15.4)
+
+- **Tela:** `/admin/real-trading/fibo-d1-guard` — status, elegibilidade, config publicada, decisões.
+- Edição detalhada continua em `/admin/licenses/[licenseId]/strategy-config`.
+
+## Rota admin (config por licença)
 
 - **Tela:** `/admin/licenses/[licenseId]/strategy-config`
 - **Entrada:** card **Estratégia autônoma** na licença → botão **Configurar parâmetros**

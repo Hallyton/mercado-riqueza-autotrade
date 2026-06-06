@@ -1,6 +1,82 @@
 export const MR_FIBO_D1_GUARD_CODE = "MR_FIBO_D1_GUARD";
-export const MR_FIBO_D1_GUARD_VERSION = "1.0.0";
+export const MR_FIBO_D1_GUARD_VERSION = "2.0.0";
 export const MR_FIBO_D1_GUARD_DISPLAY_NAME = "MR Fibo D1 Guard";
+
+export const CAN_TRADE_REASON_CODES = [
+  "OK",
+  "LICENSE_NOT_ACTIVE",
+  "SUBSCRIPTION_NOT_ACTIVE",
+  "PAYMENT_NOT_CONFIRMED",
+  "ROBOT_INSTANCE_NOT_ACTIVE",
+  "STRATEGY_NOT_ENABLED_FOR_LICENSE",
+  "AUTONOMOUS_STRATEGY_DISABLED",
+  "DEVICE_NOT_ACTIVE",
+  "DEVICE_ACCOUNT_MISMATCH",
+  "TRADE_MODE_NOT_ALLOWED",
+  "SYMBOL_MISMATCH",
+  "MAGIC_MISMATCH",
+  "STRATEGY_CONFIG_MISSING",
+  "STRATEGY_CONFIG_HASH_MISMATCH",
+  "DAILY_FINANCIAL_STOP_NOT_CONFIGURED",
+  "DAILY_FINANCIAL_STOP_REACHED",
+  "DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED",
+  "DAILY_RISK_REPORT_MISSING",
+  "REAL_TRADING_NOT_ENABLED",
+  "EA_OFFLINE",
+  "EA_CONFIG_OUTDATED",
+  "EA_AUTOTRADING_DISABLED",
+  "EA_REAL_ORDERS_DISABLED",
+  "EA_TERMINAL_DISCONNECTED",
+  "EA_SYMBOL_NOT_READY",
+  "UNKNOWN_BLOCK",
+] as const;
+
+export type CanTradeReasonCode = (typeof CAN_TRADE_REASON_CODES)[number];
+
+export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
+  OK: "Autorizado a operar.",
+  LICENSE_NOT_ACTIVE: "Licença inativa ou suspensa.",
+  SUBSCRIPTION_NOT_ACTIVE: "Assinatura inativa.",
+  PAYMENT_NOT_CONFIRMED: "Pagamento não confirmado.",
+  ROBOT_INSTANCE_NOT_ACTIVE: "RobotInstance inativo ou aguardando pagamento.",
+  STRATEGY_NOT_ENABLED_FOR_LICENSE:
+    "Estratégia MR Fibo D1 Guard não habilitada na licença.",
+  AUTONOMOUS_STRATEGY_DISABLED:
+    "Estratégia autônoma desabilitada no servidor (ENABLE_AUTONOMOUS_STRATEGY).",
+  DEVICE_NOT_ACTIVE: "Device inativo ou revogado.",
+  DEVICE_ACCOUNT_MISMATCH: "Conta MT5 do EA não confere com a licença.",
+  TRADE_MODE_NOT_ALLOWED: "Modo de operação não permitido para esta licença.",
+  SYMBOL_MISMATCH: "Símbolo do EA diverge do esperado.",
+  MAGIC_MISMATCH: "MagicNumber diverge do RobotInstance.",
+  STRATEGY_CONFIG_MISSING: "Nenhuma configuração publicada para a estratégia.",
+  STRATEGY_CONFIG_HASH_MISMATCH:
+    "Hash da config no EA difere da versão publicada no site.",
+  DAILY_FINANCIAL_STOP_NOT_CONFIGURED: "Stop financeiro diário não configurado.",
+  DAILY_FINANCIAL_STOP_REACHED: "Stop financeiro diário atingido.",
+  DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED:
+    "Risco estimado excede a perda restante do stop diário.",
+  DAILY_RISK_REPORT_MISSING: "Relatório de risco diário ausente ou desatualizado.",
+  REAL_TRADING_NOT_ENABLED: "Conta REAL não habilitada no servidor.",
+  EA_OFFLINE: "EA offline ou sem heartbeat recente.",
+  EA_CONFIG_OUTDATED: "EA com config desatualizada — aguardar sync.",
+  EA_AUTOTRADING_DISABLED: "AutoTrading desligado no MetaTrader.",
+  EA_REAL_ORDERS_DISABLED: "EA em modo que não envia ordens reais.",
+  EA_TERMINAL_DISCONNECTED: "Terminal MT5 desconectado.",
+  EA_SYMBOL_NOT_READY: "Símbolo sem tick recente.",
+  UNKNOWN_BLOCK: "Bloqueio operacional não classificado.",
+};
+
+export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>> = {
+  STRATEGY_CONFIG_MISSING: "Publicar configuração da estratégia",
+  STRATEGY_NOT_ENABLED_FOR_LICENSE: "Habilitar MR Fibo D1 Guard na licença",
+  DAILY_FINANCIAL_STOP_NOT_CONFIGURED: "Configurar stop financeiro diário",
+  EA_OFFLINE: "Verificar VPS/MT5",
+  EA_AUTOTRADING_DISABLED: "Ativar AutoTrading",
+  EA_REAL_ORDERS_DISABLED: "Desativar modo não envia ordens reais",
+  STRATEGY_CONFIG_HASH_MISMATCH: "Recompilar/atualizar EA ou republicar config",
+  DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED:
+    "Reduzir contratos ou aumentar stop financeiro",
+};
 
 export const AUTONOMOUS_STRATEGY_REASON_CODES = [
   "STRATEGY_NOT_ENABLED_FOR_LICENSE",

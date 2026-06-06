@@ -108,10 +108,13 @@ describe("contratos MQL5 — EA cliente", () => {
   it("integra config runtime Fibo D1 via site sem inputs de estrategia no executor", () => {
     const fiboConfig = readMql(path.join("includes", "MR_FiboD1_Config.mqh"));
     const fiboGuard = readMql(path.join("includes", "MR_Strategy_FiboD1_Guard.mqh"));
+    const fiboCore = readMql(path.join("includes", "MR_Strategy_FiboD1_Guard_Core.mqh"));
+    const autonomous = readMql(path.join("includes", "MR_AT_AutonomousStrategy.mqh"));
     expect(fiboConfig).toContain("MR_Fibo_ParseConfigFromEaJson");
-    expect(fiboConfig).toContain("STRATEGY_CONFIG_UPDATED");
-    expect(license).toContain("MR_Fibo_ApplyConfigFromEaResponse");
-    expect(fiboGuard).toContain("g_mr_fibo_config");
+    expect(fiboGuard).toContain("MR_Fibo_StrategyOnTick");
+    expect(fiboCore).toContain("Can-trade bloqueado");
+    expect(autonomous).toContain("/api/v1/ea/autonomous-strategy/can-trade");
+    expect(autonomous).not.toContain("MR_AT_ProcessInstruction");
     expect(fiboGuard).not.toContain("input ");
   });
 

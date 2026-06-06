@@ -8,7 +8,7 @@ const hhmmRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const mrFiboD1GuardConfigSchema = z
   .object({
-    version: z.number().int().min(1).default(1),
+    version: z.number().int().min(1).default(2),
     strategyCode: z.literal(MR_FIBO_D1_GUARD_CODE),
     identification: z.object({
       strategyName: z.string().min(1),
@@ -112,7 +112,7 @@ export type MrFiboD1GuardConfig = z.infer<typeof mrFiboD1GuardConfigSchema>;
 
 export function buildDefaultMrFiboD1GuardConfig(): MrFiboD1GuardConfig {
   return {
-    version: 1,
+    version: 2,
     strategyCode: MR_FIBO_D1_GUARD_CODE,
     identification: {
       strategyName: MR_FIBO_D1_GUARD_DISPLAY_NAME,

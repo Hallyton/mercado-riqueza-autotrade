@@ -10,7 +10,10 @@
 #include "MR_AT_Equity.mqh"
 #include "MR_AT_Position.mqh"
 #include "MR_AT_Orders.mqh"
+#include "MR_FiboD1_Config.mqh"
 
+extern bool g_autonomous_strategy_site_enabled;
+extern bool g_debug_mode;
 extern bool g_halt_new_entries;
 extern bool g_halt_all_trading;
 extern bool g_can_accept_new_entries;
@@ -18,11 +21,29 @@ extern bool g_can_manage_open_positions;
 extern int  g_heartbeat_interval_sec;
 
 //+------------------------------------------------------------------+
+string MR_AT_HeartbeatEaReadyJson()
+  {
+   string body = "{";
+   body += "\"strategy_code\":\"MR_FIBO_D1_GUARD\",";
+   body += "\"autonomous_strategy_enabled\":" + (g_autonomous_strategy_site_enabled ? "true" : "false") + ",";
+   body += "\"strategy_config_hash\":" + MR_AT_JsonQuote(g_mr_fibo_config.configHash) + ",";
+   body += "\"terminal_connected\":" + (TerminalInfoInteger(TERMINAL_CONNECTED) ? "true" : "false") + ",";
+   body += "\"auto_trading_allowed\":" + (TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) ? "true" : "false") + ",";
+   body += "\"real_orders_enabled\":" + (g_debug_mode ? "false" : "true") + ",";
+   body += "\"has_open_position\":" + (PositionsTotal() > 0 ? "true" : "false") + ",";
+   body += "\"has_pending_orders\":" + (OrdersTotal() > 0 ? "true" : "false");
+   body += "}";
+   return body;
+  }
+
+//+------------------------------------------------------------------+
 bool MR_AT_SendHeartbeat()
   {
    string pending = MR_AT_BuildPendingOrdersJson();
    string positions = MR_AT_BuildOpenPositionsJson();
    string pos_hash = MR_AT_ComputePositionsHash();
+
+   string autonomous = MR_AT_HeartbeatEaReadyJson();
 
    string body = "{";
    body += "\"login\":" + MR_AT_JsonQuote(MR_AT_AccountLoginStr()) + ",";
@@ -35,7 +56,8 @@ bool MR_AT_SendHeartbeat()
    body += "\"margin\":" + DoubleToString(MR_AT_GetMargin(), 2) + ",";
    body += "\"positions_hash\":" + MR_AT_JsonQuote(pos_hash) + ",";
    body += "\"pending_orders\":" + pending + ",";
-   body += "\"open_positions\":" + positions;
+   body += "\"open_positions\":" + positions + ",";
+   body += "\"autonomous_strategy\":" + autonomous;
    body += "}";
 
    string response = "";

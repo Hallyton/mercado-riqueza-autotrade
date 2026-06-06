@@ -137,6 +137,9 @@ int OnInit()
    if(!MR_AT_FetchConfig())
       MR_AT_LogInfo("Init", "Config inicial indisponível — tentará no próximo ciclo");
 
+   if(InpEnableAutonomousStrategy && InpAutonomousStrategyCode == "MR_FIBO_D1_GUARD")
+      MR_Fibo_InitStrategy();
+
    EventSetTimer(g_heartbeat_interval_sec);
    MR_AT_UpdatePanel();
 
@@ -152,6 +155,9 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   if(InpEnableAutonomousStrategy && InpAutonomousStrategyCode == "MR_FIBO_D1_GUARD")
+      MR_Fibo_DeinitStrategy(reason);
+
    if(InpSendPostMarketOnDeinit && MR_AT_GetTradeMode() == "REAL")
       MR_AT_SendAccountSnapshot("POST_MARKET");
 
@@ -202,9 +208,17 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   // Ciclo principal via OnTimer (heartbeat + sinais). OnTick apenas atualiza painel.
    if(InpShowPanel)
       MR_AT_UpdatePanel();
+  }
+
+//+------------------------------------------------------------------+
+void OnTradeTransaction(const MqlTradeTransaction &trans,
+                        const MqlTradeRequest &request,
+                        const MqlTradeResult &result)
+  {
+   if(InpEnableAutonomousStrategy && InpAutonomousStrategyCode == "MR_FIBO_D1_GUARD")
+      MR_Fibo_OnTradeTransactionStrategy(trans, request, result);
   }
 
 //+------------------------------------------------------------------+

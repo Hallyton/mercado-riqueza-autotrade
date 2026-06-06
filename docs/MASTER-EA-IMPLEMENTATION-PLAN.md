@@ -2648,6 +2648,18 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Audit | `strategy_config.draft_saved`, `.published`, `.reset_default`, `.archived` |
 | Doc | [`docs/MR-FIBO-D1-GUARD-ADMIN-INPUTS-CONFIG.md`](MR-FIBO-D1-GUARD-ADMIN-INPUTS-CONFIG.md) |
 
+### Fase 15.4 — MR Fibo D1 Guard Simplified Autonomous Operation Center
+
+**Status:** `MR_FIBO_D1_GUARD_SIMPLIFIED_AUTONOMOUS_OPERATION_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Arquitetura | Estratégia completa no EA; site = config + can-trade (sem instruction) |
+| API | `POST /api/v1/ea/autonomous-strategy/can-trade` |
+| Admin UI | `/admin/real-trading/fibo-d1-guard` |
+| MQL5 | `MR_Strategy_FiboD1_Guard_Core.mqh` (lógica EA_FIBO_D1) + guard can-trade |
+| Doc | [`docs/MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md`](MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md) |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

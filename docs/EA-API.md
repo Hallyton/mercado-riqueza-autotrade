@@ -61,6 +61,20 @@ Requer `ENABLE_AUTONOMOUS_STRATEGY=true` e estratégia habilitada na licença.
 
 ---
 
+## POST `/autonomous-strategy/can-trade`
+
+Autorização **simples** para MR Fibo D1 Guard v2 — **não cria instruction** nem REAL_MANUAL.
+
+Body: `strategy_code`, `license_id`, `device_id`, conta MT5, `symbol`, `trade_mode`, `magic_number`, `side`, `action` (`ENTRY`|`REVERSAL`), `requested_contracts`, `estimated_stop_points`, `strategy_config_hash`, `ea_ready` (opcional).
+
+Resposta `allowed: true`: `decision: STRATEGY_CAN_TRADE`, `reason_code: OK`.
+
+Resposta bloqueada: `decision: STRATEGY_BLOCKED`, `reason_code`, `detail`.
+
+Persiste `AutonomousStrategyDecision` para auditoria.
+
+---
+
 ## POST `/daily-risk/report`
 
 Atualiza PnL diário para stop financeiro (sem expor lógica ao cliente).
