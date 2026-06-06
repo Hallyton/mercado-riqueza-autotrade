@@ -115,7 +115,12 @@ bool MR_AT_ReportDailyRisk(const bool force = false)
    if(status >= 200 && status < 300)
      {
       g_last_daily_risk_report = TimeCurrent();
-      MR_AT_LogInfo("DailyRisk", "report ok");
+      string stateId = MR_AT_JsonGetString(response, "state_id");
+      string tradeDate = MR_AT_JsonGetString(response, "trade_date");
+      MR_AT_LogInfo("DailyRisk", "report ok stateId=" + stateId +
+                    " tradeDate=" + tradeDate +
+                    " strategy=" + MR_FIBO_GUARD_CODE +
+                    " symbol=" + _Symbol);
       return true;
      }
 

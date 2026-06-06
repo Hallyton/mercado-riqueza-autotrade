@@ -158,6 +158,45 @@ function ClientTable({
                                 </dd>
                               )}
                             </div>
+                            {row.dailyRiskDiagnostic.expectedStateKey && (
+                              <div>
+                                <dt className="text-muted-foreground font-medium">
+                                  Expected State Key
+                                </dt>
+                                <dd className="mt-1 font-mono">
+                                  {row.dailyRiskDiagnostic.expectedStateKey.licenseId.slice(0, 12)}…
+                                  {" · "}
+                                  {row.dailyRiskDiagnostic.expectedStateKey.accountLogin}@
+                                  {row.dailyRiskDiagnostic.expectedStateKey.accountServer}
+                                  {" · "}
+                                  {row.dailyRiskDiagnostic.expectedStateKey.symbol}
+                                  {" · "}
+                                  {row.dailyRiskDiagnostic.expectedStateKey.strategyCode}
+                                  {" · "}
+                                  {row.dailyRiskDiagnostic.expectedStateKey.tradeDate}
+                                </dd>
+                              </div>
+                            )}
+                            {row.dailyRiskDiagnostic.nearbyStates.length > 0 && (
+                              <div>
+                                <dt className="text-muted-foreground font-medium">
+                                  Nearby states
+                                </dt>
+                                <dd className="mt-1 space-y-1">
+                                  {row.dailyRiskDiagnostic.nearbyStates.slice(0, 4).map((nearby) => (
+                                    <div key={nearby.stateId} className="font-mono">
+                                      {nearby.diagnosisCode}: {nearby.keyLabel}
+                                    </div>
+                                  ))}
+                                </dd>
+                              </div>
+                            )}
+                            {row.dailyRiskDiagnostic.stateLookupDiagnosis && (
+                              <div>
+                                <dt className="text-muted-foreground">Lookup diagnóstico</dt>
+                                <dd>{row.dailyRiskDiagnostic.stateLookupDiagnosis}</dd>
+                              </div>
+                            )}
                             <div>
                               <dt className="text-muted-foreground">Conta esperada</dt>
                               <dd>

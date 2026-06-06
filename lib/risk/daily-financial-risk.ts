@@ -1,10 +1,21 @@
 import { DailyFinancialRiskStatus } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
+import { describeDailyRiskStateMismatch } from "@/lib/admin/daily-risk-state-trace";
+import { resolveDailyRiskStateLookup } from "@/lib/admin/daily-risk-state-trace";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
+import {
+  dailyRiskStateUniqueWhere,
+  normalizeDailyRiskAccountLogin,
+  normalizeDailyRiskAccountServer,
+  normalizeDailyRiskSymbol,
+  resolveDailyRiskStateKey,
+  tradeDateKeySaoPaulo,
+} from "@/lib/risk/daily-risk-state-key";
 import { resolveFiboDailyRiskLimit } from "@/lib/admin/daily-risk-limit-resolver";
 import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
 
-const DAILY_RISK_STALE_MS = 20 * 60 * 1000;
+export { tradeDateKeySaoPaulo } from "@/lib/risk/daily-risk-state-key";
 
 export type DailyRiskSnapshot = {
   enabled: boolean;
@@ -18,14 +29,16 @@ export type DailyRiskSnapshot = {
   lastUpdatedAt: string | null;
 };
 
-export function tradeDateKeySaoPaulo(date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
+const DAILY_RISK_STALE_MS = 20 * 60 * 1000;
+
+export type DailyRiskReportProcessResult = {
+  state: Awaited<ReturnType<typeof upsertDailyFinancialRiskState>>;
+  requestId: string;
+  created: boolean;
+  updated: boolean;
+  effectiveKey: ReturnType<typeof resolveDailyRiskStateKey>["effectiveKey"];
+  received: ReturnType<typeof resolveDailyRiskStateKey>["received"];
+};
 
 export async function getInstrumentCentsPerPoint(symbol: string): Promise<number | null> {
   const normalized = symbol.trim().toUpperCase();
@@ -69,7 +82,7 @@ export function evaluateDailyRiskStatus(input: {
 
 export async function upsertDailyFinancialRiskState(input: {
   licenseId: string;
-  accountLogin: string;
+  accountLogin: string | number;
   accountServer: string;
   strategyCode: string;
   symbol: string;
@@ -78,7 +91,22 @@ export async function upsertDailyFinancialRiskState(input: {
   openPnlCents: number;
   limitCents: number;
   includeOpenPnL: boolean;
+  reportMeta?: {
+    requestId: string;
+    source: string;
+    receivedAt: Date;
+    receivedTradeDate?: string | null;
+  };
 }) {
+  const key = resolveDailyRiskStateKey({
+    licenseId: input.licenseId,
+    accountLogin: input.accountLogin,
+    accountServer: input.accountServer,
+    symbol: input.symbol,
+    strategyCode: input.strategyCode,
+    tradeDate: input.tradeDate,
+  }).effectiveKey;
+
   const totalPnlCents = computeTotalPnlCents({
     realizedPnlCents: input.realizedPnlCents,
     openPnlCents: input.openPnlCents,
@@ -91,23 +119,14 @@ export async function upsertDailyFinancialRiskState(input: {
   const now = new Date();
 
   return prisma.dailyFinancialRiskState.upsert({
-    where: {
-      licenseId_accountLogin_accountServer_strategyCode_symbol_tradeDate: {
-        licenseId: input.licenseId,
-        accountLogin: input.accountLogin.trim(),
-        accountServer: input.accountServer.trim(),
-        strategyCode: input.strategyCode,
-        symbol: input.symbol.trim().toUpperCase(),
-        tradeDate: input.tradeDate,
-      },
-    },
+    where: dailyRiskStateUniqueWhere(key),
     create: {
-      licenseId: input.licenseId,
-      accountLogin: input.accountLogin.trim(),
-      accountServer: input.accountServer.trim(),
-      strategyCode: input.strategyCode,
-      symbol: input.symbol.trim().toUpperCase(),
-      tradeDate: input.tradeDate,
+      licenseId: key.licenseId,
+      accountLogin: key.accountLogin,
+      accountServer: key.accountServer,
+      strategyCode: key.strategyCode,
+      symbol: key.symbol,
+      tradeDate: key.tradeDate,
       realizedPnlCents: input.realizedPnlCents,
       openPnlCents: input.openPnlCents,
       totalPnlCents,
@@ -115,6 +134,10 @@ export async function upsertDailyFinancialRiskState(input: {
       remainingLossCents,
       status,
       lastUpdatedAt: now,
+      lastReportRequestId: input.reportMeta?.requestId,
+      lastReportSource: input.reportMeta?.source,
+      lastReportReceivedAt: input.reportMeta?.receivedAt,
+      receivedTradeDate: input.reportMeta?.receivedTradeDate ?? null,
     },
     update: {
       realizedPnlCents: input.realizedPnlCents,
@@ -124,6 +147,10 @@ export async function upsertDailyFinancialRiskState(input: {
       remainingLossCents,
       status,
       lastUpdatedAt: now,
+      lastReportRequestId: input.reportMeta?.requestId,
+      lastReportSource: input.reportMeta?.source,
+      lastReportReceivedAt: input.reportMeta?.receivedAt,
+      receivedTradeDate: input.reportMeta?.receivedTradeDate ?? null,
     },
   });
 }
@@ -141,10 +168,18 @@ export async function loadDailyRiskContext(input: {
   snapshot: DailyRiskSnapshot | null;
 }> {
   const tradeDate = input.tradeDate ?? tradeDateKeySaoPaulo();
-  const login = input.accountLogin.trim();
-  const server = input.accountServer.trim();
-  const symbol = input.symbol.trim().toUpperCase();
+  const login = normalizeDailyRiskAccountLogin(input.accountLogin);
+  const server = normalizeDailyRiskAccountServer(input.accountServer);
+  const symbol = normalizeDailyRiskSymbol(input.symbol);
   const strategyCode = normalizeFiboStrategyCode(input.strategyCode);
+  const stateKey = resolveDailyRiskStateKey({
+    licenseId: input.licenseId,
+    accountLogin: login,
+    accountServer: server,
+    symbol,
+    strategyCode,
+    tradeDate,
+  }).effectiveKey;
 
   let limit = await prisma.dailyFinancialRiskLimit.findUnique({
     where: {
@@ -176,16 +211,14 @@ export async function loadDailyRiskContext(input: {
 
   const state = limit
     ? await prisma.dailyFinancialRiskState.findUnique({
-        where: {
-          licenseId_accountLogin_accountServer_strategyCode_symbol_tradeDate: {
-            licenseId: input.licenseId,
-            accountLogin: login,
-            accountServer: server,
-            strategyCode: limit.strategyCode,
-            symbol,
-            tradeDate,
-          },
-        },
+        where: dailyRiskStateUniqueWhere({
+          licenseId: stateKey.licenseId,
+          accountLogin: stateKey.accountLogin,
+          accountServer: stateKey.accountServer,
+          strategyCode: stateKey.strategyCode,
+          symbol: stateKey.symbol,
+          tradeDate: stateKey.tradeDate,
+        }),
       })
     : null;
 
@@ -201,7 +234,7 @@ export async function loadDailyRiskContext(input: {
     totalPnlCents: state?.totalPnlCents ?? 0,
     remainingLossCents: state?.remainingLossCents ?? limit.dailyLossLimitCents,
     status: state?.status ?? DailyFinancialRiskStatus.OK,
-    tradeDate,
+    tradeDate: stateKey.tradeDate,
     lastUpdatedAt: state?.lastUpdatedAt?.toISOString() ?? null,
   };
 
@@ -262,10 +295,42 @@ export async function evaluateDailyFinancialStopForEntry(input: {
   }
 
   if (!state) {
+    const lookup = await resolveDailyRiskStateLookup({
+      licenseId: input.licenseId,
+      accountLogin: input.accountLogin,
+      accountServer: input.accountServer,
+      symbol: input.symbol,
+      strategyCode: input.strategyCode,
+    });
+
+    if (lookup.diagnosisCode === "DAILY_RISK_STATE_TRADE_DATE_MISMATCH") {
+      return {
+        ok: false,
+        reasonCode: "DAILY_RISK_REPORT_DATE_MISMATCH",
+        detail:
+          describeDailyRiskStateMismatch({
+            expectedKey: lookup.expectedKey,
+            nearbyStates: lookup.nearbyStates,
+            diagnosisCode: lookup.diagnosisCode,
+            received: lookup.received,
+          }) ??
+          `Relatório salvo em tradeDate ${lookup.received.tradeDateRaw}, mas o dia operacional é ${lookup.expectedKey.tradeDate}.`,
+        snapshot,
+      };
+    }
+
+    const mismatchDetail = describeDailyRiskStateMismatch({
+      expectedKey: lookup.expectedKey,
+      nearbyStates: lookup.nearbyStates,
+      diagnosisCode: lookup.diagnosisCode,
+      received: lookup.received,
+    });
+
     return {
       ok: false,
       reasonCode: "DAILY_RISK_REPORT_MISSING",
       detail:
+        mismatchDetail ??
         "DailyFinancialRiskLimit está configurado, mas nenhum DailyFinancialRiskState recente foi encontrado. O EA deve enviar POST /api/v1/ea/daily-risk/report.",
       snapshot,
     };
@@ -316,38 +381,74 @@ export async function processDailyRiskReport(input: {
   tradeDate: string;
   realizedPnl: number;
   openPnl: number;
-}) {
-  const strategyCode = normalizeFiboStrategyCode(input.strategyCode);
+  requestId?: string;
+}): Promise<DailyRiskReportProcessResult> {
+  const requestId = input.requestId ?? randomUUID();
+  const receivedAt = new Date();
+  const { effectiveKey, received } = resolveDailyRiskStateKey({
+    licenseId: input.licenseId,
+    accountLogin: input.accountLogin,
+    accountServer: input.accountServer,
+    symbol: input.symbol,
+    strategyCode: input.strategyCode,
+    tradeDateFromEa: input.tradeDate,
+  });
+
   const limit = await prisma.dailyFinancialRiskLimit.findUnique({
     where: {
       licenseId_accountLogin_accountServer_strategyCode_symbol: {
-        licenseId: input.licenseId,
-        accountLogin: input.accountLogin.trim(),
-        accountServer: input.accountServer.trim(),
-        strategyCode,
-        symbol: input.symbol.trim().toUpperCase(),
+        licenseId: effectiveKey.licenseId,
+        accountLogin: effectiveKey.accountLogin,
+        accountServer: effectiveKey.accountServer,
+        strategyCode: effectiveKey.strategyCode,
+        symbol: effectiveKey.symbol,
       },
     },
   });
 
+  const existing = await prisma.dailyFinancialRiskState.findUnique({
+    where: dailyRiskStateUniqueWhere(effectiveKey),
+  });
+
   const limitCents = limit?.enabled ? limit.dailyLossLimitCents : 0;
   const includeOpenPnL = limit?.includeOpenPnL ?? true;
-
   const realizedPnlCents = Math.round(input.realizedPnl * 100);
   const openPnlCents = Math.round(input.openPnl * 100);
 
   const state = await upsertDailyFinancialRiskState({
-    licenseId: input.licenseId,
-    accountLogin: input.accountLogin,
-    accountServer: input.accountServer,
-    strategyCode,
-    symbol: input.symbol,
-    tradeDate: input.tradeDate,
+    licenseId: effectiveKey.licenseId,
+    accountLogin: effectiveKey.accountLogin,
+    accountServer: effectiveKey.accountServer,
+    strategyCode: effectiveKey.strategyCode,
+    symbol: effectiveKey.symbol,
+    tradeDate: effectiveKey.tradeDate,
     realizedPnlCents,
     openPnlCents,
     limitCents,
     includeOpenPnL,
+    reportMeta: {
+      requestId,
+      source: "EA",
+      receivedAt,
+      receivedTradeDate: received.tradeDateRaw,
+    },
   });
 
-  return state;
+  console.info("[daily_risk.report.saved]", {
+    requestId,
+    stateId: state.id,
+    effectiveKey,
+    lastUpdatedAt: state.lastUpdatedAt.toISOString(),
+    tradeDateMismatch: received.tradeDateMismatch,
+    receivedTradeDate: received.tradeDateRaw,
+  });
+
+  return {
+    state,
+    requestId,
+    created: !existing,
+    updated: Boolean(existing),
+    effectiveKey,
+    received,
+  };
 }

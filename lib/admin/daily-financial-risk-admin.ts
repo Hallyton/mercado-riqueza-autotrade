@@ -15,6 +15,11 @@ import {
   buildDailyRiskReportTrace,
   type DailyRiskReportTrace,
 } from "@/lib/admin/daily-risk-report-trace";
+import {
+  describeDailyRiskStateMismatch,
+  resolveDailyRiskStateLookup,
+} from "@/lib/admin/daily-risk-state-trace";
+import type { DailyRiskStateEffectiveKey } from "@/lib/risk/daily-risk-state-key";
 
 export const DAILY_RISK_ADMIN_ERROR_CODES = [
   "LICENSE_NOT_FOUND",
@@ -72,6 +77,12 @@ export type DailyRiskExistingConfigView = {
   enabled: boolean;
   updatedAt: string;
   reportTrace: DailyRiskReportTrace;
+  expectedStateKey: DailyRiskStateEffectiveKey;
+  stateId: string | null;
+  lastReportRequestId: string | null;
+  savedKeyLabel: string | null;
+  nearbyStateKey: string | null;
+  mismatchAlert: string | null;
 };
 
 export async function listDailyFinancialRiskLimits(licenseId?: string) {
@@ -95,40 +106,52 @@ export async function listDailyRiskExistingConfigViews(
   licenseId?: string
 ): Promise<DailyRiskExistingConfigView[]> {
   const rows = await listDailyFinancialRiskLimits(licenseId);
-  const tradeDate = tradeDateKeySaoPaulo();
-  const states = await prisma.dailyFinancialRiskState.findMany({
-    where: {
-      tradeDate,
-      ...(licenseId ? { licenseId } : {}),
-    },
-  });
 
-  return rows.map((row) => {
-    const state = states.find(
-      (item) =>
-        item.licenseId === row.licenseId &&
-        item.accountLogin === row.accountLogin &&
-        item.accountServer === row.accountServer &&
-        item.strategyCode === row.strategyCode &&
-        item.symbol === row.symbol
-    );
+  return Promise.all(
+    rows.map(async (row) => {
+      const lookup = await resolveDailyRiskStateLookup({
+        licenseId: row.licenseId,
+        accountLogin: row.accountLogin,
+        accountServer: row.accountServer,
+        symbol: row.symbol,
+        strategyCode: row.strategyCode,
+      });
+      const state = lookup.exactState;
+      const nearby = lookup.nearbyStates[0] ?? null;
 
-    return {
-      id: row.id,
-      licenseId: row.licenseId,
-      clientName: row.license.user.name,
-      clientEmail: row.license.user.email,
-      accountLogin: row.accountLogin,
-      accountServer: row.accountServer,
-      symbol: row.symbol,
-      strategyCode: row.strategyCode,
-      dailyLossLimitBrl: row.dailyLossLimitCents / 100,
-      includeOpenPnL: row.includeOpenPnL,
-      enabled: row.enabled,
-      updatedAt: row.updatedAt.toISOString(),
-      reportTrace: buildDailyRiskReportTrace(state, tradeDate),
-    };
-  });
+      return {
+        id: row.id,
+        licenseId: row.licenseId,
+        clientName: row.license.user.name,
+        clientEmail: row.license.user.email,
+        accountLogin: row.accountLogin,
+        accountServer: row.accountServer,
+        symbol: row.symbol,
+        strategyCode: row.strategyCode,
+        dailyLossLimitBrl: row.dailyLossLimitCents / 100,
+        includeOpenPnL: row.includeOpenPnL,
+        enabled: row.enabled,
+        updatedAt: row.updatedAt.toISOString(),
+        reportTrace: buildDailyRiskReportTrace(
+          state,
+          lookup.expectedKey.tradeDate
+        ),
+        expectedStateKey: lookup.expectedKey,
+        stateId: state?.id ?? null,
+        lastReportRequestId: state?.lastReportRequestId ?? null,
+        savedKeyLabel: state
+          ? `${state.accountLogin}@${state.accountServer}|${state.symbol}|${state.strategyCode}|${state.tradeDate}`
+          : null,
+        nearbyStateKey: nearby?.keyLabel ?? null,
+        mismatchAlert: describeDailyRiskStateMismatch({
+          expectedKey: lookup.expectedKey,
+          nearbyStates: lookup.nearbyStates,
+          diagnosisCode: lookup.diagnosisCode,
+          received: lookup.received,
+        }),
+      };
+    })
+  );
 }
 
 function uniqueKey(input: {

@@ -1447,6 +1447,10 @@ model DailyFinancialRiskState {
   remainingLossCents  Int                      @default(0) @map("remaining_loss_cents")
   status              DailyFinancialRiskStatus @default(OK)
   lastUpdatedAt       DateTime                 @map("last_updated_at")
+  lastReportRequestId String?                  @map("last_report_request_id")
+  lastReportSource    String?                  @map("last_report_source")
+  lastReportReceivedAt DateTime?               @map("last_report_received_at")
+  receivedTradeDate   String?                  @map("received_trade_date")
   createdAt           DateTime                 @default(now()) @map("created_at")
   updatedAt           DateTime                 @updatedAt @map("updated_at")
 

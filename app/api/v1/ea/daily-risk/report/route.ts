@@ -1,35 +1,76 @@
+import { randomUUID } from "node:crypto";
 import {
   assertLicenseUsable,
   assertMt5AccountAuthorized,
 } from "@/lib/ea/auth";
 import { withEaAuth } from "@/lib/ea/handler";
 import { eaJson } from "@/lib/ea/json";
-import { problemJson } from "@/lib/ea/problem";
 import { dailyRiskReportBodySchema } from "@/lib/ea/schemas";
 import { processDailyRiskReport } from "@/lib/risk/daily-financial-risk";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
+import { maskAccountLogin } from "@/lib/risk/real-trading-guard-status";
 
 export const POST = withEaAuth(
   async (ctx, request) => {
     assertLicenseUsable(ctx);
+    const requestId = randomUUID();
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
-      return problemJson(400, "INVALID_JSON", "JSON inválido", "Corpo inválido");
+      return eaJson(
+        { ok: false, requestId, code: "INVALID_JSON", message: "JSON inválido" },
+        400
+      );
     }
 
     const parsed = dailyRiskReportBodySchema.safeParse(body);
     if (!parsed.success) {
-      return problemJson(400, "VALIDATION_ERROR", "Dados inválidos", parsed.error.message);
+      return eaJson(
+        {
+          ok: false,
+          requestId,
+          code: "VALIDATION_ERROR",
+          message: "Dados inválidos",
+          detail: parsed.error.message,
+        },
+        400
+      );
     }
 
     if (ctx.license.id !== parsed.data.license_id) {
-      return problemJson(403, "FORBIDDEN", "Acesso negado", "license_id inválido");
+      return eaJson(
+        {
+          ok: false,
+          requestId,
+          code: "FORBIDDEN",
+          message: "Acesso negado",
+          detail: "license_id inválido",
+          effectiveKey: {
+            licenseId: parsed.data.license_id,
+            accountLogin: parsed.data.account_login,
+            accountServer: parsed.data.account_server,
+            symbol: parsed.data.symbol,
+            strategyCode: parsed.data.strategy_code ?? MR_FIBO_D1_GUARD_CODE,
+            tradeDate: parsed.data.trade_date,
+          },
+          actionHint: "Verifique license_id do EA.",
+        },
+        403
+      );
     }
     if (ctx.device.deviceId !== parsed.data.device_id) {
-      return problemJson(403, "FORBIDDEN", "Acesso negado", "device_id inválido");
+      return eaJson(
+        {
+          ok: false,
+          requestId,
+          code: "FORBIDDEN",
+          message: "Acesso negado",
+          detail: "device_id inválido",
+        },
+        403
+      );
     }
 
     assertMt5AccountAuthorized(
@@ -38,7 +79,17 @@ export const POST = withEaAuth(
       parsed.data.account_server
     );
 
-    const state = await processDailyRiskReport({
+    console.info("[daily_risk.report.received]", {
+      requestId,
+      licenseId: ctx.license.id,
+      accountLogin: maskAccountLogin(parsed.data.account_login),
+      accountServer: parsed.data.account_server,
+      symbol: parsed.data.symbol,
+      strategyCode: parsed.data.strategy_code ?? MR_FIBO_D1_GUARD_CODE,
+      tradeDate: parsed.data.trade_date,
+    });
+
+    const result = await processDailyRiskReport({
       licenseId: ctx.license.id,
       accountLogin: parsed.data.account_login,
       accountServer: parsed.data.account_server,
@@ -47,18 +98,40 @@ export const POST = withEaAuth(
       tradeDate: parsed.data.trade_date,
       realizedPnl: parsed.data.realized_pnl,
       openPnl: parsed.data.open_pnl,
+      requestId,
     });
 
     return eaJson({
       ok: true,
-      trade_date: state.tradeDate,
-      status: state.status,
-      realized_pnl: state.realizedPnlCents / 100,
-      open_pnl: state.openPnlCents / 100,
-      total_pnl: state.totalPnlCents / 100,
-      remaining_loss: state.remainingLossCents / 100,
-      limit: state.limitCents / 100,
-      last_updated_at: state.lastUpdatedAt.toISOString(),
+      request_id: result.requestId,
+      state_id: result.state.id,
+      created: result.created,
+      updated: result.updated,
+      effective_key: {
+        license_id: result.effectiveKey.licenseId,
+        account_login: result.effectiveKey.accountLogin,
+        account_server: result.effectiveKey.accountServer,
+        symbol: result.effectiveKey.symbol,
+        strategy_code: result.effectiveKey.strategyCode,
+        trade_date: result.effectiveKey.tradeDate,
+      },
+      received: {
+        strategy_code_raw: result.received.strategyCodeRaw,
+        strategy_code_normalized: result.received.strategyCodeNormalized,
+        symbol_raw: result.received.symbolRaw,
+        symbol_normalized: result.received.symbolNormalized,
+        trade_date_raw: result.received.tradeDateRaw,
+        trade_date_operational: result.received.tradeDateOperational,
+        trade_date_mismatch: result.received.tradeDateMismatch,
+      },
+      trade_date: result.state.tradeDate,
+      status: result.state.status,
+      realized_pnl: result.state.realizedPnlCents / 100,
+      open_pnl: result.state.openPnlCents / 100,
+      total_pnl: result.state.totalPnlCents / 100,
+      remaining_loss: result.state.remainingLossCents / 100,
+      limit: result.state.limitCents / 100,
+      last_updated_at: result.state.lastUpdatedAt.toISOString(),
     });
   },
   { rateLimit: "heartbeat" }

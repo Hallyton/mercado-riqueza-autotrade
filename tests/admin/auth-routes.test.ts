@@ -128,6 +128,7 @@ describe("auditoria admin auth e rotas protegidas", () => {
       "app/api/admin/real-trading/bulk-dispatch/preview/route.ts",
       "app/api/admin/real-trading/bulk-dispatch/readiness/route.ts",
       "app/api/admin/real-trading/daily-risk/route.ts",
+      "app/api/admin/real-trading/daily-risk/trace/route.ts",
       "app/api/admin/real-trading/dispatch-manual/route.ts",
       "app/api/admin/real-trading/instructions/[instructionId]/close-no-order/route.ts",
       "app/api/admin/real-trading/instructions/[instructionId]/void-false-execution/route.ts",

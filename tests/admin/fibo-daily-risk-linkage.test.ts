@@ -13,7 +13,7 @@ const prismaMock = vi.hoisted(() => ({
     update: vi.fn(),
     delete: vi.fn(),
   },
-  dailyFinancialRiskState: { updateMany: vi.fn(), findUnique: vi.fn() },
+  dailyFinancialRiskState: { updateMany: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
   instrumentPointValue: { findFirst: vi.fn() },
   strategyRuntimeConfig: { findFirst: vi.fn() },
   autonomousStrategyDecision: { findMany: vi.fn() },
@@ -112,6 +112,8 @@ describe("fibo operation center daily risk linkage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue(null);
+    prismaMock.dailyFinancialRiskState.findMany.mockResolvedValue([]);
+    prismaMock.dailyFinancialRiskState.findFirst.mockResolvedValue(null);
     vi.mocked(evaluateDailyFinancialStopForEntry).mockResolvedValue({
       ok: true,
       snapshot: {

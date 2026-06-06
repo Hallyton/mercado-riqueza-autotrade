@@ -441,7 +441,10 @@ export function DailyRiskAdminPanel({
                 <th className="px-2 py-2">Limite diário</th>
                 <th className="px-2 py-2">Include open PnL</th>
                 <th className="px-2 py-2">Relatório diário</th>
+                <th className="px-2 py-2">stateId</th>
                 <th className="px-2 py-2">Último report</th>
+                <th className="px-2 py-2">requestId</th>
+                <th className="px-2 py-2">Chave salva</th>
                 <th className="px-2 py-2">PnL (real/open/total)</th>
                 <th className="px-2 py-2">Status config</th>
                 <th className="px-2 py-2">Atualizado</th>
@@ -471,8 +474,23 @@ export function DailyRiskAdminPanel({
                     <div className="text-muted-foreground">
                       tradeDate {row.reportTrace.tradeDate}
                     </div>
+                    {row.mismatchAlert && (
+                      <div className="mt-1 text-amber-200">{row.mismatchAlert}</div>
+                    )}
+                    {row.nearbyStateKey && !row.stateId && (
+                      <div className="mt-1 text-amber-200">
+                        Chave divergente encontrada: {row.nearbyStateKey}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-2 py-2 font-mono text-[11px]">
+                    {row.stateId ?? "—"}
                   </td>
                   <td className="px-2 py-2 text-xs">{report.lastReport}</td>
+                  <td className="px-2 py-2 font-mono text-[11px]">
+                    {row.lastReportRequestId ?? "—"}
+                  </td>
+                  <td className="px-2 py-2 text-xs">{row.savedKeyLabel ?? "—"}</td>
                   <td className="px-2 py-2 text-xs">{report.pnl}</td>
                   <td className="px-2 py-2">
                     {row.enabled ? "Ativo" : "Inativo"}
@@ -506,7 +524,7 @@ export function DailyRiskAdminPanel({
               );})}
               {existingConfigs.length === 0 && (
                 <tr>
-                  <td colSpan={15} className="px-2 py-4 text-muted-foreground">
+                  <td colSpan={18} className="px-2 py-4 text-muted-foreground">
                     Nenhum registro.
                   </td>
                 </tr>

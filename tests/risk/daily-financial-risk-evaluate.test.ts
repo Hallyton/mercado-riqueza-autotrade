@@ -5,6 +5,8 @@ const prismaMock = vi.hoisted(() => ({
   dailyFinancialRiskLimit: { findMany: vi.fn(), findUnique: vi.fn() },
   dailyFinancialRiskState: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
+    findFirst: vi.fn(),
     upsert: vi.fn(),
   },
   instrumentPointValue: { findUnique: vi.fn() },
@@ -43,6 +45,8 @@ describe("evaluateDailyFinancialStopForEntry report linkage", () => {
       includeOpenPnL: true,
     });
     prismaMock.dailyFinancialRiskLimit.findMany.mockResolvedValue([]);
+    prismaMock.dailyFinancialRiskState.findMany.mockResolvedValue([]);
+    prismaMock.dailyFinancialRiskState.findFirst.mockResolvedValue(null);
     prismaMock.instrumentPointValue.findUnique.mockResolvedValue({
       centsPerPointPerContract: 1000,
     });
@@ -55,7 +59,7 @@ describe("evaluateDailyFinancialStopForEntry report linkage", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reasonCode).toBe("DAILY_RISK_REPORT_MISSING");
-    expect(result.detail).toContain("DailyFinancialRiskLimit está configurado");
+    expect(result.detail).toContain("DailyFinancialRiskState");
     expect(result.detail).not.toContain("não configurado");
   });
 
@@ -138,8 +142,8 @@ describe("processDailyRiskReport", () => {
       accountLogin: "19583778",
       accountServer: "XPMT5-PRD",
       strategyCode: "fibo-d1-guard",
-      symbol: "WDON26",
-      tradeDate: "2026-06-02",
+      symbol: "wdon26",
+      tradeDate: "2026-06-05",
       realizedPnl: 0,
       openPnl: 0,
     });
@@ -150,12 +154,34 @@ describe("processDailyRiskReport", () => {
           licenseId_accountLogin_accountServer_strategyCode_symbol:
             expect.objectContaining({
               strategyCode: "MR_FIBO_D1_GUARD",
+              symbol: "WDON26",
+              accountLogin: "19583778",
             }),
         }),
       })
     );
     expect(prismaMock.dailyFinancialRiskState.upsert).toHaveBeenCalled();
-    expect(state.realizedPnlCents).toBe(0);
-    expect(state.openPnlCents).toBe(0);
+    expect(state.state.realizedPnlCents).toBe(0);
+    expect(state.effectiveKey.strategyCode).toBe("MR_FIBO_D1_GUARD");
+    expect(state.effectiveKey.symbol).toBe("WDON26");
+    expect(state.requestId).toBeTruthy();
+  });
+
+  it("saves under operational tradeDate when EA tradeDate differs", async () => {
+    prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue(null);
+    await processDailyRiskReport({
+      licenseId: "lic1",
+      accountLogin: "19583778",
+      accountServer: "XPMT5-PRD",
+      strategyCode: "MR_FIBO_D1_GUARD",
+      symbol: "WDON26",
+      tradeDate: "2020-01-01",
+      realizedPnl: 0,
+      openPnl: 0,
+    });
+
+    const upsertCall = prismaMock.dailyFinancialRiskState.upsert.mock.calls[0]?.[0];
+    expect(upsertCall?.create?.tradeDate).not.toBe("2020-01-01");
+    expect(upsertCall?.create?.receivedTradeDate).toBe("2020-01-01");
   });
 });
