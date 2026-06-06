@@ -258,7 +258,7 @@ export async function getFiboD1GuardOperationCenterView() {
       licenseHref: `/admin/licenses/${license.id}`,
       strategyConfigHref: `/admin/licenses/${license.id}/strategy-config`,
       approvalHref,
-      dailyRiskHref: `/admin/real-trading/daily-risk?license_id=${license.id}`,
+      dailyRiskHref: `/admin/real-trading/daily-risk?licenseId=${license.id}`,
     });
   }
 

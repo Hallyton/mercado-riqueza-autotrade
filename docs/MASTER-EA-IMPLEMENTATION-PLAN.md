@@ -2697,6 +2697,19 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Integração | strategy-config readonly limite; fibo-d1-guard remove `LOT_TOTAL_EXCEEDS_MAX_CONTRACTS` |
 | Garantias | Sem ordem real; sem instruction; identidade da aprovação imutável |
 
+### Fase 15.4.4 — Seletor de licenças ativas no stop diário
+
+**Status:** `DAILY_RISK_ACTIVE_LICENSE_SELECTOR_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Problema | Digitação manual de licenseId/conta/servidor/símbolo propensa a erro |
+| Solução | Select + tabela de licenças ACTIVE com MT5; campos readonly preenchidos |
+| Lib | `lib/admin/daily-risk-eligible-licenses.ts` |
+| UI | `/admin/real-trading/daily-risk` — tabelas + formulário com upsert/edição |
+| Audit | `daily_risk.limit.created` / `daily_risk.limit.updated` |
+| Integração | Centro Fibo linka `?licenseId=`; can-trade usa limite configurado |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

@@ -44,6 +44,12 @@ Para liberar `loteTotal` maior sem revogar/recriar aprovação:
 
 Campos de identidade da aprovação não são alteráveis. Toda alteração é auditada. **Não envia ordem real.**
 
+### Stop financeiro diário operacional
+
+**Status:** `DAILY_RISK_ACTIVE_LICENSE_SELECTOR_IMPLEMENTED`
+
+Configure em `/admin/real-trading/daily-risk` selecionando licença ativa — conta, servidor e símbolo preenchidos automaticamente. Usado pelo `can-trade` antes de novas entradas. Link do centro Fibo: `?licenseId=`.
+
 ## Caixa preta
 
 Cliente não vê parâmetros. Admin vê contratos, stop, takes, horários.

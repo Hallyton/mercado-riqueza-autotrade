@@ -693,7 +693,7 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
           <p className="text-sm text-muted-foreground">Stop diário não configurado.</p>
         )}
         <Link
-          href={`/admin/real-trading/daily-risk?license_id=${view.licenseId}`}
+          href={`/admin/real-trading/daily-risk?licenseId=${view.licenseId}`}
           className="mt-4 inline-block text-sm text-gold hover:underline"
         >
           Configurar stop financeiro diário →

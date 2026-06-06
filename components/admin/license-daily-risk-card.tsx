@@ -69,7 +69,7 @@ export function LicenseDailyRiskCard({
         </p>
       )}
       <Link
-        href={`/admin/real-trading/daily-risk?license_id=${licenseId}`}
+        href={`/admin/real-trading/daily-risk?licenseId=${licenseId}`}
         className="mt-4 inline-block text-sm text-gold hover:underline"
       >
         Configurar stop financeiro diário →

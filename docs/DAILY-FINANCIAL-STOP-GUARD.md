@@ -30,6 +30,24 @@ Segunda trava em `POST /api/v1/ea/autonomous-strategy/can-trade` (Fase 15.4) e n
 
 Mensagem genérica no dashboard — sem valores de limite nem lógica interna.
 
+### Configuração operacional do stop financeiro diário
+
+**Status:** `DAILY_RISK_ACTIVE_LICENSE_SELECTOR_IMPLEMENTED`
+
+| Item | Detalhe |
+|------|---------|
+| Tela | `/admin/real-trading/daily-risk` |
+| Fluxo | Admin seleciona licença **ACTIVE** com conta MT5 vinculada |
+| Preenchimento | `licenseId`, login, servidor, símbolo, estratégia — readonly |
+| Duplicidade | Upsert por chave `licenseId + accountLogin + accountServer + symbol + strategyCode` |
+| Edição | Mesma tela — botão **Editar configuração existente** |
+| Deep link | `?licenseId=` (compatível com `license_id`) pré-seleciona licença |
+| Centro Fibo | Link **Stop diário** → `/admin/real-trading/daily-risk?licenseId=…` |
+| Audit | `daily_risk.limit.created` / `daily_risk.limit.updated` |
+| Can-trade | Stop diário verificado antes de novas entradas autônomas |
+
+O admin **não** deve digitar manualmente licenseId/conta/servidor — evita erro operacional.
+
 ## Admin — pré-requisito da estratégia autônoma
 
 O card **Estratégia autônoma** em `/admin/licenses/[licenseId]` exibe blocker

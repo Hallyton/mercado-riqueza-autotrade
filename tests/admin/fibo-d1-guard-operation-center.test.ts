@@ -86,6 +86,9 @@ describe("fibo d1 guard operation center", () => {
     expect(blocked?.reasonCodes).toContain(LOT_TOTAL_EXCEEDS_MAX_CONTRACTS);
     expect(blocked?.strategyConfigHref).toBe("/admin/licenses/lic1/strategy-config");
     expect(blocked?.approvalHref).toBe("/admin/real-trading/approvals/ap1");
+    expect(blocked?.dailyRiskHref).toBe(
+      "/admin/real-trading/daily-risk?licenseId=lic1"
+    );
   });
 
   it("clears LOT_TOTAL_EXCEEDS after approval maxContracts raised to match loteTotal", async () => {
