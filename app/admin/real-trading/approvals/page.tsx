@@ -8,8 +8,35 @@ import {
   maskLicenseId,
 } from "@/lib/risk/real-trading-guard-status";
 
-export default async function AdminRealTradingApprovalsPage() {
-  const items = await listRealTradingApprovals(100);
+type PageProps = {
+  searchParams: Promise<{
+    licenseId?: string;
+    requestId?: string;
+    accountLogin?: string;
+    symbol?: string;
+    magicNumber?: string;
+  }>;
+};
+
+export default async function AdminRealTradingApprovalsPage({
+  searchParams,
+}: PageProps) {
+  const params = await searchParams;
+  const items = await listRealTradingApprovals({
+    take: 100,
+    licenseId: params.licenseId,
+    requestId: params.requestId,
+    accountLogin: params.accountLogin,
+    symbol: params.symbol,
+    magicNumber: params.magicNumber ? Number(params.magicNumber) : undefined,
+  });
+
+  const filterQuery = new URLSearchParams();
+  if (params.licenseId) filterQuery.set("licenseId", params.licenseId);
+  if (params.requestId) filterQuery.set("requestId", params.requestId);
+  if (params.accountLogin) filterQuery.set("accountLogin", params.accountLogin);
+  if (params.symbol) filterQuery.set("symbol", params.symbol);
+  if (params.magicNumber) filterQuery.set("magicNumber", params.magicNumber);
 
   return (
     <div className="space-y-6">
@@ -28,6 +55,56 @@ export default async function AdminRealTradingApprovalsPage() {
             Nova aprovação controlada →
           </Link>
         </CardHeader>
+      </Card>
+
+      <Card className="border-gold/20 p-5">
+        <CardTitle className="text-base">Filtrar aprovações</CardTitle>
+        <form className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" method="get">
+          <input
+            name="licenseId"
+            placeholder="licenseId"
+            defaultValue={params.licenseId ?? ""}
+            className="rounded-md border border-white/10 bg-background px-3 py-2 text-sm"
+          />
+          <input
+            name="requestId"
+            placeholder="requestId"
+            defaultValue={params.requestId ?? ""}
+            className="rounded-md border border-white/10 bg-background px-3 py-2 text-sm font-mono"
+          />
+          <input
+            name="accountLogin"
+            placeholder="accountLogin"
+            defaultValue={params.accountLogin ?? ""}
+            className="rounded-md border border-white/10 bg-background px-3 py-2 text-sm"
+          />
+          <input
+            name="symbol"
+            placeholder="symbol"
+            defaultValue={params.symbol ?? ""}
+            className="rounded-md border border-white/10 bg-background px-3 py-2 text-sm"
+          />
+          <input
+            name="magicNumber"
+            placeholder="magicNumber"
+            defaultValue={params.magicNumber ?? ""}
+            className="rounded-md border border-white/10 bg-background px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            className="rounded-md border border-gold/40 px-4 py-2 text-sm text-gold sm:col-span-2 lg:col-span-1"
+          >
+            Filtrar
+          </button>
+        </form>
+        {filterQuery.toString() && (
+          <Link
+            href="/admin/real-trading/approvals"
+            className="mt-2 inline-block text-sm text-muted-foreground hover:text-gold"
+          >
+            Limpar filtros
+          </Link>
+        )}
       </Card>
 
       <div className="overflow-x-auto rounded-lg border border-white/10">

@@ -205,7 +205,14 @@ export async function getRealTradingApprovalById(approvalId: string) {
 }
 
 export async function listRealTradingApprovals(
-  take = 50
+  input: {
+    take?: number;
+    licenseId?: string;
+    accountLogin?: string;
+    symbol?: string;
+    magicNumber?: number;
+    requestId?: string;
+  } = {}
 ): Promise<
   Prisma.RealTradingApprovalGetPayload<{
     include: {
@@ -214,7 +221,51 @@ export async function listRealTradingApprovals(
     };
   }>[]
 > {
+  const take = input.take ?? 50;
+
+  if (input.requestId) {
+    const actions = await prisma.adminAction.findMany({
+      where: {
+        action: {
+          in: ["real_trading.approval.created", "real_trading.approval.create_failed"],
+        },
+        metadata: {
+          path: ["requestId"],
+          equals: input.requestId,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    const approvalIds = actions
+      .map((a) => a.targetId)
+      .filter((id): id is string => Boolean(id));
+
+    if (approvalIds.length === 0) {
+      return [];
+    }
+
+    return prisma.realTradingApproval.findMany({
+      where: { id: { in: approvalIds } },
+      take,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { email: true } },
+        license: { select: { id: true } },
+      },
+    });
+  }
+
   return prisma.realTradingApproval.findMany({
+    where: {
+      ...(input.licenseId ? { licenseId: input.licenseId } : {}),
+      ...(input.accountLogin
+        ? { accountLogin: input.accountLogin.trim() }
+        : {}),
+      ...(input.symbol ? { symbol: input.symbol.trim().toUpperCase() } : {}),
+      ...(input.magicNumber != null ? { magicNumber: input.magicNumber } : {}),
+    },
     take,
     orderBy: { createdAt: "desc" },
     include: {

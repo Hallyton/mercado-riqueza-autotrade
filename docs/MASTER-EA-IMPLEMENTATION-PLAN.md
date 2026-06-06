@@ -2671,6 +2671,17 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Risco | Card de risco estimado por stop + comparação stop diário |
 | Lib | `lib/strategy/mr-fibo-d1-guard-readiness.ts` |
 
+### Fase 15.4.2 — Real Trading Approval Create Traceability
+
+**Status:** `REAL_TRADING_APPROVAL_CREATE_TRACEABILITY_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| API | JSON estruturado com `requestId`, `code`, `actionHint`, `existingApprovalId` |
+| Lib | `lib/admin/real-trading-approval-create.ts` |
+| UI | Card de diagnóstico em `/admin/real-trading/approvals/new` |
+| Audit | `real_trading.approval.created` / `real_trading.approval.create_failed` |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`
