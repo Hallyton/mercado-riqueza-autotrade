@@ -28,6 +28,7 @@ export const CAN_TRADE_REASON_CODES = [
   "EA_REAL_ORDERS_DISABLED",
   "EA_TERMINAL_DISCONNECTED",
   "EA_SYMBOL_NOT_READY",
+  "LOT_TOTAL_EXCEEDS_MAX_CONTRACTS",
   "UNKNOWN_BLOCK",
 ] as const;
 
@@ -63,6 +64,8 @@ export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
   EA_REAL_ORDERS_DISABLED: "EA em modo que não envia ordens reais.",
   EA_TERMINAL_DISCONNECTED: "Terminal MT5 desconectado.",
   EA_SYMBOL_NOT_READY: "Símbolo sem tick recente.",
+  LOT_TOTAL_EXCEEDS_MAX_CONTRACTS:
+    "Configuração da estratégia usa mais contratos do que a licença permite.",
   UNKNOWN_BLOCK: "Bloqueio operacional não classificado.",
 };
 
@@ -76,6 +79,8 @@ export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>>
   STRATEGY_CONFIG_HASH_MISMATCH: "Recompilar/atualizar EA ou republicar config",
   DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED:
     "Reduzir contratos ou aumentar stop financeiro",
+  LOT_TOTAL_EXCEEDS_MAX_CONTRACTS:
+    "Ajustar limite operacional ou reduzir contratos",
 };
 
 export const AUTONOMOUS_STRATEGY_REASON_CODES = [

@@ -152,9 +152,7 @@ bool SelectOurPosition();
 bool IsBoughtPosition();
 bool IsSoldPosition();
 
-void CheckMarketEntries()
-  {
-   g_fibo_trade_action = "ENTRY";;
+void CheckMarketEntries();
 bool CheckReversalSignal();
 bool ProcessarReversaoPendente();
 bool FecharPosicaoAtualParaReversao();
@@ -1459,6 +1457,8 @@ void CancelOppositeEntryOrder(ENUM_POSITION_TYPE type)
 
 void CheckMarketEntries()
 {
+   g_fibo_trade_action = "ENTRY";
+
    if(HasOurPosition())
       return;
 

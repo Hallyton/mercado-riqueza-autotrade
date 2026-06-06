@@ -1,4 +1,4 @@
-import { LicenseStatus, RealTradingApprovalStatus } from "@prisma/client";
+import { LicenseStatus, RealTradingApprovalStatus, StrategyRuntimeConfigStatus } from "@prisma/client";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
 import { isAutonomousStrategyServerEnabled } from "@/lib/ea/autonomous-strategy-preflight";
 import { isEaOffline } from "@/lib/ea/status";
@@ -12,7 +12,8 @@ import {
 } from "@/lib/risk/autonomous-strategy-reasons";
 import { evaluateDailyFinancialStopForEntry } from "@/lib/risk/daily-financial-risk";
 import { isRealTradingEnabled } from "@/lib/risk/real-trading-guard";
-import { buildDefaultMrFiboD1GuardConfig } from "@/lib/strategy/mr-fibo-d1-guard-config";
+import { buildDefaultMrFiboD1GuardConfig, mrFiboD1GuardConfigSchema } from "@/lib/strategy/mr-fibo-d1-guard-config";
+import { LOT_TOTAL_EXCEEDS_MAX_CONTRACTS } from "@/lib/strategy/mr-fibo-d1-guard-readiness";
 
 export type FiboGuardClientBucket = "READY" | "EA_NOT_READY" | "PLATFORM_BLOCKED";
 
@@ -36,6 +37,8 @@ export type FiboGuardClientRow = {
   actionHints: string[];
   lastEaError: string | null;
   licenseHref: string;
+  strategyConfigHref: string;
+  approvalHref: string;
   dailyRiskHref: string;
 };
 
@@ -98,9 +101,42 @@ export async function getFiboD1GuardOperationCenterView() {
     let bucket: FiboGuardClientBucket = "READY";
 
     const published = await getPublishedStrategyConfigForEa(license.id);
-    const config = published?.strategyConfig.risk;
-    const stopPoints = published?.strategyConfig.risk.stop_pontos ?? null;
-    const loteTotal = config?.lote_total ?? null;
+    const draftRow = await prisma.strategyRuntimeConfig.findFirst({
+      where: {
+        licenseId: license.id,
+        strategyCode: MR_FIBO_D1_GUARD_CODE,
+        status: StrategyRuntimeConfigStatus.DRAFT,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    const approval = license.realTradingApprovals[0] ?? null;
+    const maxContracts = approval?.maxContracts ?? 1;
+    const approvalHref = approval
+      ? `/admin/real-trading/approvals/${approval.id}`
+      : `/admin/real-trading/approvals?licenseId=${license.id}`;
+
+    let loteTotal = published?.strategyConfig.risk.lote_total ?? null;
+    let stopPoints = published?.strategyConfig.risk.stop_pontos ?? null;
+
+    if (loteTotal == null && draftRow?.config != null) {
+      const parsedDraft = mrFiboD1GuardConfigSchema.safeParse(draftRow.config);
+      if (parsedDraft.success) {
+        loteTotal = parsedDraft.data.risk.loteTotal;
+        stopPoints = parsedDraft.data.risk.stopPontos;
+      }
+    }
+
+    if (loteTotal == null) {
+      const defaults = buildDefaultMrFiboD1GuardConfig();
+      loteTotal = defaults.risk.loteTotal;
+      stopPoints = defaults.risk.stopPontos;
+    }
+
+    if (loteTotal > maxContracts) {
+      reasonCodes.push(LOT_TOTAL_EXCEEDS_MAX_CONTRACTS);
+      bucket = "PLATFORM_BLOCKED";
+    }
 
     let estimatedRiskBrl: number | null = null;
     const symbol = robot.symbol ?? license.expectedSymbol;
@@ -220,6 +256,8 @@ export async function getFiboD1GuardOperationCenterView() {
       actionHints: [...new Set(actionHints)],
       lastEaError: lastError?.errorMessage ?? null,
       licenseHref: `/admin/licenses/${license.id}`,
+      strategyConfigHref: `/admin/licenses/${license.id}/strategy-config`,
+      approvalHref,
       dailyRiskHref: `/admin/real-trading/daily-risk?license_id=${license.id}`,
     });
   }

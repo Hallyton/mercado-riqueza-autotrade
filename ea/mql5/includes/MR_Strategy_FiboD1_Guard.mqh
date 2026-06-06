@@ -54,8 +54,3 @@ datetime MR_Fibo_DayStart(datetime when)
    dt.sec = 0;
    return StructToTime(dt);
   }
-
-bool MR_Fibo_IsConfigReadyForReal()
-  {
-   return g_mr_fibo_config.loaded;
-  }

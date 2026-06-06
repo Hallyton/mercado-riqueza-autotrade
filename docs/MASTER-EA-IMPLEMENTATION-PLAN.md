@@ -2660,6 +2660,17 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | MQL5 | `MR_Strategy_FiboD1_Guard_Core.mqh` (lógica EA_FIBO_D1) + guard can-trade |
 | Doc | [`docs/MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md`](MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md) |
 
+### Fase 15.4.1 — Contract Limit Regularization Flow
+
+**Status:** `MR_FIBO_D1_GUARD_CONTRACT_LIMIT_REGULARIZATION_FLOW_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| UX | strategy-config separa limite aprovado (readonly) vs contratos configurados |
+| Bloqueio | `LOT_TOTAL_EXCEEDS_MAX_CONTRACTS` na publicação e centro operacional |
+| Risco | Card de risco estimado por stop + comparação stop diário |
+| Lib | `lib/strategy/mr-fibo-d1-guard-readiness.ts` |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

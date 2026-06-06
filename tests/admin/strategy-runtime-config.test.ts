@@ -177,6 +177,79 @@ describe("strategy runtime config admin", () => {
     );
   });
 
+  it("blocks publish when loteTotal exceeds maxContracts", async () => {
+    prismaMock.license.findUnique.mockResolvedValue({
+      ...baseLicense,
+      realTradingApprovals: [{ id: "ap1", maxContracts: 1 }],
+    });
+    const cfg = buildDefaultMrFiboD1GuardConfig();
+    prismaMock.strategyRuntimeConfig.findFirst.mockImplementation(async (args) => {
+      if (args?.where?.status === StrategyRuntimeConfigStatus.DRAFT) {
+        return {
+          id: "cfg1",
+          version: 1,
+          status: StrategyRuntimeConfigStatus.DRAFT,
+          config: cfg,
+          configHash: "abc",
+          notes: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          publishedAt: null,
+          publishedBy: null,
+          createdBy: { id: "admin1", name: "Admin", email: "a@b.com" },
+        };
+      }
+      return null;
+    });
+
+    await expect(
+      publishStrategyConfig({ licenseId: "lic1", actorId: "admin1" })
+    ).rejects.toMatchObject({ code: "LOT_TOTAL_EXCEEDS_MAX_CONTRACTS" });
+  });
+
+  it("loads readiness with maxContracts in admin view", async () => {
+    prismaMock.license.findUnique.mockResolvedValue({
+      ...baseLicense,
+      realTradingApprovals: [{ id: "ap1", maxContracts: 1 }],
+    });
+    const view = await getStrategyConfigAdminView("lic1");
+    expect(view.operationalLimit.approvedMaxContracts).toBe(1);
+    expect(view.operationalLimit.approvalHref).toBe(
+      "/admin/real-trading/approvals/ap1"
+    );
+    expect(view.readiness.contractLimit.exceedsLimit).toBe(true);
+    expect(view.identification.maxContracts).toBe(1);
+  });
+
+  it("allows draft save when loteTotal exceeds maxContracts", async () => {
+    const cfg = buildDefaultMrFiboD1GuardConfig();
+    prismaMock.license.findUnique.mockResolvedValue({
+      ...baseLicense,
+      realTradingApprovals: [{ id: "ap1", maxContracts: 1 }],
+    });
+    prismaMock.strategyRuntimeConfig.create.mockResolvedValue({
+      id: "cfg1",
+      version: 1,
+      status: StrategyRuntimeConfigStatus.DRAFT,
+      config: cfg,
+      configHash: "abc",
+      notes: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      publishedAt: null,
+      publishedBy: null,
+      createdBy: { id: "admin1", name: "Admin", email: "a@b.com" },
+    });
+
+    await saveStrategyConfigDraft({
+      licenseId: "lic1",
+      config: cfg,
+      actorId: "admin1",
+    });
+
+    expect(prismaMock.strategyRuntimeConfig.create).toHaveBeenCalled();
+  });
+
   it("returns published config for EA", async () => {
     const cfg = buildDefaultMrFiboD1GuardConfig();
     prismaMock.strategyRuntimeConfig.findFirst.mockResolvedValue({

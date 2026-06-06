@@ -29,6 +29,10 @@
 
 `/admin/real-trading/fibo-d1-guard` — prontos, EA não pronto, bloqueados, decisões recentes.
 
+## Limite operacional vs contratos
+
+`MaxContracts` vem da aprovação REAL — **não** é editável na strategy-config. Se `loteTotal` exceder o limite, publicação bloqueada (`LOT_TOTAL_EXCEEDS_MAX_CONTRACTS`); rascunho pode ser salvo. Regularizar via aprovação REAL ou reduzir contratos na config.
+
 ## Caixa preta
 
 Cliente não vê parâmetros. Admin vê contratos, stop, takes, horários.

@@ -186,7 +186,7 @@ export function validateMrFiboD1GuardConfigWithContext(
     const issue = new z.ZodError([
       {
         code: z.ZodIssueCode.custom,
-        message: `Lote total (${parsed.data.risk.loteTotal}) excede maxContracts (${maxContracts}).`,
+        message: `Contratos configurados (${parsed.data.risk.loteTotal}) excedem o limite operacional aprovado (${maxContracts}).`,
         path: ["risk", "loteTotal"],
       },
     ]);

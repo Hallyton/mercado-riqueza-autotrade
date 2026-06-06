@@ -12,11 +12,16 @@ import {
 } from "@/lib/risk/autonomous-strategy-reasons";
 import {
   buildDefaultMrFiboD1GuardConfig,
+  mrFiboD1GuardConfigSchema,
   toEaMrFiboD1GuardStrategyConfig,
   validateMrFiboD1GuardConfigWithContext,
   type MrFiboD1GuardConfig,
 } from "@/lib/strategy/mr-fibo-d1-guard-config";
 import { hashMrFiboD1GuardConfig } from "@/lib/strategy/mr-fibo-d1-guard-config-hash";
+import {
+  analyzeStrategyConfigReadiness,
+  LOT_TOTAL_EXCEEDS_MAX_CONTRACTS,
+} from "@/lib/strategy/mr-fibo-d1-guard-readiness";
 
 export class StrategyRuntimeConfigError extends Error {
   constructor(
@@ -34,6 +39,7 @@ type LicenseContext = {
   robotInstanceId: string | null;
   strategyCode: string;
   maxContracts: number;
+  approvalId: string | null;
   magicNumber: number | null;
   symbol: string | null;
   mt5Login: string | null;
@@ -69,7 +75,7 @@ async function loadLicenseContext(licenseId: string): Promise<LicenseContext> {
         where: { status: RealTradingApprovalStatus.APPROVED },
         orderBy: { approvedAt: "desc" },
         take: 1,
-        select: { maxContracts: true },
+        select: { maxContracts: true, id: true },
       },
     },
   });
@@ -79,7 +85,8 @@ async function loadLicenseContext(licenseId: string): Promise<LicenseContext> {
   }
 
   const robot = license.robotInstances[0] ?? null;
-  const approvalMax = license.realTradingApprovals[0]?.maxContracts ?? null;
+  const approval = license.realTradingApprovals[0] ?? null;
+  const approvalMax = approval?.maxContracts ?? null;
   const maxContracts = approvalMax ?? 1;
 
   const dailyLimit = await prisma.dailyFinancialRiskLimit.findFirst({
@@ -104,6 +111,7 @@ async function loadLicenseContext(licenseId: string): Promise<LicenseContext> {
     robotInstanceId: robot?.id ?? null,
     strategyCode: MR_FIBO_D1_GUARD_CODE,
     maxContracts,
+    approvalId: approval?.id ?? null,
     magicNumber: robot?.magicNumber ?? license.expectedMagicNumber,
     symbol,
     mt5Login: license.mt5Account?.login ?? license.expectedAccountLogin,
@@ -248,6 +256,26 @@ export async function getStrategyConfigAdminView(licenseId: string) {
     blockers.push("AUTONOMOUS_STRATEGY_DISABLED");
   }
 
+  const dailySnapshot = dailySnapshots[0];
+  const remainingLossBrl = dailySnapshot?.state
+    ? dailySnapshot.state.remainingLossCents / 100
+    : dailySnapshot?.limit.enabled
+      ? dailySnapshot.limit.dailyLossLimitCents / 100
+      : null;
+
+  const readiness = analyzeStrategyConfigReadiness(workingConfig, {
+    maxContracts: ctx.maxContracts,
+    pointValueBrl: ctx.pointValueBrl,
+    dailyLossLimitCents: ctx.dailyLossLimitCents,
+    dailyRiskEnabled: ctx.dailyRiskEnabled,
+    remainingLossBrl,
+    requiresDailyFinancialStop: ctx.requiresDailyFinancialStop,
+  });
+
+  const approvalHref = ctx.approvalId
+    ? `/admin/real-trading/approvals/${ctx.approvalId}`
+    : `/admin/real-trading/approvals?licenseId=${ctx.licenseId}`;
+
   return {
     licenseId: ctx.licenseId,
     robotInstanceId: ctx.robotInstanceId,
@@ -261,6 +289,14 @@ export async function getStrategyConfigAdminView(licenseId: string) {
       magicNumber: ctx.magicNumber,
       maxContracts: ctx.maxContracts,
     },
+    operationalLimit: {
+      approvedMaxContracts: ctx.maxContracts,
+      approvalId: ctx.approvalId,
+      approvalHref,
+      licenseHref: `/admin/licenses/${ctx.licenseId}`,
+    },
+    pointValueBrl: ctx.pointValueBrl,
+    readiness,
     platformPolicy: {
       permitirEstrategiaAutonomaDemo: true,
       permitirEstrategiaAutonomaRealSomenteViaSite: true,
@@ -295,20 +331,16 @@ export async function saveStrategyConfigDraft(input: {
   ipAddress?: string | null;
 }) {
   const ctx = await loadLicenseContext(input.licenseId);
-  const validated = validateMrFiboD1GuardConfigWithContext(input.config, {
-    maxContracts: ctx.maxContracts,
-    dailyLossLimitCents: ctx.dailyLossLimitCents,
-    pointValueBrl: ctx.pointValueBrl,
-  });
-  if (!validated.success) {
+  const parsed = mrFiboD1GuardConfigSchema.safeParse(input.config);
+  if (!parsed.success) {
     throw new StrategyRuntimeConfigError(
-      validated.error.issues.map((i) => i.message).join("; "),
+      parsed.error.issues.map((i) => i.message).join("; "),
       "INVALID_CONFIG",
       400
     );
   }
 
-  const config = validated.data;
+  const config = parsed.data;
   const configHash = hashMrFiboD1GuardConfig(config);
 
   const existingDraft = await prisma.strategyRuntimeConfig.findFirst({
@@ -441,6 +473,13 @@ export async function publishStrategyConfig(input: {
     pointValueBrl: ctx.pointValueBrl,
   });
   if (!validated.success) {
+    if (config.risk.loteTotal > ctx.maxContracts) {
+      throw new StrategyRuntimeConfigError(
+        "Contratos configurados excedem o limite operacional aprovado para esta licença.",
+        LOT_TOTAL_EXCEEDS_MAX_CONTRACTS,
+        409
+      );
+    }
     throw new StrategyRuntimeConfigError(
       validated.error.issues.map((i) => i.message).join("; "),
       "INVALID_CONFIG",

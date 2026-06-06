@@ -19,9 +19,9 @@ Permitir que administradores configurem parâmetros operacionais da estratégia 
 
 ## Grupos de inputs (12)
 
-1. Identificação (readonly: código, magic, maxContracts)
+1. Identificação (readonly: limite operacional aprovado, magic, conta)
 2. Estratégia Fibo D1 — percentual fibo
-3. Gestão de risco — lote total, stop pontos
+3. Gestão de risco — **contratos configurados na estratégia** (loteTotal), stop pontos
 4. Parciais e trailing
 5. Horários operacionais
 6. Execução e spread
@@ -31,6 +31,22 @@ Permitir que administradores configurem parâmetros operacionais da estratégia 
 10. Painel administrativo
 11. Stop financeiro diário (resumo + link)
 12. Publicação / versão
+
+## Limite operacional aprovado vs contratos da estratégia
+
+**MaxContracts** é uma trava operacional da licença/aprovação REAL e **não** deve ser editado na tela de parâmetros da estratégia.
+
+- Campo readonly: **Limite operacional aprovado** (vem da aprovação REAL / fallback 1).
+- Campo editável: **Contratos configurados na estratégia** (`loteTotal`).
+
+Se `loteTotal > maxContracts`, a publicação é bloqueada com `LOT_TOTAL_EXCEEDS_MAX_CONTRACTS`. O admin pode:
+
+1. Aumentar o limite na **aprovação de conta real** (`/admin/real-trading/approvals/[id]`).
+2. Reduzir `loteTotal` na strategy-config (botão “Reduzir contratos para N” altera só o formulário local).
+
+Rascunho pode ser salvo acima do limite; **publicar** exige regularização.
+
+A tela também exibe **risco estimado por stop** (`loteTotal × stopPontos × valorPorPonto`) e compara com o stop financeiro diário.
 
 ## Persistência
 

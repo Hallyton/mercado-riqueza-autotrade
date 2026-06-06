@@ -130,15 +130,10 @@ src = src.replace(
   `else if(direcaoReversaoPendente == 1)\n      enviada = EnviarCompraReversaoMercado();`
 );
 
-// Default ENTRY in CheckMarketEntries
+// Default ENTRY flag only in implementation (not forward declaration)
 src = src.replace(
-  /void CheckMarketEntries\(\)/,
-  `void CheckMarketEntries()\n  {\n   g_fibo_trade_action = "ENTRY";`
-);
-// Fix double brace - CheckMarketEntries already has {
-src = src.replace(
-  /void CheckMarketEntries\(\)\n  \{\n   g_fibo_trade_action = "ENTRY";\n  \{/,
-  `void CheckMarketEntries()\n  {\n   g_fibo_trade_action = "ENTRY";`
+  /void CheckMarketEntries\(\)\s*\{\s*\n(\s*)if\(HasOurPosition\(\)\)/,
+  `void CheckMarketEntries()\n{\n$1g_fibo_trade_action = "ENTRY";\n\n$1if(HasOurPosition())`
 );
 
 writeFileSync(corePath, src, "utf8");

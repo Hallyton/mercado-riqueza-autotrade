@@ -10,6 +10,11 @@ import {
   mrFiboD1GuardConfigSchema,
   type MrFiboD1GuardConfig,
 } from "@/lib/strategy/mr-fibo-d1-guard-config";
+import {
+  analyzeStrategyConfigReadiness,
+  applyLoteTotalToApprovedMax,
+  LOT_TOTAL_EXCEEDS_MAX_CONTRACTS,
+} from "@/lib/strategy/mr-fibo-d1-guard-readiness";
 import type { getStrategyConfigAdminView } from "@/lib/admin/strategy-runtime-config";
 
 type AdminView = NonNullable<Awaited<ReturnType<typeof getStrategyConfigAdminView>>>;
@@ -74,18 +79,33 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
-  const validation = useMemo(() => {
+  const daily = view.dailyRisk[0];
+  const approvedMax = view.operationalLimit.approvedMaxContracts;
+
+  const readiness = useMemo(() => {
+    return analyzeStrategyConfigReadiness(config, {
+      maxContracts: approvedMax,
+      pointValueBrl: view.pointValueBrl,
+      dailyLossLimitCents: daily ? daily.dailyLossLimitBrl * 100 : null,
+      dailyRiskEnabled: daily?.enabled ?? false,
+      remainingLossBrl: daily?.remainingLossBrl ?? null,
+      requiresDailyFinancialStop: view.platformPolicy.requerDailyFinancialStop,
+    });
+  }, [config, approvedMax, view.pointValueBrl, daily, view.platformPolicy.requerDailyFinancialStop]);
+
+  const schemaIssues = useMemo(() => {
     const parsed = mrFiboD1GuardConfigSchema.safeParse(config);
     if (!parsed.success) {
       return parsed.error.issues.map((i) => i.message);
     }
-    if (config.risk.loteTotal > view.identification.maxContracts) {
-      return [
-        `Lote total excede maxContracts (${view.identification.maxContracts}).`,
-      ];
-    }
     return [];
-  }, [config, view.identification.maxContracts]);
+  }, [config]);
+
+  const contractLimitIssue = readiness.issues.find(
+    (issue) => issue.code === LOT_TOTAL_EXCEEDS_MAX_CONTRACTS
+  );
+  const canSaveDraft = schemaIssues.length === 0;
+  const canPublish = readiness.canPublish && schemaIssues.length === 0;
 
   function patchConfig(updater: (prev: MrFiboD1GuardConfig) => MrFiboD1GuardConfig) {
     setConfig((prev) => updater(prev));
@@ -155,8 +175,6 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
     }
   }
 
-  const daily = view.dailyRisk[0];
-
   return (
     <div className="space-y-6">
       <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -173,13 +191,128 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
         </ul>
       )}
 
-      {validation.length > 0 && (
+      {schemaIssues.length > 0 && (
         <ul className="rounded-lg border border-red-500/30 p-4 text-sm text-red-300">
-          {validation.map((msg) => (
+          {schemaIssues.map((msg) => (
             <li key={msg}>{msg}</li>
           ))}
         </ul>
       )}
+
+      {contractLimitIssue && (
+        <Card className="border-red-500/40 bg-red-500/5 p-5">
+          <CardTitle className="text-base text-red-200">
+            Limite operacional insuficiente
+          </CardTitle>
+          <CardDescription className="mt-2 text-sm text-red-100/90">
+            {contractLimitIssue.message}
+          </CardDescription>
+          <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">Limite aprovado atual</dt>
+              <dd className="font-medium">{approvedMax} contrato(s)</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Contratos configurados</dt>
+              <dd className="font-medium">{readiness.contractLimit.configuredContracts}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Diferença</dt>
+              <dd className="font-medium">
+                precisa liberar +{readiness.contractLimit.contractsToRelease} contrato(s)
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Status</dt>
+              <dd className="font-semibold text-red-300">BLOQUEADO PARA PUBLICAÇÃO</dd>
+            </div>
+          </dl>
+          <p className="mt-3 font-mono text-xs text-red-200/80">
+            {LOT_TOTAL_EXCEEDS_MAX_CONTRACTS} — {contractLimitIssue.actionHint}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={view.operationalLimit.approvalHref}
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-gold/40 px-5 text-sm font-semibold text-gold hover:border-gold hover:bg-gold/10"
+            >
+              Abrir aprovação de conta real
+            </Link>
+            <Link
+              href={view.operationalLimit.licenseHref}
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-gold/40 px-5 text-sm font-semibold text-gold hover:border-gold hover:bg-gold/10"
+            >
+              Abrir licença
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setConfig((prev) => applyLoteTotalToApprovedMax(prev, approvedMax))
+              }
+            >
+              Reduzir contratos para {approvedMax}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <Card className="border-gold/20 p-5">
+        <CardHeader className="p-0">
+          <CardTitle className="text-base">Risco estimado por stop</CardTitle>
+          <CardDescription className="mt-1">
+            loteTotal × stopPontos × valor por ponto por contrato
+          </CardDescription>
+        </CardHeader>
+        <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-muted-foreground">Valor por ponto (R$)</dt>
+            <dd>
+              {readiness.estimatedRisk.pointValueBrl != null
+                ? readiness.estimatedRisk.pointValueBrl.toFixed(2)
+                : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Stop em pontos</dt>
+            <dd>{readiness.estimatedRisk.stopPoints}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Contratos</dt>
+            <dd>{readiness.estimatedRisk.contracts}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Risco estimado (R$)</dt>
+            <dd className="font-medium text-gold">
+              {readiness.estimatedRisk.estimatedRiskBrl != null
+                ? readiness.estimatedRisk.estimatedRiskBrl.toFixed(2)
+                : "—"}
+            </dd>
+          </div>
+          {daily && (
+            <>
+              <div>
+                <dt className="text-muted-foreground">Limite diário (R$)</dt>
+                <dd>{daily.dailyLossLimitBrl.toFixed(2)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Perda restante (R$)</dt>
+                <dd>{daily.remainingLossBrl.toFixed(2)}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">Status stop diário</dt>
+                <dd>
+                  {readiness.estimatedRisk.dailyRiskStatus === "OK" && "OK"}
+                  {readiness.estimatedRisk.dailyRiskStatus === "NOT_CONFIGURED" &&
+                    "STOP FINANCEIRO NÃO CONFIGURADO"}
+                  {readiness.estimatedRisk.dailyRiskStatus === "EXCEEDS_DAILY_STOP" &&
+                    "RISCO EXCEDE STOP FINANCEIRO"}
+                  {readiness.estimatedRisk.dailyRiskStatus === "UNKNOWN" && "—"}
+                </dd>
+              </div>
+            </>
+          )}
+        </dl>
+      </Card>
 
       <GroupCard title="01 — Identificação">
         <FieldRow label="Nome da estratégia">
@@ -203,8 +336,16 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
         <FieldRow label="MagicNumber">
           <Input value={String(view.identification.magicNumber ?? "—")} readOnly disabled />
         </FieldRow>
-        <FieldRow label="MaxContracts">
-          <Input value={String(view.identification.maxContracts)} readOnly disabled />
+        <FieldRow
+          label="Limite operacional aprovado"
+          description="Trava da licença/aprovação REAL — não editável nesta tela."
+        >
+          <Input
+            value={`${approvedMax} contrato(s)`}
+            readOnly
+            disabled
+            className="font-medium"
+          />
         </FieldRow>
       </GroupCard>
 
@@ -230,7 +371,10 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
       </GroupCard>
 
       <GroupCard title="03 — Gestão de Risco">
-        <FieldRow label="Lote total / contratos">
+        <FieldRow
+          label="Contratos configurados na estratégia"
+          description="Lote total usado pelo MR Fibo D1 Guard — deve respeitar o limite aprovado."
+        >
           <Input
             type="number"
             min={1}
@@ -593,7 +737,7 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
             type="button"
-            disabled={busy !== null || validation.length > 0}
+            disabled={busy !== null || !canSaveDraft}
             onClick={() => postAction("draft", { config, notes })}
           >
             {busy === "draft" ? "Salvando…" : "Salvar rascunho"}
@@ -601,7 +745,7 @@ export function LicenseStrategyConfigForm({ view }: { view: AdminView }) {
           <Button
             type="button"
             variant="outline"
-            disabled={busy !== null || validation.length > 0}
+            disabled={busy !== null || !canPublish}
             onClick={() => postAction("publish", { notes })}
           >
             {busy === "publish" ? "Publicando…" : "Publicar configuração"}

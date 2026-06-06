@@ -75,10 +75,14 @@ function ClientTable({
                   </Link>
                   {" · "}
                   <Link
-                    href={`/admin/licenses/${row.licenseId}/strategy-config`}
+                    href={row.strategyConfigHref}
                     className="text-gold hover:underline"
                   >
-                    Config
+                    Configurar parâmetros
+                  </Link>
+                  {" · "}
+                  <Link href={row.approvalHref} className="text-gold hover:underline">
+                    Aprovação
                   </Link>
                   {" · "}
                   <Link href={row.dailyRiskHref} className="text-gold hover:underline">
