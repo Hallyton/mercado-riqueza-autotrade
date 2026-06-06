@@ -1,6 +1,8 @@
 import { DailyFinancialRiskStatus } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
+import { resolveFiboDailyRiskLimit } from "@/lib/admin/daily-risk-limit-resolver";
+import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
 
 const DAILY_RISK_STALE_MS = 20 * 60 * 1000;
 
@@ -142,18 +144,35 @@ export async function loadDailyRiskContext(input: {
   const login = input.accountLogin.trim();
   const server = input.accountServer.trim();
   const symbol = input.symbol.trim().toUpperCase();
+  const strategyCode = normalizeFiboStrategyCode(input.strategyCode);
 
-  const limit = await prisma.dailyFinancialRiskLimit.findUnique({
+  let limit = await prisma.dailyFinancialRiskLimit.findUnique({
     where: {
       licenseId_accountLogin_accountServer_strategyCode_symbol: {
         licenseId: input.licenseId,
         accountLogin: login,
         accountServer: server,
-        strategyCode: input.strategyCode,
+        strategyCode,
         symbol,
       },
     },
   });
+
+  if (!limit && strategyCode === MR_FIBO_D1_GUARD_CODE) {
+    const siblings = await prisma.dailyFinancialRiskLimit.findMany({
+      where: {
+        licenseId: input.licenseId,
+        accountLogin: login,
+        accountServer: server,
+        symbol,
+      },
+    });
+    limit = resolveFiboDailyRiskLimit(siblings, {
+      accountLogin: login,
+      accountServer: server,
+      symbol,
+    }).effective;
+  }
 
   const state = limit
     ? await prisma.dailyFinancialRiskState.findUnique({
@@ -162,7 +181,7 @@ export async function loadDailyRiskContext(input: {
             licenseId: input.licenseId,
             accountLogin: login,
             accountServer: server,
-            strategyCode: input.strategyCode,
+            strategyCode: limit.strategyCode,
             symbol,
             tradeDate,
           },
@@ -297,13 +316,14 @@ export async function processDailyRiskReport(input: {
   realizedPnl: number;
   openPnl: number;
 }) {
+  const strategyCode = normalizeFiboStrategyCode(input.strategyCode);
   const limit = await prisma.dailyFinancialRiskLimit.findUnique({
     where: {
       licenseId_accountLogin_accountServer_strategyCode_symbol: {
         licenseId: input.licenseId,
         accountLogin: input.accountLogin.trim(),
         accountServer: input.accountServer.trim(),
-        strategyCode: input.strategyCode || MR_FIBO_D1_GUARD_CODE,
+        strategyCode,
         symbol: input.symbol.trim().toUpperCase(),
       },
     },

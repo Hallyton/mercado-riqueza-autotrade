@@ -56,15 +56,70 @@ function ClientTable({
                 <td className="py-2 pr-3">{row.eaOnline ? "Online" : "Offline"}</td>
                 <td className="py-2 pr-3 text-xs">
                   {row.reasonCodes.length > 0 ? (
-                    <ul>
-                      {row.reasonCodes.map((c) => (
-                        <li key={c}>
-                          <span className="font-mono">{c}</span>
-                          {" — "}
-                          {row.actionHints[row.reasonCodes.indexOf(c)] ?? ""}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-2">
+                      <ul>
+                        {row.reasonCodes.map((c) => (
+                          <li key={c}>
+                            <span className="font-mono">{c}</span>
+                            {" — "}
+                            {row.actionHints[row.reasonCodes.indexOf(c)] ?? ""}
+                          </li>
+                        ))}
+                      </ul>
+                      {row.dailyRiskDiagnostic &&
+                        row.reasonCodes.some((code) =>
+                          code.startsWith("DAILY_FINANCIAL_STOP")
+                        ) && (
+                          <dl className="rounded border border-white/10 bg-black/20 p-2 text-[11px]">
+                            <div>
+                              <dt className="text-muted-foreground">Stop diário</dt>
+                              <dd>
+                                {row.dailyRiskDiagnostic.foundDailyRiskLimit
+                                  ? "encontrado"
+                                  : "não encontrado"}{" "}
+                                · esperado{" "}
+                                {row.dailyRiskDiagnostic.expectedStrategyCode}
+                                {row.dailyRiskDiagnostic.foundDailyRiskStrategyCode &&
+                                  ` · salvo ${row.dailyRiskDiagnostic.foundDailyRiskStrategyCode}`}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-muted-foreground">Conta / símbolo</dt>
+                              <dd>
+                                {row.dailyRiskDiagnostic.accountLogin ?? "—"}@
+                                {row.dailyRiskDiagnostic.accountServer ?? "—"} ·{" "}
+                                {row.dailyRiskDiagnostic.symbol ?? "—"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-muted-foreground">Limite / status</dt>
+                              <dd>
+                                {row.dailyRiskDiagnostic.dailyLimitBrl != null
+                                  ? `R$ ${row.dailyRiskDiagnostic.dailyLimitBrl.toFixed(2)}`
+                                  : "—"}{" "}
+                                · enabled{" "}
+                                {row.dailyRiskDiagnostic.enabled == null
+                                  ? "—"
+                                  : row.dailyRiskDiagnostic.enabled
+                                    ? "sim"
+                                    : "não"}{" "}
+                                · includeOpenPnL{" "}
+                                {row.dailyRiskDiagnostic.includeOpenPnL == null
+                                  ? "—"
+                                  : row.dailyRiskDiagnostic.includeOpenPnL
+                                    ? "sim"
+                                    : "não"}
+                              </dd>
+                            </div>
+                            {row.dailyRiskDiagnostic.detailMessage && (
+                              <div>
+                                <dt className="text-muted-foreground">Diagnóstico</dt>
+                                <dd>{row.dailyRiskDiagnostic.detailMessage}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        )}
+                    </div>
                   ) : (
                     "PRONTO PARA OPERAR"
                   )}

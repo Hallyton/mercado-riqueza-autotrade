@@ -5,6 +5,11 @@ import {
 } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
+import {
+  buildDailyRiskLinkageDetail,
+  resolveFiboDailyRiskLimit,
+} from "@/lib/admin/daily-risk-limit-resolver";
+import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
 
 export type DailyRiskOperationalStatus =
   | "CONFIGURED"
@@ -35,6 +40,8 @@ export type DailyRiskEligibleLicense = {
   robotInstanceId: string | null;
   autonomousStrategyEnabled: boolean;
   existingDailyRiskLimit: DailyRiskExistingLimitSummary | null;
+  storedStrategyCode: string | null;
+  strategyCodeMismatch: boolean;
   operationalStatus: DailyRiskOperationalStatus;
   selectable: boolean;
 };
@@ -42,8 +49,7 @@ export type DailyRiskEligibleLicense = {
 function resolveStrategyCode(
   robotStrategyCode: string | null | undefined
 ): string {
-  if (robotStrategyCode?.trim()) return robotStrategyCode.trim();
-  return MR_FIBO_D1_GUARD_CODE;
+  return normalizeFiboStrategyCode(robotStrategyCode);
 }
 
 function findMatchingLimit(
@@ -52,25 +58,43 @@ function findMatchingLimit(
     accountLogin: string;
     accountServer: string;
     symbol: string;
-    strategyCode: string;
   }
-): DailyFinancialRiskLimit | undefined {
-  return limits.find(
-    (limit) =>
-      limit.accountLogin === input.accountLogin &&
-      limit.accountServer === input.accountServer &&
-      limit.symbol === input.symbol.toUpperCase() &&
-      limit.strategyCode === input.strategyCode
-  );
+): {
+  summary: DailyRiskExistingLimitSummary | null;
+  storedStrategyCode: string | null;
+  strategyCodeMismatch: boolean;
+} {
+  const resolved = resolveFiboDailyRiskLimit(limits, input);
+  const effective = resolved.canonical ?? resolved.effective;
+  if (!effective) {
+    return {
+      summary: null,
+      storedStrategyCode: resolved.aliasLimits[0]?.strategyCode ?? null,
+      strategyCodeMismatch: resolved.strategyMismatch,
+    };
+  }
+  return {
+    summary: {
+      id: effective.id,
+      enabled: effective.enabled,
+      dailyLossLimitCents: effective.dailyLossLimitCents,
+      includeOpenPnL: effective.includeOpenPnL,
+      updatedAt: effective.updatedAt.toISOString(),
+    },
+    storedStrategyCode: effective.strategyCode,
+    strategyCodeMismatch: resolved.strategyMismatch,
+  };
 }
 
 function deriveOperationalStatus(input: {
   hasMt5: boolean;
   autonomousStrategyEnabled: boolean;
-  existing: DailyFinancialRiskLimit | undefined;
+  existing: DailyRiskExistingLimitSummary | null;
+  strategyCodeMismatch: boolean;
 }): DailyRiskOperationalStatus {
   if (!input.hasMt5) return "NO_MT5_ACCOUNT";
   if (!input.autonomousStrategyEnabled) return "STRATEGY_NOT_ENABLED";
+  if (input.strategyCodeMismatch) return "NOT_CONFIGURED";
   if (!input.existing) return "NOT_CONFIGURED";
   if (!input.existing.enabled) return "INACTIVE";
   return "CONFIGURED";
@@ -124,19 +148,23 @@ export async function listDailyRiskEligibleLicenses(): Promise<
         accountServer
     );
 
-    const existing = hasMt5 && symbol
+    const existingMatch = hasMt5 && symbol
       ? findMatchingLimit(license.dailyFinancialRiskLimits, {
           accountLogin: accountLogin!,
           accountServer: accountServer!,
           symbol,
-          strategyCode,
         })
-      : undefined;
+      : {
+          summary: null,
+          storedStrategyCode: null,
+          strategyCodeMismatch: false,
+        };
 
     const operationalStatus = deriveOperationalStatus({
       hasMt5,
       autonomousStrategyEnabled,
-      existing,
+      existing: existingMatch.summary,
+      strategyCodeMismatch: existingMatch.strategyCodeMismatch,
     });
 
     const selectable =
@@ -161,15 +189,9 @@ export async function listDailyRiskEligibleLicenses(): Promise<
       licenseStatus: license.status,
       robotInstanceId: robot?.id ?? null,
       autonomousStrategyEnabled,
-      existingDailyRiskLimit: existing
-        ? {
-            id: existing.id,
-            enabled: existing.enabled,
-            dailyLossLimitCents: existing.dailyLossLimitCents,
-            includeOpenPnL: existing.includeOpenPnL,
-            updatedAt: existing.updatedAt.toISOString(),
-          }
-        : null,
+      existingDailyRiskLimit: existingMatch.summary,
+      storedStrategyCode: existingMatch.storedStrategyCode,
+      strategyCodeMismatch: existingMatch.strategyCodeMismatch,
       operationalStatus,
       selectable,
     };

@@ -24,6 +24,14 @@ vi.mock("@/lib/admin/record-action", () => ({
   recordAdminAction: vi.fn().mockResolvedValue({ id: "action1" }),
 }));
 
+vi.mock("@/lib/admin/normalize-fibo-daily-risk-records", () => ({
+  normalizeFiboDailyRiskStrategyCodes: vi.fn().mockResolvedValue({
+    limitsUpdated: 0,
+    limitsDeleted: 0,
+    statesUpdated: 0,
+  }),
+}));
+
 import { recordAdminAction } from "@/lib/admin/record-action";
 import {
   DailyFinancialRiskAdminError,
@@ -146,7 +154,15 @@ describe("upsertDailyFinancialRiskLimitValidated", () => {
   it("creates DailyFinancialRiskLimit and audit", async () => {
     const result = await upsertDailyFinancialRiskLimitValidated(validInput);
     expect(result.created).toBe(true);
-    expect(prismaMock.dailyFinancialRiskLimit.upsert).toHaveBeenCalled();
+    expect(prismaMock.dailyFinancialRiskLimit.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          licenseId_accountLogin_accountServer_strategyCode_symbol: expect.objectContaining({
+            strategyCode: "MR_FIBO_D1_GUARD",
+          }),
+        }),
+      })
+    );
     expect(recordAdminAction).toHaveBeenCalledWith(
       expect.objectContaining({ action: "daily_risk.limit.created" })
     );

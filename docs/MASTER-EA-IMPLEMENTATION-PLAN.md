@@ -2710,6 +2710,17 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Audit | `daily_risk.limit.created` / `daily_risk.limit.updated` |
 | Integração | Centro Fibo linka `?licenseId=`; can-trade usa limite configurado |
 
+### Fase 15.4.5 — Vínculo stop diário ↔ MR Fibo D1 Guard
+
+**Status:** `FIBO_D1_DAILY_RISK_LINKAGE_FIXED_AND_TRACEABLE`
+
+| Item | Resultado |
+|------|-----------|
+| Causa | Lookup por `strategyCode` canônico vs alias/`symbol`/conta divergente |
+| Fix | `normalizeStrategyCode()` no save e `resolveFiboDailyRiskLimit()` no centro |
+| Reason | `DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH` quando só alias existe |
+| UI | Diagnóstico detalhado no centro Fibo + aviso na daily-risk |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`

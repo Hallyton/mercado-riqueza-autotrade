@@ -18,6 +18,7 @@ export const CAN_TRADE_REASON_CODES = [
   "STRATEGY_CONFIG_MISSING",
   "STRATEGY_CONFIG_HASH_MISMATCH",
   "DAILY_FINANCIAL_STOP_NOT_CONFIGURED",
+  "DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH",
   "DAILY_FINANCIAL_STOP_REACHED",
   "DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED",
   "DAILY_RISK_REPORT_MISSING",
@@ -53,6 +54,8 @@ export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
   STRATEGY_CONFIG_HASH_MISMATCH:
     "Hash da config no EA difere da versão publicada no site.",
   DAILY_FINANCIAL_STOP_NOT_CONFIGURED: "Stop financeiro diário não configurado.",
+  DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH:
+    "Existe stop diário configurado, mas para outro código de estratégia.",
   DAILY_FINANCIAL_STOP_REACHED: "Stop financeiro diário atingido.",
   DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED:
     "Risco estimado excede a perda restante do stop diário.",
@@ -73,6 +76,8 @@ export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>>
   STRATEGY_CONFIG_MISSING: "Publicar configuração da estratégia",
   STRATEGY_NOT_ENABLED_FOR_LICENSE: "Habilitar MR Fibo D1 Guard na licença",
   DAILY_FINANCIAL_STOP_NOT_CONFIGURED: "Configurar stop financeiro diário",
+  DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH:
+    "Atualizar configuração para MR_FIBO_D1_GUARD",
   EA_OFFLINE: "Verificar VPS/MT5",
   EA_AUTOTRADING_DISABLED: "Ativar AutoTrading",
   EA_REAL_ORDERS_DISABLED: "Desativar modo não envia ordens reais",

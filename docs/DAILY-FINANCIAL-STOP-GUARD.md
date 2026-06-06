@@ -46,6 +46,17 @@ Mensagem genérica no dashboard — sem valores de limite nem lógica interna.
 | Audit | `daily_risk.limit.created` / `daily_risk.limit.updated` |
 | Can-trade | Stop diário verificado antes de novas entradas autônomas |
 
+### Vínculo canônico com MR Fibo D1 Guard
+
+**Status:** `FIBO_D1_DAILY_RISK_LINKAGE_FIXED_AND_TRACEABLE`
+
+| Item | Detalhe |
+|------|---------|
+| Código canônico | `MR_FIBO_D1_GUARD` (aliases normalizados no save) |
+| Aliases | `fibo-d1-guard`, `MR Fibo D1 Guard`, etc. → `MR_FIBO_D1_GUARD` |
+| Centro Fibo | Diagnóstico por cliente; reason `DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH` |
+| Migração | `normalizeFiboDailyRiskStrategyCodes()` no load do centro + pós-upsert daily-risk |
+
 O admin **não** deve digitar manualmente licenseId/conta/servidor — evita erro operacional.
 
 ## Admin — pré-requisito da estratégia autônoma

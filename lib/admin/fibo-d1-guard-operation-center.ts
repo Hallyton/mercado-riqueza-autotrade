@@ -12,10 +12,33 @@ import {
 } from "@/lib/risk/autonomous-strategy-reasons";
 import { evaluateDailyFinancialStopForEntry } from "@/lib/risk/daily-financial-risk";
 import { isRealTradingEnabled } from "@/lib/risk/real-trading-guard";
+import {
+  buildDailyRiskLinkageDetail,
+  resolveFiboDailyRiskLimit,
+} from "@/lib/admin/daily-risk-limit-resolver";
+import { normalizeFiboDailyRiskStrategyCodes } from "@/lib/admin/normalize-fibo-daily-risk-records";
 import { buildDefaultMrFiboD1GuardConfig, mrFiboD1GuardConfigSchema } from "@/lib/strategy/mr-fibo-d1-guard-config";
 import { LOT_TOTAL_EXCEEDS_MAX_CONTRACTS } from "@/lib/strategy/mr-fibo-d1-guard-readiness";
 
 export type FiboGuardClientBucket = "READY" | "EA_NOT_READY" | "PLATFORM_BLOCKED";
+
+export type DailyRiskLinkageDiagnostic = {
+  licenseId: string;
+  accountLogin: string | null;
+  accountServer: string | null;
+  symbol: string | null;
+  expectedStrategyCode: string;
+  foundDailyRiskLimit: boolean;
+  foundDailyRiskStrategyCode: string | null;
+  dailyLimitBrl: number | null;
+  enabled: boolean | null;
+  includeOpenPnL: boolean | null;
+  riskEstimatedBrl: number | null;
+  remainingLossBrl: number | null;
+  dailyRiskStatus: string | null;
+  primaryReasonCode: string | null;
+  detailMessage: string | null;
+};
 
 export type FiboGuardClientRow = {
   bucket: FiboGuardClientBucket;
@@ -40,6 +63,7 @@ export type FiboGuardClientRow = {
   strategyConfigHref: string;
   approvalHref: string;
   dailyRiskHref: string;
+  dailyRiskDiagnostic: DailyRiskLinkageDiagnostic | null;
 };
 
 type EaReadySnapshot = {
@@ -69,6 +93,8 @@ function hintFor(code: string): string {
 }
 
 export async function getFiboD1GuardOperationCenterView() {
+  await normalizeFiboDailyRiskStrategyCodes();
+
   const licenses = await prisma.license.findMany({
     where: {
       robotInstances: { some: {} },
@@ -86,6 +112,7 @@ export async function getFiboD1GuardOperationCenterView() {
         orderBy: { approvedAt: "desc" },
         take: 1,
       },
+      dailyFinancialRiskLimits: true,
     },
     take: 200,
   });
@@ -139,7 +166,13 @@ export async function getFiboD1GuardOperationCenterView() {
     }
 
     let estimatedRiskBrl: number | null = null;
-    const symbol = robot.symbol ?? license.expectedSymbol;
+    const accountLogin =
+      license.mt5Account?.login ?? license.expectedAccountLogin ?? null;
+    const accountServer =
+      license.mt5Account?.server ?? license.expectedAccountServer ?? null;
+    const symbolRaw = robot.symbol ?? license.expectedSymbol ?? null;
+    const symbol = symbolRaw ? symbolRaw.trim().toUpperCase() : null;
+
     if (symbol && loteTotal && stopPoints) {
       const pointValue = await prisma.instrumentPointValue.findFirst({
         where: { symbol: symbol.toUpperCase() },
@@ -150,10 +183,53 @@ export async function getFiboD1GuardOperationCenterView() {
       }
     }
 
-    const dailyLimit = await prisma.dailyFinancialRiskLimit.findFirst({
-      where: { licenseId: license.id, strategyCode: MR_FIBO_D1_GUARD_CODE },
-      orderBy: { updatedAt: "desc" },
-    });
+    const dailyRiskResolution =
+      accountLogin && accountServer && symbol
+        ? resolveFiboDailyRiskLimit(license.dailyFinancialRiskLimits, {
+            accountLogin,
+            accountServer,
+            symbol,
+          })
+        : {
+            canonical: null,
+            aliasLimits: [],
+            effective: null,
+            strategyMismatch: false,
+            mismatchStrategyCodes: [],
+          };
+
+    const dailyLimit = dailyRiskResolution.canonical ?? dailyRiskResolution.effective;
+    let dailyRiskDiagnostic: DailyRiskLinkageDiagnostic | null = null;
+    let remainingLossBrl: number | null = null;
+    let dailyRiskStatus: string | null = null;
+
+    if (accountLogin && accountServer && symbol) {
+      dailyRiskDiagnostic = {
+        licenseId: license.id,
+        accountLogin,
+        accountServer,
+        symbol,
+        expectedStrategyCode: MR_FIBO_D1_GUARD_CODE,
+        foundDailyRiskLimit: Boolean(dailyLimit),
+        foundDailyRiskStrategyCode: dailyLimit?.strategyCode ?? null,
+        dailyLimitBrl: dailyLimit
+          ? dailyLimit.dailyLossLimitCents / 100
+          : null,
+        enabled: dailyLimit?.enabled ?? null,
+        includeOpenPnL: dailyLimit?.includeOpenPnL ?? null,
+        riskEstimatedBrl: estimatedRiskBrl,
+        remainingLossBrl: null,
+        dailyRiskStatus: null,
+        primaryReasonCode: null,
+        detailMessage: buildDailyRiskLinkageDetail({
+          resolution: dailyRiskResolution,
+          expectedStrategyCode: MR_FIBO_D1_GUARD_CODE,
+          accountLogin,
+          accountServer,
+          symbol,
+        }),
+      };
+    }
 
     if (license.status !== LicenseStatus.ACTIVE) {
       reasonCodes.push("LICENSE_NOT_ACTIVE");
@@ -167,25 +243,58 @@ export async function getFiboD1GuardOperationCenterView() {
       reasonCodes.push("STRATEGY_CONFIG_MISSING");
       bucket = "PLATFORM_BLOCKED";
     }
-    if (robot.robotProduct.requiresDailyFinancialStop && !dailyLimit?.enabled) {
-      reasonCodes.push("DAILY_FINANCIAL_STOP_NOT_CONFIGURED");
-      bucket = "PLATFORM_BLOCKED";
+    if (robot.robotProduct.requiresDailyFinancialStop) {
+      if (dailyRiskResolution.strategyMismatch) {
+        reasonCodes.push("DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH");
+        bucket = "PLATFORM_BLOCKED";
+        if (dailyRiskDiagnostic) {
+          dailyRiskDiagnostic.primaryReasonCode =
+            "DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH";
+        }
+      } else if (!dailyLimit?.enabled) {
+        reasonCodes.push("DAILY_FINANCIAL_STOP_NOT_CONFIGURED");
+        bucket = "PLATFORM_BLOCKED";
+        if (dailyRiskDiagnostic) {
+          dailyRiskDiagnostic.primaryReasonCode =
+            "DAILY_FINANCIAL_STOP_NOT_CONFIGURED";
+        }
+      }
     }
 
-    if (loteTotal && stopPoints && dailyLimit?.enabled) {
+    if (
+      loteTotal &&
+      stopPoints &&
+      dailyLimit?.enabled &&
+      accountLogin &&
+      accountServer &&
+      symbol &&
+      !dailyRiskResolution.strategyMismatch
+    ) {
       const dailyCheck = await evaluateDailyFinancialStopForEntry({
         licenseId: license.id,
-        accountLogin: license.mt5Account?.login ?? "",
-        accountServer: license.mt5Account?.server ?? "",
+        accountLogin,
+        accountServer,
         strategyCode: MR_FIBO_D1_GUARD_CODE,
-        symbol: symbol ?? "WDO",
+        symbol,
         requestedContracts: loteTotal,
         stopPoints,
         requiresDailyStop: true,
       });
+      if (dailyCheck.ok && dailyCheck.snapshot) {
+        remainingLossBrl = dailyCheck.snapshot.remainingLossCents / 100;
+        dailyRiskStatus = dailyCheck.snapshot.status;
+        if (dailyRiskDiagnostic) {
+          dailyRiskDiagnostic.remainingLossBrl = remainingLossBrl;
+          dailyRiskDiagnostic.dailyRiskStatus = dailyRiskStatus;
+        }
+      }
       if (!dailyCheck.ok) {
         reasonCodes.push(dailyCheck.reasonCode);
         bucket = "PLATFORM_BLOCKED";
+        if (dailyRiskDiagnostic) {
+          dailyRiskDiagnostic.primaryReasonCode = dailyCheck.reasonCode;
+          dailyRiskDiagnostic.detailMessage = dailyCheck.detail;
+        }
       }
     }
 
@@ -239,8 +348,8 @@ export async function getFiboD1GuardOperationCenterView() {
       licenseId: license.id,
       userEmail: license.user.email,
       userName: license.user.name,
-      accountLogin: license.mt5Account?.login ?? license.expectedAccountLogin,
-      accountServer: license.mt5Account?.server ?? license.expectedAccountServer,
+      accountLogin,
+      accountServer,
       symbol,
       magicNumber: robot.magicNumber ?? license.expectedMagicNumber,
       configuredContracts: loteTotal,
@@ -248,7 +357,13 @@ export async function getFiboD1GuardOperationCenterView() {
       dailyStopLimitBrl: dailyLimit
         ? dailyLimit.dailyLossLimitCents / 100
         : null,
-      dailyStopStatus: dailyLimit?.enabled ? "CONFIGURED" : "MISSING",
+      dailyStopStatus: dailyRiskResolution.strategyMismatch
+        ? "STRATEGY_MISMATCH"
+        : dailyLimit?.enabled
+          ? "CONFIGURED"
+          : dailyLimit
+            ? "INACTIVE"
+            : "MISSING",
       eaOnline,
       configHash: published?.configHash ?? null,
       configVersion: published?.version ?? null,
@@ -259,6 +374,7 @@ export async function getFiboD1GuardOperationCenterView() {
       strategyConfigHref: `/admin/licenses/${license.id}/strategy-config`,
       approvalHref,
       dailyRiskHref: `/admin/real-trading/daily-risk?licenseId=${license.id}`,
+      dailyRiskDiagnostic,
     });
   }
 

@@ -48,7 +48,7 @@ Campos de identidade da aprovação não são alteráveis. Toda alteração é a
 
 **Status:** `DAILY_RISK_ACTIVE_LICENSE_SELECTOR_IMPLEMENTED`
 
-Configure em `/admin/real-trading/daily-risk` selecionando licença ativa — conta, servidor e símbolo preenchidos automaticamente. Usado pelo `can-trade` antes de novas entradas. Link do centro Fibo: `?licenseId=`.
+Configure em `/admin/real-trading/daily-risk` selecionando licença ativa — conta, servidor e símbolo preenchidos automaticamente. Usado pelo `can-trade` antes de novas entradas. Link do centro Fibo: `?licenseId=`. **strategyCode canônico:** `MR_FIBO_D1_GUARD`.
 
 ## Caixa preta
 

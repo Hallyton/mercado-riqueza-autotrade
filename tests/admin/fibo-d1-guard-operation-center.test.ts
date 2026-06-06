@@ -18,6 +18,14 @@ vi.mock("@/lib/admin/strategy-runtime-config", () => ({
   getPublishedStrategyConfigForEa: vi.fn(),
 }));
 
+vi.mock("@/lib/admin/normalize-fibo-daily-risk-records", () => ({
+  normalizeFiboDailyRiskStrategyCodes: vi.fn().mockResolvedValue({
+    limitsUpdated: 0,
+    limitsDeleted: 0,
+    statesUpdated: 0,
+  }),
+}));
+
 vi.mock("@/lib/ea/autonomous-strategy-preflight", () => ({
   isAutonomousStrategyServerEnabled: vi.fn().mockReturnValue(true),
 }));
@@ -60,12 +68,25 @@ describe("fibo d1 guard operation center", () => {
           },
         ],
         realTradingApprovals: [{ id: "ap1", maxContracts: 1 }],
+        dailyFinancialRiskLimits: [
+          {
+            id: "dr1",
+            licenseId: "lic1",
+            accountLogin: "123",
+            accountServer: "XPMT5-PRD",
+            symbol: "WDON26",
+            strategyCode: "MR_FIBO_D1_GUARD",
+            enabled: true,
+            dailyLossLimitCents: 50000,
+            includeOpenPnL: true,
+            resetTimezone: "America/Sao_Paulo",
+            resetAtTime: "00:00",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
       },
     ]);
-    prismaMock.dailyFinancialRiskLimit.findFirst.mockResolvedValue({
-      enabled: true,
-      dailyLossLimitCents: 50000,
-    });
     prismaMock.instrumentPointValue.findFirst.mockResolvedValue({
       centsPerPointPerContract: 1000,
     });
@@ -111,6 +132,23 @@ describe("fibo d1 guard operation center", () => {
           },
         ],
         realTradingApprovals: [{ id: "ap1", maxContracts: 5 }],
+        dailyFinancialRiskLimits: [
+          {
+            id: "dr1",
+            licenseId: "lic1",
+            accountLogin: "123",
+            accountServer: "XPMT5-PRD",
+            symbol: "WDON26",
+            strategyCode: "MR_FIBO_D1_GUARD",
+            enabled: true,
+            dailyLossLimitCents: 50000,
+            includeOpenPnL: true,
+            resetTimezone: "America/Sao_Paulo",
+            resetAtTime: "00:00",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
       },
     ]);
     vi.mocked(getPublishedStrategyConfigForEa).mockResolvedValue({

@@ -284,6 +284,16 @@ export function DailyRiskAdminPanel({
             </p>
           )}
 
+          {selected?.strategyCodeMismatch && (
+            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+              Existe stop diário com strategyCode divergente (
+              <span className="font-mono">{selected.storedStrategyCode}</span>).
+              O código canônico é{" "}
+              <span className="font-mono">MR_FIBO_D1_GUARD</span>. Salve novamente
+              para normalizar sem duplicar.
+            </p>
+          )}
+
           {selected && (
             <dl className="grid gap-3 rounded-lg border border-white/10 bg-black/20 p-4 text-sm sm:grid-cols-2">
               <div>

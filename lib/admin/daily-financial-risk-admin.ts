@@ -4,10 +4,13 @@ import {
   type DailyFinancialRiskLimit,
 } from "@prisma/client";
 import { recordAdminAction } from "@/lib/admin/record-action";
+import { normalizeFiboDailyRiskStrategyCodes } from "@/lib/admin/normalize-fibo-daily-risk-records";
+import { resolveFiboDailyRiskLimit } from "@/lib/admin/daily-risk-limit-resolver";
 import prisma from "@/lib/prisma";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
 import { maskAccountLogin, maskLicenseId } from "@/lib/risk/real-trading-guard-status";
 import { tradeDateKeySaoPaulo } from "@/lib/risk/daily-financial-risk";
+import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
 
 export const DAILY_RISK_ADMIN_ERROR_CODES = [
   "LICENSE_NOT_FOUND",
@@ -145,7 +148,9 @@ export async function upsertDailyFinancialRiskLimit(input: {
   resetTimezone?: string;
   resetAtTime?: string;
 }) {
-  const strategyCode = input.strategyCode ?? MR_FIBO_D1_GUARD_CODE;
+  const strategyCode = normalizeFiboStrategyCode(
+    input.strategyCode ?? MR_FIBO_D1_GUARD_CODE
+  );
   const dailyLossLimitCents = Math.round(input.dailyLossLimitBrl * 100);
 
   return prisma.dailyFinancialRiskLimit.upsert({
@@ -192,7 +197,7 @@ export async function upsertDailyFinancialRiskLimitValidated(input: {
   actorId: string;
   ipAddress?: string | null;
 }) {
-  const strategyCode = input.strategyCode?.trim() || MR_FIBO_D1_GUARD_CODE;
+  const strategyCode = normalizeFiboStrategyCode(input.strategyCode);
 
   if (!input.licenseId.trim()) {
     throw new DailyFinancialRiskAdminError(
@@ -308,6 +313,8 @@ export async function upsertDailyFinancialRiskLimitValidated(input: {
     resetTimezone: input.resetTimezone,
     resetAtTime: input.resetAtTime,
   });
+
+  await normalizeFiboDailyRiskStrategyCodes({ licenseId: input.licenseId });
 
   const previousLimitCents = existing?.dailyLossLimitCents ?? null;
 
