@@ -146,6 +146,9 @@ int OnInit()
    if(InpDebugMode)
       MR_AT_LogInfo("Init", "DEBUG_MODE ativo — nenhuma ordem real será enviada");
 
+   if(MR_AT_IsLicensed() && MR_AT_ShouldSendDailyRiskReport())
+      MR_AT_ReportDailyRisk(true);
+
    if(InpSendPreMarketOnInit && MR_AT_GetTradeMode() == "REAL")
       MR_AT_EnsurePreMarketSnapshot();
 
@@ -198,6 +201,9 @@ void OnTimer()
 
    if(MR_AT_GetTradeMode() == "REAL")
       MR_AT_EnsurePreMarketSnapshot();
+
+   if(MR_AT_ShouldSendDailyRiskReport())
+      MR_AT_ReportDailyRisk(false);
 
    MR_AT_FetchAndProcessSignals();
    MR_AT_ProcessAutonomousStrategy();

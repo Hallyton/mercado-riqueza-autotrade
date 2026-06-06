@@ -13,6 +13,29 @@ import type {
 } from "@/lib/admin/daily-risk-eligible-licenses";
 import { formatDailyRiskLicenseLabel } from "@/lib/admin/daily-risk-eligible-licenses";
 
+const REPORT_STATUS_LABELS = {
+  OK: "OK",
+  STALE: "STALE",
+  MISSING: "MISSING",
+} as const;
+
+function formatReportTrace(row: DailyRiskExistingConfigView["reportTrace"]) {
+  if (!row.reportReceived) {
+    return {
+      summary: "Configuração existe, mas nenhum relatório diário foi recebido do EA.",
+      lastReport: "—",
+      pnl: "—",
+    };
+  }
+  return {
+    summary: REPORT_STATUS_LABELS[row.reportStatus],
+    lastReport: row.lastReportAt
+      ? new Date(row.lastReportAt).toLocaleString("pt-BR")
+      : "—",
+    pnl: `R$ ${row.realizedPnlBrl?.toFixed(2) ?? "0.00"} / R$ ${row.openPnlBrl?.toFixed(2) ?? "0.00"} / R$ ${row.totalPnlBrl?.toFixed(2) ?? "0.00"}`,
+  };
+}
+
 const STATUS_LABELS: Record<DailyRiskOperationalStatus, string> = {
   CONFIGURED: "Configurado",
   NOT_CONFIGURED: "Não configurado",
@@ -417,13 +440,18 @@ export function DailyRiskAdminPanel({
                 <th className="px-2 py-2">Estratégia</th>
                 <th className="px-2 py-2">Limite diário</th>
                 <th className="px-2 py-2">Include open PnL</th>
-                <th className="px-2 py-2">Status</th>
+                <th className="px-2 py-2">Relatório diário</th>
+                <th className="px-2 py-2">Último report</th>
+                <th className="px-2 py-2">PnL (real/open/total)</th>
+                <th className="px-2 py-2">Status config</th>
                 <th className="px-2 py-2">Atualizado</th>
                 <th className="px-2 py-2">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {existingConfigs.map((row) => (
+              {existingConfigs.map((row) => {
+                const report = formatReportTrace(row.reportTrace);
+                return (
                 <tr key={row.id} className="border-b border-white/5">
                   <td className="px-2 py-2">{row.clientName ?? "—"}</td>
                   <td className="px-2 py-2">{row.clientEmail}</td>
@@ -438,6 +466,14 @@ export function DailyRiskAdminPanel({
                     R$ {row.dailyLossLimitBrl.toFixed(2)}
                   </td>
                   <td className="px-2 py-2">{row.includeOpenPnL ? "Sim" : "Não"}</td>
+                  <td className="px-2 py-2 text-xs">
+                    <div>{report.summary}</div>
+                    <div className="text-muted-foreground">
+                      tradeDate {row.reportTrace.tradeDate}
+                    </div>
+                  </td>
+                  <td className="px-2 py-2 text-xs">{report.lastReport}</td>
+                  <td className="px-2 py-2 text-xs">{report.pnl}</td>
                   <td className="px-2 py-2">
                     {row.enabled ? "Ativo" : "Inativo"}
                   </td>
@@ -467,10 +503,10 @@ export function DailyRiskAdminPanel({
                     </div>
                   </td>
                 </tr>
-              ))}
+              );})}
               {existingConfigs.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="px-2 py-4 text-muted-foreground">
+                  <td colSpan={15} className="px-2 py-4 text-muted-foreground">
                     Nenhum registro.
                   </td>
                 </tr>

@@ -7,6 +7,7 @@ const prismaMock = vi.hoisted(() => ({
   eaHeartbeat: { findFirst: vi.fn() },
   eaErrorReport: { findFirst: vi.fn() },
   dailyFinancialRiskLimit: { findFirst: vi.fn() },
+  dailyFinancialRiskState: { findUnique: vi.fn() },
   instrumentPointValue: { findFirst: vi.fn() },
   strategyRuntimeConfig: { findFirst: vi.fn() },
   autonomousStrategyDecision: { findMany: vi.fn() },
@@ -34,9 +35,14 @@ vi.mock("@/lib/risk/real-trading-guard", () => ({
   isRealTradingEnabled: vi.fn().mockReturnValue(true),
 }));
 
-vi.mock("@/lib/risk/daily-financial-risk", () => ({
-  evaluateDailyFinancialStopForEntry: vi.fn().mockResolvedValue({ ok: true }),
-}));
+vi.mock("@/lib/risk/daily-financial-risk", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/risk/daily-financial-risk")>();
+  return {
+    ...actual,
+    evaluateDailyFinancialStopForEntry: vi.fn().mockResolvedValue({ ok: true }),
+    tradeDateKeySaoPaulo: vi.fn().mockReturnValue("2026-06-02"),
+  };
+});
 
 vi.mock("@/lib/ea/status", () => ({
   isEaOffline: vi.fn().mockReturnValue(false),
@@ -49,6 +55,7 @@ import { LOT_TOTAL_EXCEEDS_MAX_CONTRACTS } from "@/lib/strategy/mr-fibo-d1-guard
 describe("fibo d1 guard operation center", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue(null);
     prismaMock.license.findMany.mockResolvedValue([
       {
         id: "lic1",

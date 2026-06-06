@@ -11,6 +11,10 @@ import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
 import { maskAccountLogin, maskLicenseId } from "@/lib/risk/real-trading-guard-status";
 import { tradeDateKeySaoPaulo } from "@/lib/risk/daily-financial-risk";
 import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
+import {
+  buildDailyRiskReportTrace,
+  type DailyRiskReportTrace,
+} from "@/lib/admin/daily-risk-report-trace";
 
 export const DAILY_RISK_ADMIN_ERROR_CODES = [
   "LICENSE_NOT_FOUND",
@@ -67,6 +71,7 @@ export type DailyRiskExistingConfigView = {
   includeOpenPnL: boolean;
   enabled: boolean;
   updatedAt: string;
+  reportTrace: DailyRiskReportTrace;
 };
 
 export async function listDailyFinancialRiskLimits(licenseId?: string) {
@@ -90,20 +95,40 @@ export async function listDailyRiskExistingConfigViews(
   licenseId?: string
 ): Promise<DailyRiskExistingConfigView[]> {
   const rows = await listDailyFinancialRiskLimits(licenseId);
-  return rows.map((row) => ({
-    id: row.id,
-    licenseId: row.licenseId,
-    clientName: row.license.user.name,
-    clientEmail: row.license.user.email,
-    accountLogin: row.accountLogin,
-    accountServer: row.accountServer,
-    symbol: row.symbol,
-    strategyCode: row.strategyCode,
-    dailyLossLimitBrl: row.dailyLossLimitCents / 100,
-    includeOpenPnL: row.includeOpenPnL,
-    enabled: row.enabled,
-    updatedAt: row.updatedAt.toISOString(),
-  }));
+  const tradeDate = tradeDateKeySaoPaulo();
+  const states = await prisma.dailyFinancialRiskState.findMany({
+    where: {
+      tradeDate,
+      ...(licenseId ? { licenseId } : {}),
+    },
+  });
+
+  return rows.map((row) => {
+    const state = states.find(
+      (item) =>
+        item.licenseId === row.licenseId &&
+        item.accountLogin === row.accountLogin &&
+        item.accountServer === row.accountServer &&
+        item.strategyCode === row.strategyCode &&
+        item.symbol === row.symbol
+    );
+
+    return {
+      id: row.id,
+      licenseId: row.licenseId,
+      clientName: row.license.user.name,
+      clientEmail: row.license.user.email,
+      accountLogin: row.accountLogin,
+      accountServer: row.accountServer,
+      symbol: row.symbol,
+      strategyCode: row.strategyCode,
+      dailyLossLimitBrl: row.dailyLossLimitCents / 100,
+      includeOpenPnL: row.includeOpenPnL,
+      enabled: row.enabled,
+      updatedAt: row.updatedAt.toISOString(),
+      reportTrace: buildDailyRiskReportTrace(state, tradeDate),
+    };
+  });
 }
 
 function uniqueKey(input: {

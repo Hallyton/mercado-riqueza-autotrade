@@ -265,7 +265,8 @@ export async function evaluateDailyFinancialStopForEntry(input: {
     return {
       ok: false,
       reasonCode: "DAILY_RISK_REPORT_MISSING",
-      detail: "EA ainda não reportou PnL diário.",
+      detail:
+        "DailyFinancialRiskLimit está configurado, mas nenhum DailyFinancialRiskState recente foi encontrado. O EA deve enviar POST /api/v1/ea/daily-risk/report.",
       snapshot,
     };
   }
@@ -273,8 +274,8 @@ export async function evaluateDailyFinancialStopForEntry(input: {
   if (isDailyRiskStateStale(state.lastUpdatedAt)) {
     return {
       ok: false,
-      reasonCode: "DAILY_RISK_STATE_STALE",
-      detail: "Relatório de risco diário expirado. Aguarde heartbeat/daily-risk.",
+      reasonCode: "DAILY_RISK_REPORT_STALE",
+      detail: `Último relatório de risco em ${state.lastUpdatedAt.toISOString()}. Aguarde o EA enviar daily-risk/report.`,
       snapshot,
     };
   }
@@ -339,7 +340,7 @@ export async function processDailyRiskReport(input: {
     licenseId: input.licenseId,
     accountLogin: input.accountLogin,
     accountServer: input.accountServer,
-    strategyCode: input.strategyCode || MR_FIBO_D1_GUARD_CODE,
+    strategyCode,
     symbol: input.symbol,
     tradeDate: input.tradeDate,
     realizedPnlCents,

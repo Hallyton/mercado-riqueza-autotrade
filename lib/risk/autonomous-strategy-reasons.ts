@@ -22,6 +22,7 @@ export const CAN_TRADE_REASON_CODES = [
   "DAILY_FINANCIAL_STOP_REACHED",
   "DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED",
   "DAILY_RISK_REPORT_MISSING",
+  "DAILY_RISK_REPORT_STALE",
   "REAL_TRADING_NOT_ENABLED",
   "EA_OFFLINE",
   "EA_CONFIG_OUTDATED",
@@ -59,7 +60,10 @@ export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
   DAILY_FINANCIAL_STOP_REACHED: "Stop financeiro diário atingido.",
   DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED:
     "Risco estimado excede a perda restante do stop diário.",
-  DAILY_RISK_REPORT_MISSING: "Relatório de risco diário ausente ou desatualizado.",
+  DAILY_RISK_REPORT_MISSING:
+    "Stop diário configurado, mas o EA ainda não enviou o relatório de PnL/risco do dia.",
+  DAILY_RISK_REPORT_STALE:
+    "Stop diário configurado, mas o relatório de risco diário está desatualizado.",
   REAL_TRADING_NOT_ENABLED: "Conta REAL não habilitada no servidor.",
   EA_OFFLINE: "EA offline ou sem heartbeat recente.",
   EA_CONFIG_OUTDATED: "EA com config desatualizada — aguardar sync.",
@@ -78,6 +82,10 @@ export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>>
   DAILY_FINANCIAL_STOP_NOT_CONFIGURED: "Configurar stop financeiro diário",
   DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH:
     "Atualizar configuração para MR_FIBO_D1_GUARD",
+  DAILY_RISK_REPORT_MISSING:
+    "Verificar EA online e POST /api/v1/ea/daily-risk/report",
+  DAILY_RISK_REPORT_STALE:
+    "Aguardar novo report do EA ou verificar heartbeat",
   EA_OFFLINE: "Verificar VPS/MT5",
   EA_AUTOTRADING_DISABLED: "Ativar AutoTrading",
   EA_REAL_ORDERS_DISABLED: "Desativar modo não envia ordens reais",
@@ -97,6 +105,7 @@ export const AUTONOMOUS_STRATEGY_REASON_CODES = [
   "DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED",
   "DAILY_RISK_STATE_STALE",
   "DAILY_RISK_REPORT_MISSING",
+  "DAILY_RISK_REPORT_STALE",
   "STRATEGY_DAILY_TRADE_LIMIT_REACHED",
   "STRATEGY_DAILY_SIDE_ALREADY_TRADED",
   "STRATEGY_REVERSAL_NOT_ALLOWED",
@@ -128,6 +137,8 @@ export const AUTONOMOUS_STRATEGY_REASON_MESSAGES: Record<
     "Relatório de risco diário desatualizado.",
   DAILY_RISK_REPORT_MISSING:
     "Relatório de risco diário ausente.",
+  DAILY_RISK_REPORT_STALE:
+    "Relatório de risco diário desatualizado.",
   STRATEGY_DAILY_TRADE_LIMIT_REACHED:
     "Limite diário de operações da estratégia atingido.",
   STRATEGY_DAILY_SIDE_ALREADY_TRADED:

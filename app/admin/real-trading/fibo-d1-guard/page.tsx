@@ -68,42 +68,34 @@ function ClientTable({
                       </ul>
                       {row.dailyRiskDiagnostic &&
                         row.reasonCodes.some((code) =>
-                          code.startsWith("DAILY_FINANCIAL_STOP")
+                          code.startsWith("DAILY_FINANCIAL_STOP") ||
+                          code.startsWith("DAILY_RISK_REPORT")
                         ) && (
-                          <dl className="rounded border border-white/10 bg-black/20 p-2 text-[11px]">
+                          <dl className="rounded border border-white/10 bg-black/20 p-2 text-[11px] space-y-2">
                             <div>
-                              <dt className="text-muted-foreground">Stop diário</dt>
-                              <dd>
-                                {row.dailyRiskDiagnostic.foundDailyRiskLimit
-                                  ? "encontrado"
-                                  : "não encontrado"}{" "}
-                                · esperado{" "}
-                                {row.dailyRiskDiagnostic.expectedStrategyCode}
-                                {row.dailyRiskDiagnostic.foundDailyRiskStrategyCode &&
-                                  ` · salvo ${row.dailyRiskDiagnostic.foundDailyRiskStrategyCode}`}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-muted-foreground">Conta / símbolo</dt>
-                              <dd>
-                                {row.dailyRiskDiagnostic.accountLogin ?? "—"}@
-                                {row.dailyRiskDiagnostic.accountServer ?? "—"} ·{" "}
-                                {row.dailyRiskDiagnostic.symbol ?? "—"}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt className="text-muted-foreground">Limite / status</dt>
-                              <dd>
+                              <dt className="text-muted-foreground font-medium">
+                                A. Stop financeiro diário configurado
+                              </dt>
+                              <dd className="mt-1">
+                                {row.dailyRiskDiagnostic.stopConfigured ? "Sim" : "Não"}
+                                {" · "}
+                                Limite{" "}
                                 {row.dailyRiskDiagnostic.dailyLimitBrl != null
                                   ? `R$ ${row.dailyRiskDiagnostic.dailyLimitBrl.toFixed(2)}`
-                                  : "—"}{" "}
-                                · enabled{" "}
+                                  : "—"}
+                                {" · "}
+                                Estratégia{" "}
+                                {row.dailyRiskDiagnostic.foundDailyRiskStrategyCode ??
+                                  row.dailyRiskDiagnostic.expectedStrategyCode}
+                                {" · "}
+                                enabled{" "}
                                 {row.dailyRiskDiagnostic.enabled == null
                                   ? "—"
                                   : row.dailyRiskDiagnostic.enabled
                                     ? "sim"
-                                    : "não"}{" "}
-                                · includeOpenPnL{" "}
+                                    : "não"}
+                                {" · "}
+                                includeOpenPnL{" "}
                                 {row.dailyRiskDiagnostic.includeOpenPnL == null
                                   ? "—"
                                   : row.dailyRiskDiagnostic.includeOpenPnL
@@ -111,9 +103,94 @@ function ClientTable({
                                     : "não"}
                               </dd>
                             </div>
+                            <div>
+                              <dt className="text-muted-foreground font-medium">
+                                B. Relatório diário de risco
+                              </dt>
+                              <dd className="mt-1">
+                                {row.dailyRiskDiagnostic.reportTrace?.reportReceived
+                                  ? "Recebido"
+                                  : "Não recebido"}
+                                {" · "}
+                                Status{" "}
+                                {row.dailyRiskDiagnostic.reportTrace?.reportStatus ??
+                                  "MISSING"}
+                                {" · "}
+                                Último{" "}
+                                {row.dailyRiskDiagnostic.reportTrace?.lastReportAt
+                                  ? new Date(
+                                      row.dailyRiskDiagnostic.reportTrace.lastReportAt
+                                    ).toLocaleString("pt-BR")
+                                  : "ausente"}
+                                {row.dailyRiskDiagnostic.reportTrace?.reportAgeMinutes !=
+                                  null && (
+                                  <>
+                                    {" · "}
+                                    Idade{" "}
+                                    {row.dailyRiskDiagnostic.reportTrace.reportAgeMinutes}{" "}
+                                    min
+                                  </>
+                                )}
+                              </dd>
+                              {row.dailyRiskDiagnostic.reportTrace?.reportReceived && (
+                                <dd className="mt-1">
+                                  RealizedPnL{" "}
+                                  {row.dailyRiskDiagnostic.reportTrace.realizedPnlBrl !=
+                                  null
+                                    ? `R$ ${row.dailyRiskDiagnostic.reportTrace.realizedPnlBrl.toFixed(2)}`
+                                    : "—"}
+                                  {" · "}
+                                  OpenPnL{" "}
+                                  {row.dailyRiskDiagnostic.reportTrace.openPnlBrl != null
+                                    ? `R$ ${row.dailyRiskDiagnostic.reportTrace.openPnlBrl.toFixed(2)}`
+                                    : "—"}
+                                  {" · "}
+                                  TotalPnL{" "}
+                                  {row.dailyRiskDiagnostic.reportTrace.totalPnlBrl != null
+                                    ? `R$ ${row.dailyRiskDiagnostic.reportTrace.totalPnlBrl.toFixed(2)}`
+                                    : "—"}
+                                  {" · "}
+                                  Perda restante{" "}
+                                  {row.dailyRiskDiagnostic.reportTrace.remainingLossBrl !=
+                                  null
+                                    ? `R$ ${row.dailyRiskDiagnostic.reportTrace.remainingLossBrl.toFixed(2)}`
+                                    : "—"}
+                                </dd>
+                              )}
+                            </div>
+                            <div>
+                              <dt className="text-muted-foreground">Conta esperada</dt>
+                              <dd>
+                                {row.dailyRiskDiagnostic.accountLogin ?? "—"}@
+                                {row.dailyRiskDiagnostic.accountServer ?? "—"} ·{" "}
+                                {row.dailyRiskDiagnostic.symbol ?? "—"}
+                              </dd>
+                            </div>
+                            {row.dailyRiskDiagnostic.primaryReasonCode && (
+                              <div>
+                                <dt className="text-muted-foreground">Reason</dt>
+                                <dd className="font-mono">
+                                  {row.dailyRiskDiagnostic.primaryReasonCode}
+                                </dd>
+                              </div>
+                            )}
+                            {row.dailyRiskDiagnostic.operationalMessage && (
+                              <div>
+                                <dt className="text-muted-foreground">
+                                  Mensagem operacional
+                                </dt>
+                                <dd>{row.dailyRiskDiagnostic.operationalMessage}</dd>
+                              </div>
+                            )}
+                            {row.dailyRiskDiagnostic.recommendedAction && (
+                              <div>
+                                <dt className="text-muted-foreground">Ação recomendada</dt>
+                                <dd>{row.dailyRiskDiagnostic.recommendedAction}</dd>
+                              </div>
+                            )}
                             {row.dailyRiskDiagnostic.detailMessage && (
                               <div>
-                                <dt className="text-muted-foreground">Diagnóstico</dt>
+                                <dt className="text-muted-foreground">Diagnóstico técnico</dt>
                                 <dd>{row.dailyRiskDiagnostic.detailMessage}</dd>
                               </div>
                             )}

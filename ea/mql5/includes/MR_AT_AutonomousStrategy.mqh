@@ -46,11 +46,24 @@ string MR_AT_BuildEaReadyJson()
   }
 
 //+------------------------------------------------------------------+
-bool MR_AT_ReportDailyRisk()
+bool MR_AT_ShouldSendDailyRiskReport()
   {
+   if(!InpEnableAutonomousStrategy)
+      return false;
+   if(StringLen(InpAutonomousStrategyCode) == 0 ||
+      InpAutonomousStrategyCode != MR_FIBO_GUARD_CODE)
+      return false;
    if(StringLen(g_license_id) < 4)
       return false;
-   if(TimeCurrent() - g_last_daily_risk_report < 60)
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+bool MR_AT_ReportDailyRisk(const bool force = false)
+  {
+   if(!MR_AT_ShouldSendDailyRiskReport())
+      return false;
+   if(!force && TimeCurrent() - g_last_daily_risk_report < 60)
       return true;
 
    double realized = 0;
@@ -95,12 +108,22 @@ bool MR_AT_ReportDailyRisk()
    string response = "";
    int status = 0;
    if(!MR_AT_ApiPostAuth("/api/v1/ea/daily-risk/report", body, response, status))
+     {
+      MR_AT_LogError("DailyRisk", "report request failed");
       return false;
+     }
    if(status >= 200 && status < 300)
      {
       g_last_daily_risk_report = TimeCurrent();
+      MR_AT_LogInfo("DailyRisk", "report ok");
       return true;
      }
+
+   string reason = MR_AT_JsonGetString(response, "code");
+   if(StringLen(reason) == 0)
+      reason = MR_AT_JsonGetString(response, "detail");
+   MR_AT_LogError("DailyRisk", "report rejected status=" + IntegerToString(status) +
+                  " reason=" + reason);
    return false;
   }
 
@@ -119,6 +142,9 @@ bool MR_AT_CanTradeAutonomousStrategy(
       block_reason = "LICENSE_NOT_ACTIVE";
       return false;
      }
+
+   if(g_last_daily_risk_report == 0 || TimeCurrent() - g_last_daily_risk_report >= 60)
+      MR_AT_ReportDailyRisk(true);
 
    string ea_ready = MR_AT_BuildEaReadyJson();
    string body = "{";
@@ -189,6 +215,5 @@ void MR_AT_ProcessAutonomousStrategy()
       return;
      }
 
-   MR_AT_ReportDailyRisk();
    MR_Fibo_OnTickStrategy();
   }

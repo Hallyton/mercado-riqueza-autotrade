@@ -17,8 +17,15 @@ import {
   resolveFiboDailyRiskLimit,
 } from "@/lib/admin/daily-risk-limit-resolver";
 import { normalizeFiboDailyRiskStrategyCodes } from "@/lib/admin/normalize-fibo-daily-risk-records";
+import {
+  buildDailyRiskReportTrace,
+  dailyRiskReportActionHint,
+  dailyRiskReportOperationalMessage,
+  type DailyRiskReportTrace,
+} from "@/lib/admin/daily-risk-report-trace";
 import { buildDefaultMrFiboD1GuardConfig, mrFiboD1GuardConfigSchema } from "@/lib/strategy/mr-fibo-d1-guard-config";
 import { LOT_TOTAL_EXCEEDS_MAX_CONTRACTS } from "@/lib/strategy/mr-fibo-d1-guard-readiness";
+import { tradeDateKeySaoPaulo } from "@/lib/risk/daily-financial-risk";
 
 export type FiboGuardClientBucket = "READY" | "EA_NOT_READY" | "PLATFORM_BLOCKED";
 
@@ -28,6 +35,7 @@ export type DailyRiskLinkageDiagnostic = {
   accountServer: string | null;
   symbol: string | null;
   expectedStrategyCode: string;
+  stopConfigured: boolean;
   foundDailyRiskLimit: boolean;
   foundDailyRiskStrategyCode: string | null;
   dailyLimitBrl: number | null;
@@ -36,8 +44,11 @@ export type DailyRiskLinkageDiagnostic = {
   riskEstimatedBrl: number | null;
   remainingLossBrl: number | null;
   dailyRiskStatus: string | null;
+  reportTrace: DailyRiskReportTrace | null;
   primaryReasonCode: string | null;
   detailMessage: string | null;
+  operationalMessage: string | null;
+  recommendedAction: string | null;
 };
 
 export type FiboGuardClientRow = {
@@ -118,6 +129,7 @@ export async function getFiboD1GuardOperationCenterView() {
   });
 
   const rows: FiboGuardClientRow[] = [];
+  const tradeDate = tradeDateKeySaoPaulo();
 
   for (const license of licenses) {
     const robot = license.robotInstances[0];
@@ -199,6 +211,30 @@ export async function getFiboD1GuardOperationCenterView() {
           };
 
     const dailyLimit = dailyRiskResolution.canonical ?? dailyRiskResolution.effective;
+    let dailyRiskState = null as Awaited<
+      ReturnType<typeof prisma.dailyFinancialRiskState.findUnique>
+    > | null;
+
+    if (dailyLimit && accountLogin && accountServer && symbol) {
+      dailyRiskState = await prisma.dailyFinancialRiskState.findUnique({
+        where: {
+          licenseId_accountLogin_accountServer_strategyCode_symbol_tradeDate: {
+            licenseId: license.id,
+            accountLogin,
+            accountServer,
+            strategyCode: dailyLimit.strategyCode,
+            symbol,
+            tradeDate,
+          },
+        },
+      });
+    }
+
+    const reportTrace =
+      dailyLimit && accountLogin && accountServer && symbol
+        ? buildDailyRiskReportTrace(dailyRiskState, tradeDate)
+        : null;
+
     let dailyRiskDiagnostic: DailyRiskLinkageDiagnostic | null = null;
     let remainingLossBrl: number | null = null;
     let dailyRiskStatus: string | null = null;
@@ -210,6 +246,7 @@ export async function getFiboD1GuardOperationCenterView() {
         accountServer,
         symbol,
         expectedStrategyCode: MR_FIBO_D1_GUARD_CODE,
+        stopConfigured: Boolean(dailyLimit?.enabled),
         foundDailyRiskLimit: Boolean(dailyLimit),
         foundDailyRiskStrategyCode: dailyLimit?.strategyCode ?? null,
         dailyLimitBrl: dailyLimit
@@ -218,8 +255,9 @@ export async function getFiboD1GuardOperationCenterView() {
         enabled: dailyLimit?.enabled ?? null,
         includeOpenPnL: dailyLimit?.includeOpenPnL ?? null,
         riskEstimatedBrl: estimatedRiskBrl,
-        remainingLossBrl: null,
-        dailyRiskStatus: null,
+        remainingLossBrl: reportTrace?.remainingLossBrl ?? null,
+        dailyRiskStatus: reportTrace?.stateStatus ?? null,
+        reportTrace,
         primaryReasonCode: null,
         detailMessage: buildDailyRiskLinkageDetail({
           resolution: dailyRiskResolution,
@@ -228,6 +266,15 @@ export async function getFiboD1GuardOperationCenterView() {
           accountServer,
           symbol,
         }),
+        operationalMessage: dailyRiskReportOperationalMessage({
+          limitConfigured: Boolean(dailyLimit?.enabled),
+          report: reportTrace ?? buildDailyRiskReportTrace(null, tradeDate),
+        }),
+        recommendedAction: reportTrace
+          ? dailyRiskReportActionHint(reportTrace.reportStatus)
+          : dailyLimit?.enabled
+            ? dailyRiskReportActionHint("MISSING")
+            : null,
       };
     }
 
@@ -294,6 +341,20 @@ export async function getFiboD1GuardOperationCenterView() {
         if (dailyRiskDiagnostic) {
           dailyRiskDiagnostic.primaryReasonCode = dailyCheck.reasonCode;
           dailyRiskDiagnostic.detailMessage = dailyCheck.detail;
+          dailyRiskDiagnostic.operationalMessage =
+            dailyRiskReportOperationalMessage({
+              limitConfigured: true,
+              report:
+                dailyRiskDiagnostic.reportTrace ??
+                buildDailyRiskReportTrace(null, tradeDate),
+            });
+          dailyRiskDiagnostic.recommendedAction = dailyRiskReportActionHint(
+            dailyCheck.reasonCode === "DAILY_RISK_REPORT_STALE"
+              ? "STALE"
+              : dailyCheck.reasonCode === "DAILY_RISK_REPORT_MISSING"
+                ? "MISSING"
+                : reportTrace?.reportStatus ?? "MISSING"
+          );
         }
       }
     }
