@@ -7,6 +7,7 @@ const prismaMock = vi.hoisted(() => ({
   device: { findFirst: vi.fn() },
   dailyFinancialRiskLimit: { findFirst: vi.fn() },
   autonomousStrategyDecision: { create: vi.fn() },
+  licenseOperationControl: { findUnique: vi.fn().mockResolvedValue(null) },
 }));
 
 vi.mock("@/lib/prisma", () => ({ default: prismaMock }));

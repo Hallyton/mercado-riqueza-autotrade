@@ -83,6 +83,48 @@ Body: `license_id`, `device_id`, conta, `symbol`, `trade_date`, `realized_pnl`, 
 
 ---
 
+## GET `/commands`
+
+Poll de comandos operacionais pendentes para a licença/device/conta/símbolo autenticados.
+
+---
+
+## POST `/commands/{commandId}/ack`
+
+Confirma recebimento: `status: ACKED`, `ea_time`, `message`.
+
+---
+
+## POST `/commands/{commandId}/result`
+
+Reporta execução: `status: EXECUTED|FAILED`, `result_code`, `result_message`, `details`.
+
+---
+
+## POST `/operation-snapshot`
+
+Telemetria operacional periódica: posição, pendentes, PnL dia/mês, pausa admin, flags terminal.
+
+Ver [`docs/EA-OPERATIONAL-COMMANDS.md`](EA-OPERATIONAL-COMMANDS.md).
+
+---
+
+## GET `/config` — `operation_control`
+
+Campo adicional:
+
+```json
+{
+  "operation_control": {
+    "paused": false,
+    "reason": null,
+    "strategy_code": "MR_FIBO_D1_GUARD"
+  }
+}
+```
+
+---
+
 ## POST `/heartbeat`
 
 Registra: status EA, equity/saldo/margem, ordens pendentes, posições abertas.

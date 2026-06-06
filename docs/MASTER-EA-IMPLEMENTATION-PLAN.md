@@ -2660,6 +2660,20 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | MQL5 | `MR_Strategy_FiboD1_Guard_Core.mqh` (lógica EA_FIBO_D1) + guard can-trade |
 | Doc | [`docs/MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md`](MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md) |
 
+### Fase 15.5 — Real Trading Operation Center & Remote Commands
+
+**Status:** `REAL_TRADING_OPERATION_CENTER_AND_REMOTE_COMMANDS_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Admin UI | `/admin/real-trading/operations` + detalhe `[licenseId]` |
+| API admin | `POST/GET /api/admin/real-trading/operations/commands` |
+| API EA | `GET /commands`, `POST /commands/{id}/ack|result`, `POST /operation-snapshot` |
+| Modelos | `EAOperationalSnapshot`, `EAOperationalCommand`, `LicenseOperationControl` |
+| MQL5 | `MR_AT_OperationalCommands.mqh` — poll, ack, result, snapshot |
+| Config EA | `operation_control.paused` em `/api/v1/ea/config` |
+| Doc | [`docs/REAL-TRADING-OPERATION-CENTER.md`](REAL-TRADING-OPERATION-CENTER.md), [`docs/EA-OPERATIONAL-COMMANDS.md`](EA-OPERATIONAL-COMMANDS.md) |
+
 ### Fase 15.4.1 — Contract Limit Regularization Flow
 
 **Status:** `MR_FIBO_D1_GUARD_CONTRACT_LIMIT_REGULARIZATION_FLOW_IMPLEMENTED`

@@ -8,6 +8,7 @@
 #include "MR_AT_Json.mqh"
 #include "MR_AT_Http.mqh"
 #include "MR_AT_ApiAuth.mqh"
+#include "MR_AT_OperationalCommands.mqh"
 #include "MR_AT_Equity.mqh"
 #include "MR_Strategy_FiboD1_Guard.mqh"
 
@@ -142,6 +143,11 @@ bool MR_AT_CanTradeAutonomousStrategy(
 )
   {
    block_reason = "";
+   if(MR_AT_IsAdminPaused())
+     {
+      block_reason = "ADMIN_OPERATION_PAUSED";
+      return false;
+     }
    if(StringLen(g_license_id) < 4)
      {
       block_reason = "LICENSE_NOT_ACTIVE";

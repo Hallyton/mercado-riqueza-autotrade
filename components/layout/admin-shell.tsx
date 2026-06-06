@@ -16,6 +16,7 @@ const NAV = [
   { href: "/admin/real-trading/bulk-dispatch", label: "Conta real / Disparo em lote" },
   { href: "/admin/real-trading/protection", label: "Conta real / Proteção SL/TP" },
   { href: "/admin/real-trading/daily-risk", label: "Conta real / Stop diário" },
+  { href: "/admin/real-trading/operations", label: "Conta real / Operações" },
   { href: "/admin/real-trading/fibo-d1-guard", label: "Conta real / MR Fibo D1 Guard" },
   { href: "/admin/real-trading/autonomous-strategy", label: "Conta real / Decisões autônomas" },
 ];

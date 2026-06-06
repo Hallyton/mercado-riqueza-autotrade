@@ -50,6 +50,12 @@ Campos de identidade da aprovação não são alteráveis. Toda alteração é a
 
 Configure em `/admin/real-trading/daily-risk` selecionando licença ativa — conta, servidor e símbolo preenchidos automaticamente. Usado pelo `can-trade` antes de novas entradas. Link do centro Fibo: `?licenseId=`. **strategyCode canônico:** `MR_FIBO_D1_GUARD`.
 
+### Centro de operações conta real
+
+**Status:** `REAL_TRADING_OPERATION_CENTER_AND_REMOTE_COMMANDS_IMPLEMENTED`
+
+Admin monitora EAs em `/admin/real-trading/operations` (online, posição, pendentes, PnL, stop diário) e envia comandos operacionais (`PAUSE`, `FLATTEN_AND_PAUSE`, etc.) — **não** cria `REAL_MANUAL`. Pausa persiste em `LicenseOperationControl` e `operation_control` no config EA. Ver [`docs/REAL-TRADING-OPERATION-CENTER.md`](REAL-TRADING-OPERATION-CENTER.md).
+
 ## Caixa preta
 
 Cliente não vê parâmetros. Admin vê contratos, stop, takes, horários.

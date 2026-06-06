@@ -9,6 +9,7 @@ import type { EaAuthContext } from "@/lib/ea/auth";
 import { isEaOffline } from "@/lib/ea/status";
 import { isAutonomousStrategyServerEnabled } from "@/lib/ea/autonomous-strategy-preflight";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
+import { getLicenseOperationControl } from "@/lib/operations/license-operation-control-service";
 import prisma from "@/lib/prisma";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import {
@@ -251,6 +252,19 @@ export async function runAutonomousStrategyCanTrade(
     body.strategy_config_hash !== published.configHash
   ) {
     result = block("STRATEGY_CONFIG_HASH_MISMATCH");
+    await recordCanTradeDecision(ctx, body, result);
+    return result;
+  }
+
+  const operationControl = await getLicenseOperationControl(
+    ctx.license.id,
+    body.strategy_code
+  );
+  if (operationControl?.paused) {
+    result = block(
+      "ADMIN_OPERATION_PAUSED",
+      operationControl.pausedReason ?? undefined
+    );
     await recordCanTradeDecision(ctx, body, result);
     return result;
   }

@@ -351,6 +351,8 @@ model User {
   strategyRuntimeConfigsCreated   StrategyRuntimeConfig[]        @relation("StrategyRuntimeConfigCreatedBy")
   strategyRuntimeConfigsPublished StrategyRuntimeConfig[]        @relation("StrategyRuntimeConfigPublishedBy")
   strategyRuntimeConfigHistory    StrategyRuntimeConfigHistory[] @relation("StrategyRuntimeConfigHistoryActor")
+  licenseOperationControlsPaused  LicenseOperationControl[]      @relation("LicenseOperationControlPausedBy")
+  eaOperationalCommandsRequested  EAOperationalCommand[]         @relation("EAOperationalCommandRequestedBy")
 
   @@index([role])
   @@index([status])
@@ -722,6 +724,9 @@ model License {
   dailyFinancialRiskStates DailyFinancialRiskState[]
   autonomousStrategyDecisions AutonomousStrategyDecision[]
   strategyRuntimeConfigs     StrategyRuntimeConfig[]
+  licenseOperationControls   LicenseOperationControl[]
+  eaOperationalSnapshots     EAOperationalSnapshot[]
+  eaOperationalCommands      EAOperationalCommand[]
 
   @@index([userId, status])
   @@index([mt5AccountId])
@@ -1550,4 +1555,132 @@ model StrategyRuntimeConfigHistory {
 
   @@index([licenseId, strategyCode, createdAt])
   @@map("strategy_runtime_config_history")
+}
+
+enum EAOperationalCommandType {
+  PAUSE_NEW_ENTRIES
+  RESUME_TRADING
+  CANCEL_PENDING_ORDERS
+  CLOSE_OPEN_POSITION
+  CLOSE_ALL_POSITIONS
+  FLATTEN_AND_PAUSE
+  REFRESH_STATUS
+}
+
+enum EAOperationalCommandStatus {
+  PENDING
+  ACKED
+  EXECUTED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+model LicenseOperationControl {
+  id              String    @id @default(cuid())
+  licenseId       String    @map("license_id")
+  strategyCode    String    @map("strategy_code")
+  paused          Boolean   @default(false)
+  pausedReason    String?   @map("paused_reason") @db.Text
+  pausedByAdminId String?   @map("paused_by_admin_id")
+  pausedAt        DateTime? @map("paused_at")
+  resumedAt       DateTime? @map("resumed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  license  License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  pausedBy User?   @relation("LicenseOperationControlPausedBy", fields: [pausedByAdminId], references: [id], onDelete: SetNull)
+
+  @@unique([licenseId, strategyCode])
+  @@index([licenseId])
+  @@map("license_operation_controls")
+}
+
+model EAOperationalSnapshot {
+  id                         String   @id @default(cuid())
+  licenseId                  String   @map("license_id")
+  deviceId                   String?  @map("device_id")
+  accountLogin               String   @map("account_login")
+  accountServer              String   @map("account_server")
+  symbol                     String
+  strategyCode               String   @map("strategy_code")
+  magicNumber                Int?     @map("magic_number")
+  tradeMode                  String?  @map("trade_mode")
+  eaVersion                  String?  @map("ea_version")
+  isOnline                   Boolean  @default(false) @map("is_online")
+  terminalConnected          Boolean  @default(false) @map("terminal_connected")
+  autoTradingAllowed         Boolean  @default(false) @map("auto_trading_allowed")
+  realOrdersEnabled          Boolean  @default(false) @map("real_orders_enabled")
+  autonomousStrategyEnabled  Boolean  @default(false) @map("autonomous_strategy_enabled")
+  pausedByAdmin              Boolean  @default(false) @map("paused_by_admin")
+  pauseReason                String?  @map("pause_reason") @db.Text
+  hasOpenPosition            Boolean  @default(false) @map("has_open_position")
+  positionSide               String?  @map("position_side")
+  positionVolume             Decimal? @map("position_volume") @db.Decimal(18, 6)
+  positionAveragePrice       Decimal? @map("position_average_price") @db.Decimal(18, 6)
+  positionCurrentPrice       Decimal? @map("position_current_price") @db.Decimal(18, 6)
+  positionOpenPnlCents       Int      @default(0) @map("position_open_pnl_cents")
+  hasPendingOrders           Boolean  @default(false) @map("has_pending_orders")
+  pendingOrdersCount         Int      @default(0) @map("pending_orders_count")
+  pendingOrdersJson          Json?    @map("pending_orders_json")
+  realizedPnlDayCents        Int      @default(0) @map("realized_pnl_day_cents")
+  openPnlCents               Int      @default(0) @map("open_pnl_cents")
+  totalPnlDayCents           Int      @default(0) @map("total_pnl_day_cents")
+  realizedPnlMonthCents      Int      @default(0) @map("realized_pnl_month_cents")
+  totalPnlMonthCents         Int      @default(0) @map("total_pnl_month_cents")
+  dailyLimitCents            Int      @default(0) @map("daily_limit_cents")
+  dailyUsedCents             Int      @default(0) @map("daily_used_cents")
+  dailyRemainingCents        Int      @default(0) @map("daily_remaining_cents")
+  lastTickAt                 DateTime? @map("last_tick_at")
+  lastHeartbeatAt            DateTime? @map("last_heartbeat_at")
+  lastCommandId              String?  @map("last_command_id")
+  lastCommandStatus          String?  @map("last_command_status")
+  lastExecutionError         String?  @map("last_execution_error") @db.Text
+  pnlStatus                  String?  @map("pnl_status")
+  rawSnapshotJson            Json?    @map("raw_snapshot_json")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, accountLogin, accountServer, symbol, strategyCode])
+  @@index([licenseId, updatedAt])
+  @@map("ea_operational_snapshots")
+}
+
+model EAOperationalCommand {
+  id                 String                     @id @default(cuid())
+  licenseId          String                     @map("license_id")
+  deviceId           String?                    @map("device_id")
+  accountLogin       String                     @map("account_login")
+  accountServer      String                     @map("account_server")
+  symbol             String
+  strategyCode       String                     @map("strategy_code")
+  magicNumber        Int?                       @map("magic_number")
+  commandType        EAOperationalCommandType   @map("command_type")
+  status             EAOperationalCommandStatus @default(PENDING)
+  requestedByAdminId String                     @map("requested_by_admin_id")
+  requestedAt        DateTime                   @default(now()) @map("requested_at")
+  expiresAt          DateTime                   @map("expires_at")
+  ackedAt            DateTime?                  @map("acked_at")
+  executedAt         DateTime?                  @map("executed_at")
+  failedAt           DateTime?                  @map("failed_at")
+  cancelledAt        DateTime?                  @map("cancelled_at")
+  confirmationText   String?                    @map("confirmation_text")
+  adminNote          String?                    @map("admin_note") @db.Text
+  resultCode         String?                    @map("result_code")
+  resultMessage      String?                    @map("result_message") @db.Text
+  eaResponseJson     Json?                      @map("ea_response_json")
+  requestPayloadJson Json?                      @map("request_payload_json")
+  auditMetadataJson  Json?                      @map("audit_metadata_json")
+  createdAt          DateTime                   @default(now()) @map("created_at")
+  updatedAt          DateTime                   @updatedAt @map("updated_at")
+
+  license     License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  requestedBy User    @relation("EAOperationalCommandRequestedBy", fields: [requestedByAdminId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, status, requestedAt])
+  @@index([deviceId, status])
+  @@index([licenseId, commandType, status])
+  @@map("ea_operational_commands")
 }

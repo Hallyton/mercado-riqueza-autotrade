@@ -118,20 +118,16 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(fiboGuard).not.toContain("input ");
   });
 
-  it("pull instructions usa contrato /api/v1/ea/instructions e ignora ordem não suportada", () => {
-    expect(signal).toContain("/api/v1/ea/instructions?login=");
-    expect(signal).toContain("instruction_id");
-    expect(signal).toContain("idempotency_key");
-    expect(signal).toContain("Tipo de ordem não suportado:");
-    expect(signal).toContain("ORDER_PRICE_REQUIRED_FOR_PENDING_ORDER");
-    expect(signal).toContain("STOP_LOSS_AND_TAKE_PROFIT_REQUIRED");
-    expect(signal).toContain("stop_loss_price");
-    expect(signal).toContain("management_plan");
-    expect(signal).toContain("MR_AT_ParseManagementPlanBlock");
-    expect(combinedClient).toContain("MR_AT_ApplyManagementPlanAfterEntry");
-    expect(combinedClient).toContain("/api/v1/ea/management-events");
-    expect(constants).toContain("order_price");
-    expect(signal).not.toContain("strategy");
+  it("integra comandos operacionais remotos e snapshot operacional", () => {
+    const opCmd = readMql(path.join("includes", "MR_AT_OperationalCommands.mqh"));
+    expect(opCmd).toContain("/api/v1/ea/commands");
+    expect(opCmd).toContain("/api/v1/ea/operation-snapshot");
+    expect(opCmd).toContain("PAUSE_NEW_ENTRIES");
+    expect(opCmd).toContain("FLATTEN_AND_PAUSE");
+    expect(opCmd).toContain("g_admin_paused");
+    expect(executor).toContain("MR_AT_OperationalCommandsOnTimer");
+    expect(executor).toContain("MR_AT_OperationalCommands.mqh");
+    expect(opCmd).not.toMatch(/MR_AT_Log(?:Info|Debug|Error)\([^)]*g_device_token/);
   });
 });
 

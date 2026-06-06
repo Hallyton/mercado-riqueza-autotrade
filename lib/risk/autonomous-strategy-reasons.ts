@@ -33,6 +33,7 @@ export const CAN_TRADE_REASON_CODES = [
   "EA_SYMBOL_NOT_READY",
   "LOT_TOTAL_EXCEEDS_MAX_CONTRACTS",
   "UNKNOWN_BLOCK",
+  "ADMIN_OPERATION_PAUSED",
 ] as const;
 
 export type CanTradeReasonCode = (typeof CAN_TRADE_REASON_CODES)[number];
@@ -77,6 +78,8 @@ export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
   LOT_TOTAL_EXCEEDS_MAX_CONTRACTS:
     "Configuração da estratégia usa mais contratos do que a licença permite.",
   UNKNOWN_BLOCK: "Bloqueio operacional não classificado.",
+  ADMIN_OPERATION_PAUSED:
+    "Novas entradas pausadas pelo centro de operações administrativo.",
 };
 
 export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>> = {
@@ -99,6 +102,8 @@ export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>>
     "Reduzir contratos ou aumentar stop financeiro",
   LOT_TOTAL_EXCEEDS_MAX_CONTRACTS:
     "Ajustar limite operacional ou reduzir contratos",
+  ADMIN_OPERATION_PAUSED:
+    "Retomar operações no centro de operações ou aguardar fim da pausa admin",
 };
 
 export const AUTONOMOUS_STRATEGY_REASON_CODES = [

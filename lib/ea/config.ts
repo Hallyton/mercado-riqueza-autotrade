@@ -2,6 +2,7 @@ import type { EaAuthContext } from "./auth";
 import { getEaOnlineState } from "./auth";
 import { isAutonomousStrategyServerEnabled } from "@/lib/ea/autonomous-strategy-preflight";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
+import { buildOperationControlConfig } from "@/lib/operations/license-operation-control-service";
 import { getLicenseOperationalFlags } from "@/lib/licensing/service";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
 import prisma from "@/lib/prisma";
@@ -45,6 +46,10 @@ export async function buildEaConfigResponse(ctx: EaAuthContext) {
       ? await getPublishedStrategyConfigForEa(ctx.license.id)
       : null;
 
+  const operationControl = autonomousEnabled
+    ? await buildOperationControlConfig(ctx.license.id, strategyCode)
+    : { paused: false, reason: null, strategy_code: strategyCode };
+
   return {
     min_ea_version: MIN_EA_VERSION,
     heartbeat_interval_sec: HEARTBEAT_INTERVAL_SEC,
@@ -73,5 +78,6 @@ export async function buildEaConfigResponse(ctx: EaAuthContext) {
     strategy_config_version: publishedStrategy?.version ?? null,
     strategy_config_hash: publishedStrategy?.configHash ?? null,
     strategy_config: publishedStrategy?.strategyConfig ?? null,
+    operation_control: operationControl,
   };
 }

@@ -235,3 +235,58 @@ export const dailyRiskReportBodySchema = z.object({
   equity: z.number().optional(),
   currency: z.string().max(8).optional(),
 });
+
+export const operationSnapshotPendingOrderSchema = z.object({
+  ticket: z.union([z.number(), z.string()]).optional(),
+  type: z.string().max(32).optional(),
+  purpose: z.string().max(64).optional(),
+  volume: z.number().optional(),
+  price: z.number().optional(),
+  side: z.string().max(8).optional(),
+  symbol: z.string().max(32).optional(),
+});
+
+export const operationSnapshotBodySchema = z.object({
+  license_id: z.string().min(1),
+  device_id: z.string().min(1).max(128),
+  account_login: z.string().min(1).max(64),
+  account_server: z.string().min(1).max(128),
+  symbol: z.string().min(1).max(32),
+  strategy_code: z.string().min(3).max(64).optional(),
+  magic_number: z.number().int().optional(),
+  trade_mode: z.string().max(16).optional(),
+  ea_version: z.string().max(32).optional(),
+  terminal_connected: z.boolean().optional(),
+  auto_trading_allowed: z.boolean().optional(),
+  real_orders_enabled: z.boolean().optional(),
+  autonomous_strategy_enabled: z.boolean().optional(),
+  paused_by_admin: z.boolean().optional(),
+  has_open_position: z.boolean().optional(),
+  position_side: z.string().max(8).optional(),
+  position_volume: z.number().optional(),
+  position_average_price: z.number().optional(),
+  position_current_price: z.number().optional(),
+  position_open_pnl: z.number().optional(),
+  pending_orders: z.array(operationSnapshotPendingOrderSchema).optional(),
+  realized_pnl_day: z.number().optional(),
+  realized_pnl_month: z.number().optional(),
+  open_pnl: z.number().optional(),
+  total_pnl_day: z.number().optional(),
+  total_pnl_month: z.number().optional(),
+  pnl_status: z.enum(["OK", "PARTIAL"]).optional(),
+  last_tick_time: z.string().max(64).optional(),
+  last_execution_error: z.string().max(500).optional(),
+});
+
+export const eaCommandAckBodySchema = z.object({
+  status: z.literal("ACKED"),
+  ea_time: z.string().max(64).optional(),
+  message: z.string().max(500).optional(),
+});
+
+export const eaCommandResultBodySchema = z.object({
+  status: z.enum(["EXECUTED", "FAILED"]),
+  result_code: z.string().min(1).max(64),
+  result_message: z.string().min(1).max(500),
+  details: z.record(z.unknown()).optional(),
+});

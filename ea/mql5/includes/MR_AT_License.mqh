@@ -24,6 +24,10 @@ extern bool     g_subscription_active;
 
 //+------------------------------------------------------------------+
 extern bool g_autonomous_strategy_site_enabled;
+extern bool g_admin_paused;
+extern string g_admin_pause_reason;
+
+void MR_AT_ApplyOperationControlFromConfig(const string json);
 
 bool MR_AT_ApplyConfigFromJson(const string json)
   {
@@ -44,6 +48,7 @@ bool MR_AT_ApplyConfigFromJson(const string json)
       MR_AT_JsonGetBool(json, "autonomous_strategy_enabled");
 
    MR_Fibo_ApplyConfigFromEaResponse(json);
+   MR_AT_ApplyOperationControlFromConfig(json);
 
    return true;
   }

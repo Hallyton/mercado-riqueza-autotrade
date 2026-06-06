@@ -43,6 +43,7 @@ input string InpAutonomousStrategyCode = "MR_FIBO_D1_GUARD";               // CÃ
 #include "includes/MR_AT_Signal.mqh"
 #include "includes/MR_AT_RealTrading.mqh"
 #include "includes/MR_AT_AutonomousStrategy.mqh"
+#include "includes/MR_AT_OperationalCommands.mqh"
 
 //--- Globais (compartilhadas com includes via extern)
 bool   g_autonomous_strategy_site_enabled = false;
@@ -208,6 +209,7 @@ void OnTimer()
    MR_AT_FetchAndProcessSignals();
    MR_AT_ProcessAutonomousStrategy();
    MR_AT_ManagementOnTimer();
+   MR_AT_OperationalCommandsOnTimer();
    MR_AT_UpdatePanel();
   }
 
