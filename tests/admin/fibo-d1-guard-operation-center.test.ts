@@ -87,4 +87,39 @@ describe("fibo d1 guard operation center", () => {
     expect(blocked?.strategyConfigHref).toBe("/admin/licenses/lic1/strategy-config");
     expect(blocked?.approvalHref).toBe("/admin/real-trading/approvals/ap1");
   });
+
+  it("clears LOT_TOTAL_EXCEEDS after approval maxContracts raised to match loteTotal", async () => {
+    prismaMock.license.findMany.mockResolvedValue([
+      {
+        id: "lic1",
+        status: LicenseStatus.ACTIVE,
+        expectedSymbol: "WDON26",
+        expectedMagicNumber: 910001,
+        expectedAccountLogin: "123",
+        expectedAccountServer: "XPMT5-PRD",
+        user: { email: "cliente@test.com", name: "Cliente" },
+        mt5Account: { login: "123", server: "XPMT5-PRD" },
+        robotInstances: [
+          {
+            symbol: "WDON26",
+            magicNumber: 910001,
+            autonomousStrategyEnabled: true,
+            robotProduct: { requiresDailyFinancialStop: true },
+          },
+        ],
+        realTradingApprovals: [{ id: "ap1", maxContracts: 5 }],
+      },
+    ]);
+    vi.mocked(getPublishedStrategyConfigForEa).mockResolvedValue({
+      strategyConfig: {
+        risk: { lote_total: 5, stop_pontos: 100 },
+      },
+      configHash: "hash1",
+      version: 1,
+    } as Awaited<ReturnType<typeof getPublishedStrategyConfigForEa>>);
+
+    const view = await getFiboD1GuardOperationCenterView();
+    const blocked = view.clients.blocked.find((row) => row.licenseId === "lic1");
+    expect(blocked?.reasonCodes ?? []).not.toContain(LOT_TOTAL_EXCEEDS_MAX_CONTRACTS);
+  });
 });

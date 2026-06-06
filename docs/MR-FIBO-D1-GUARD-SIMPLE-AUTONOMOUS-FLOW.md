@@ -33,6 +33,17 @@
 
 `MaxContracts` vem da aprovação REAL — **não** é editável na strategy-config. Se `loteTotal` exceder o limite, publicação bloqueada (`LOT_TOTAL_EXCEEDS_MAX_CONTRACTS`); rascunho pode ser salvo. Regularizar via aprovação REAL ou reduzir contratos na config.
 
+### Edição controlada do limite operacional REAL
+
+Para liberar `loteTotal` maior sem revogar/recriar aprovação:
+
+1. Abrir `/admin/real-trading/approvals/[approvalId]` (ou link **Abrir aprovação existente** na criação).
+2. Card **Limite operacional** → **Editar limite operacional**.
+3. `PATCH` com confirmação `ALTERAR LIMITE OPERACIONAL REAL`.
+4. Publicar config na strategy-config; centro operacional reflete elegibilidade.
+
+Campos de identidade da aprovação não são alteráveis. Toda alteração é auditada. **Não envia ordem real.**
+
 ## Caixa preta
 
 Cliente não vê parâmetros. Admin vê contratos, stop, takes, horários.

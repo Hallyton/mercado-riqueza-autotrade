@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RealTradingApprovalActions } from "@/components/admin/real-trading-approval-actions";
+import {
+  RealTradingApprovalLimitEditPanel,
+  type ApprovalLimitEditView,
+} from "@/components/admin/real-trading-approval-limit-edit";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getRealTradingApprovalById,
@@ -8,12 +12,19 @@ import {
   listRelatedProtectionReportsForApproval,
   listRelatedSnapshotsForApproval,
 } from "@/lib/admin/real-trading-approval";
+import { RealTradingApprovalStatus } from "@prisma/client";
 import {
   maskAccountLogin,
   maskLicenseId,
 } from "@/lib/risk/real-trading-guard-status";
 
 type PageProps = { params: Promise<{ approvalId: string }> };
+
+function decimalToNumber(value: { toString(): string } | number | null): number {
+  if (value == null) return 0;
+  if (typeof value === "number") return value;
+  return Number(value.toString());
+}
 
 export default async function AdminRealTradingApprovalDetailPage({
   params,
@@ -27,6 +38,28 @@ export default async function AdminRealTradingApprovalDetailPage({
     listRelatedPreflightsForApproval(approval),
     listRelatedProtectionReportsForApproval(approval),
   ]);
+
+  const limitEditView: ApprovalLimitEditView = {
+    approvalId: approval.id,
+    licenseId: approval.licenseId,
+    accountLogin: approval.accountLogin,
+    accountServer: approval.accountServer,
+    symbol: approval.symbol,
+    magicNumber: approval.magicNumber,
+    status: approval.status,
+    allowReal: approval.allowReal,
+    maxContracts: approval.maxContracts,
+    minFreeMargin: decimalToNumber(approval.minFreeMargin),
+    marginBufferPercent: decimalToNumber(approval.marginBufferPercent),
+    notes: approval.notes,
+    createdAt: approval.createdAt.toISOString(),
+    updatedAt: approval.updatedAt.toISOString(),
+    editable:
+      approval.status === RealTradingApprovalStatus.APPROVED &&
+      approval.allowReal &&
+      approval.revokedAt == null,
+    strategyConfigHref: `/admin/licenses/${approval.licenseId}/strategy-config`,
+  };
 
   return (
     <div className="space-y-6">
@@ -68,28 +101,10 @@ export default async function AdminRealTradingApprovalDetailPage({
               {approval.symbol} / {approval.magicNumber}
             </dd>
           </div>
-          <div>
-            <dt className="text-muted-foreground">Limites</dt>
-            <dd>
-              maxContracts={approval.maxContracts} · minFreeMargin=
-              {approval.minFreeMargin != null
-                ? String(approval.minFreeMargin)
-                : "—"}{" "}
-              · buffer={String(approval.marginBufferPercent)}%
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Aprovado em</dt>
-            <dd>{approval.approvedAt?.toISOString() ?? "—"}</dd>
-          </div>
-          {approval.notes && (
-            <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">Notas</dt>
-              <dd>{approval.notes}</dd>
-            </div>
-          )}
         </dl>
       </Card>
+
+      <RealTradingApprovalLimitEditPanel approval={limitEditView} />
 
       <Card className="p-6">
         <CardHeader className="p-0 pb-4">

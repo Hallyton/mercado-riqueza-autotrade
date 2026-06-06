@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   applyRealTradingApprovalAction,
@@ -5,6 +6,13 @@ import {
   RealTradingApprovalError,
   updateRealTradingApprovalActionSchema,
 } from "@/lib/admin/real-trading-approval";
+import {
+  isRealTradingApprovalLimitPatchBody,
+  mapApprovalLimitUpdateZodError,
+  RealTradingApprovalLimitUpdateError,
+  updateRealTradingApprovalLimits,
+  updateRealTradingApprovalLimitsSchema,
+} from "@/lib/admin/real-trading-approval-limit-update";
 import { clientIp, requireAdminApiSession } from "@/lib/auth/admin-api";
 
 type RouteContext = { params: Promise<{ approvalId: string }> };
@@ -23,16 +31,91 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const authResult = await requireAdminApiSession();
-  if ("error" in authResult && authResult.error) return authResult.error;
-
+  const requestId = randomUUID();
   const { approvalId } = await context.params;
+
+  const authResult = await requireAdminApiSession();
+  if ("error" in authResult && authResult.error) {
+    const status = authResult.error.status;
+    return NextResponse.json(
+      {
+        ok: false,
+        requestId,
+        code:
+          status === 401 ? "ADMIN_SESSION_REQUIRED" : "ADMIN_PERMISSION_DENIED",
+        message:
+          status === 401
+            ? "Sessão admin necessária."
+            : "Permissão insuficiente.",
+        actionHint: "Faça login como administrador autorizado.",
+      },
+      { status }
+    );
+  }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      {
+        ok: false,
+        requestId,
+        code: "UNKNOWN_APPROVAL_UPDATE_ERROR",
+        message: "JSON inválido.",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (isRealTradingApprovalLimitPatchBody(body)) {
+    const parsed = updateRealTradingApprovalLimitsSchema.safeParse(body);
+    if (!parsed.success) {
+      const err = mapApprovalLimitUpdateZodError(parsed.error, requestId);
+      return NextResponse.json(err.toPayload(), { status: err.status });
+    }
+
+    try {
+      const result = await updateRealTradingApprovalLimits(approvalId, {
+        ...parsed.data,
+        actorId: authResult.session!.user!.id!,
+        ipAddress: clientIp(request),
+        requestId,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        requestId: result.requestId,
+        approvalId: result.approval.id,
+        previous: {
+          maxContracts: result.previous.maxContracts,
+          marginFreeMin: result.previous.marginFreeMin,
+          marginBufferPercent: result.previous.marginBufferPercent,
+        },
+        current: {
+          maxContracts: result.current.maxContracts,
+          marginFreeMin: result.current.marginFreeMin,
+          marginBufferPercent: result.current.marginBufferPercent,
+        },
+      });
+    } catch (e) {
+      if (e instanceof RealTradingApprovalLimitUpdateError) {
+        return NextResponse.json(e.toPayload(), { status: e.status });
+      }
+      console.error("[real_trading.approval.limit_update_failed]", {
+        requestId,
+        approvalId,
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          requestId,
+          code: "UNKNOWN_APPROVAL_UPDATE_ERROR",
+          message: "Falha inesperada ao atualizar limite operacional.",
+        },
+        { status: 500 }
+      );
+    }
   }
 
   const parsed = updateRealTradingApprovalActionSchema.safeParse(body);

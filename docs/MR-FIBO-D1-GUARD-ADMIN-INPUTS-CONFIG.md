@@ -41,8 +41,28 @@ Permitir que administradores configurem parâmetros operacionais da estratégia 
 
 Se `loteTotal > maxContracts`, a publicação é bloqueada com `LOT_TOTAL_EXCEEDS_MAX_CONTRACTS`. O admin pode:
 
-1. Aumentar o limite na **aprovação de conta real** (`/admin/real-trading/approvals/[id]`).
+1. Aumentar o limite na **aprovação de conta real** (`/admin/real-trading/approvals/[id]`) — ver seção abaixo.
 2. Reduzir `loteTotal` na strategy-config (botão “Reduzir contratos para N” altera só o formulário local).
+
+### Edição controlada do limite operacional REAL
+
+**Status:** `REAL_TRADING_APPROVAL_LIMIT_EDIT_IMPLEMENTED`
+
+Quando já existe aprovação REAL ativa para a chave única (`licenseId` + `accountLogin` + `accountServer` + `symbol` + `magicNumber`), **não** crie outra aprovação — edite a existente.
+
+| Item | Detalhe |
+|------|---------|
+| Tela | `/admin/real-trading/approvals/[approvalId]` — card **Limite operacional** |
+| API | `PATCH /api/admin/real-trading/approvals/[approvalId]` |
+| Editáveis | `maxContracts`, `marginFreeMin`, `marginBufferPercent`, `adminNotes` |
+| Readonly | `licenseId`, conta, servidor, símbolo, `magicNumber`, `status` |
+| Confirmação | Digitar exatamente: `ALTERAR LIMITE OPERACIONAL REAL` |
+| Audit | `real_trading.approval.limit_updated` com valores previous/current |
+| Segurança | Não envia ordem; não cria instruction; não altera estratégia |
+
+Após aumentar `maxContracts`, a strategy-config passa a exibir o novo **Limite operacional aprovado** e permite publicar `loteTotal` até esse teto (desde que stop financeiro, parciais e demais validações OK). O centro operacional (`/admin/real-trading/fibo-d1-guard`) deixa de bloquear por `LOT_TOTAL_EXCEEDS_MAX_CONTRACTS` quando regularizado.
+
+Conflitos na criação (`ACTIVE_APPROVAL_CONFLICT`, `APPROVAL_ALREADY_EXISTS`) linkam para a aprovação existente via **Abrir aprovação existente**.
 
 Rascunho pode ser salvo acima do limite; **publicar** exige regularização.
 

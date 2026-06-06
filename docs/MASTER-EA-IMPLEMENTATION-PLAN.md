@@ -2682,6 +2682,21 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | UI | Card de diagnóstico em `/admin/real-trading/approvals/new` |
 | Audit | `real_trading.approval.created` / `real_trading.approval.create_failed` |
 
+### Fase 15.4.3 — Edição controlada do limite operacional REAL
+
+**Status:** `REAL_TRADING_APPROVAL_LIMIT_EDIT_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Problema | Unique constraint impede segunda aprovação para mesma chave operacional |
+| Solução | `PATCH /api/admin/real-trading/approvals/[approvalId]` — editar `maxContracts` e margens |
+| Lib | `lib/admin/real-trading-approval-limit-update.ts` |
+| UI | Card **Limite operacional** em `/admin/real-trading/approvals/[approvalId]` |
+| Audit | `real_trading.approval.limit_updated` (previous/current, sem secrets) |
+| Confirmação | `ALTERAR LIMITE OPERACIONAL REAL` |
+| Integração | strategy-config readonly limite; fibo-d1-guard remove `LOT_TOTAL_EXCEEDS_MAX_CONTRACTS` |
+| Garantias | Sem ordem real; sem instruction; identidade da aprovação imutável |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`
