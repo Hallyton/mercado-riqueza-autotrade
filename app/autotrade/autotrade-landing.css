@@ -1,0 +1,781 @@
+.autotrade-landing {
+  --black: #050506;
+  --black-2: #0b0b0d;
+  --black-3: #111114;
+  --card: #151518;
+  --card-2: #1b1b1f;
+  --white: #f7f7f2;
+  --soft: #cfcfd4;
+  --muted: #8f9098;
+  --line: rgba(255, 255, 255, 0.12);
+  --line-2: rgba(255, 255, 255, 0.22);
+  --radius-xl: 42px;
+  --radius-lg: 28px;
+  --max: 1180px;
+  --shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 76% 4%, rgba(255, 255, 255, 0.12), transparent 25%),
+    radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, #030304 0%, #0b0b0d 45%, #050506 100%);
+  color: var(--white);
+  line-height: 1.55;
+  overflow-x: hidden;
+  min-height: 100vh;
+  position: relative;
+}
+
+.autotrade-landing *,
+.autotrade-landing *::before,
+.autotrade-landing *::after {
+  box-sizing: border-box;
+}
+
+.autotrade-landing a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.autotrade-landing img {
+  max-width: 100%;
+  display: block;
+}
+
+.autotrade-landing .container {
+  width: min(var(--max), calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.autotrade-landing .noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.autotrade-landing .page {
+  position: relative;
+  z-index: 1;
+}
+
+.autotrade-landing .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(5, 5, 6, 0.76);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+}
+
+.autotrade-landing .nav {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.autotrade-landing .brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.autotrade-landing .brand-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  background: #101012;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.autotrade-landing .brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  filter: grayscale(1) contrast(1.15);
+}
+
+.autotrade-landing .brand-text strong {
+  display: block;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--white);
+}
+
+.autotrade-landing .brand-text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.autotrade-landing .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  color: var(--soft);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.autotrade-landing .nav-links a:hover {
+  color: var(--white);
+}
+
+.autotrade-landing .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  min-height: 48px;
+  padding: 0 22px;
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: 0.22s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.autotrade-landing .btn:hover {
+  transform: translateY(-2px);
+}
+
+.autotrade-landing .btn-white {
+  background: var(--white);
+  color: var(--black);
+  box-shadow: 0 18px 40px rgba(255, 255, 255, 0.12);
+}
+
+.autotrade-landing .btn-dark {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--white);
+  border-color: var(--line-2);
+}
+
+.autotrade-landing .hero {
+  padding: 78px 0 50px;
+}
+
+.autotrade-landing .hero-grid {
+  display: grid;
+  grid-template-columns: 1.04fr 0.96fr;
+  gap: 42px;
+  align-items: center;
+}
+
+.autotrade-landing .kicker {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  font-size: 13px;
+  margin-bottom: 28px;
+}
+
+.autotrade-landing h1 {
+  font-size: clamp(50px, 8vw, 108px);
+  line-height: 0.88;
+  letter-spacing: -0.07em;
+  font-weight: 400;
+  text-transform: uppercase;
+  max-width: 780px;
+  margin: 0;
+}
+
+.autotrade-landing .hero-copy {
+  max-width: 620px;
+  margin-top: 28px;
+  color: var(--soft);
+  font-size: clamp(17px, 2vw, 21px);
+}
+
+.autotrade-landing .hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.autotrade-landing .hero-visual {
+  min-height: 590px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.24), transparent 16%),
+    radial-gradient(circle at 52% 32%, rgba(255, 255, 255, 0.1), transparent 36%),
+    linear-gradient(145deg, #151517, #050506 72%);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  padding: 26px;
+}
+
+.autotrade-landing .hero-visual::before {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 45% 55% 62% 38% / 40% 55% 45% 60%;
+  left: 50%;
+  top: 32%;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  background:
+    radial-gradient(circle at 34% 26%, #ffffff 0 4%, transparent 18%),
+    radial-gradient(circle at 50% 50%, #d7d7d7, #5f5f64 35%, #161619 62%, transparent 70%);
+  filter: contrast(1.35) brightness(1.08);
+  opacity: 0.86;
+  box-shadow:
+    inset 0 0 60px rgba(255, 255, 255, 0.35),
+    0 0 70px rgba(255, 255, 255, 0.12);
+}
+
+.autotrade-landing .hero-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-radial-gradient(
+      circle at 52% 32%,
+      transparent 0 17px,
+      rgba(255, 255, 255, 0.08) 18px,
+      transparent 19px
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0 49%,
+      rgba(255, 255, 255, 0.08) 49% 50%,
+      transparent 50%
+    );
+  opacity: 0.36;
+}
+
+.autotrade-landing .visual-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 535px;
+}
+
+.autotrade-landing .visual-top,
+.autotrade-landing .visual-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+}
+
+.autotrade-landing .visual-title {
+  margin-top: auto;
+  padding-top: 260px;
+}
+
+.autotrade-landing .visual-title h2 {
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 0.92;
+  font-size: clamp(30px, 4vw, 56px);
+  margin: 0;
+}
+
+.autotrade-landing .visual-title p {
+  margin-top: 14px;
+  color: var(--muted);
+  max-width: 420px;
+}
+
+.autotrade-landing .section {
+  padding: 74px 0;
+}
+
+.autotrade-landing .section-head {
+  margin-bottom: 34px;
+  max-width: 860px;
+}
+
+.autotrade-landing .section-head.center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.autotrade-landing .section-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+
+.autotrade-landing .section-head h2 {
+  font-size: clamp(38px, 6vw, 82px);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+  font-weight: 400;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.autotrade-landing .section-head p {
+  color: var(--soft);
+  font-size: 18px;
+  margin-top: 18px;
+  max-width: 760px;
+}
+
+.autotrade-landing .section-head.center p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.autotrade-landing .cards-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.autotrade-landing .cards-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.autotrade-landing .card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    var(--card);
+  padding: 28px;
+  min-height: 230px;
+  position: relative;
+  overflow: hidden;
+}
+
+.autotrade-landing .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.12), transparent 28%);
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.autotrade-landing .card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.autotrade-landing .card small {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 11px;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.autotrade-landing .card h3 {
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+}
+
+.autotrade-landing .card p {
+  color: var(--soft);
+  margin: 0;
+}
+
+.autotrade-landing .full-bleed {
+  width: min(1480px, calc(100% - 20px));
+  margin: 0 auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.08), transparent 22%),
+    linear-gradient(120deg, #1b1b1f, #09090b 64%);
+  padding: clamp(32px, 6vw, 76px);
+  overflow: hidden;
+  position: relative;
+}
+
+.autotrade-landing .wide-risk {
+  display: grid;
+  grid-template-columns: 0.94fr 1.06fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.autotrade-landing .big-statement {
+  font-size: clamp(44px, 7vw, 96px);
+  line-height: 0.94;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+  font-weight: 300;
+  margin: 0;
+}
+
+.autotrade-landing .pill-list {
+  display: grid;
+  gap: 14px;
+}
+
+.autotrade-landing .pill {
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  padding: 17px 22px;
+  color: var(--soft);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.autotrade-landing .pill strong {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.autotrade-landing .capital-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.autotrade-landing .capital-box {
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 24px;
+  padding: 24px;
+  min-height: 118px;
+}
+
+.autotrade-landing .capital-box span {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.autotrade-landing .capital-box strong {
+  font-size: clamp(26px, 4vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.autotrade-landing .highlight-card {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line-2);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)),
+    #141416;
+  padding: clamp(30px, 5vw, 58px);
+}
+
+.autotrade-landing .highlight-card h2 {
+  font-size: clamp(40px, 6vw, 80px);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+  font-weight: 300;
+  margin: 0;
+}
+
+.autotrade-landing .highlight-card p {
+  color: var(--soft);
+  margin-top: 20px;
+  max-width: 760px;
+  font-size: 18px;
+}
+
+.autotrade-landing .data-row {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 0.9fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.autotrade-landing .big-number {
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+  font-weight: 400;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.autotrade-landing .list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+}
+
+.autotrade-landing .list li {
+  color: var(--soft);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.autotrade-landing .list li::before {
+  content: "— ";
+  color: var(--white);
+}
+
+.autotrade-landing .operation-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 780px;
+}
+
+.autotrade-landing .table-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  background: var(--card);
+}
+
+.autotrade-landing .operation-table th,
+.autotrade-landing .operation-table td {
+  padding: 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.autotrade-landing .operation-table th {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.autotrade-landing .operation-table td {
+  color: var(--soft);
+  font-size: 14px;
+}
+
+.autotrade-landing .operation-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.autotrade-landing .tag {
+  display: inline-flex;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: var(--white);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.autotrade-landing .faq {
+  display: grid;
+  gap: 12px;
+}
+
+.autotrade-landing details {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 22px;
+  padding: 20px;
+}
+
+.autotrade-landing summary {
+  cursor: pointer;
+  color: var(--white);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.autotrade-landing details p {
+  color: var(--soft);
+  margin-top: 12px;
+}
+
+.autotrade-landing .cta-box {
+  text-align: center;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-xl);
+  padding: clamp(36px, 7vw, 84px);
+  background:
+    radial-gradient(circle at 52% 0%, rgba(255, 255, 255, 0.14), transparent 30%),
+    linear-gradient(145deg, #1b1b1f, #080809);
+  box-shadow: var(--shadow);
+}
+
+.autotrade-landing .cta-box h2 {
+  font-size: clamp(44px, 7vw, 96px);
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+  font-weight: 300;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.autotrade-landing .cta-box p {
+  color: var(--soft);
+  max-width: 790px;
+  margin: 24px auto 0;
+  font-size: 18px;
+}
+
+.autotrade-landing .cta-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.autotrade-landing .footer {
+  border-top: 1px solid var(--line);
+  padding: 34px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.autotrade-landing .footer-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.autotrade-landing .disclaimer {
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 28px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .autotrade-landing .nav-links {
+    display: none;
+  }
+
+  .autotrade-landing .hero-grid,
+  .autotrade-landing .wide-risk,
+  .autotrade-landing .data-row {
+    grid-template-columns: 1fr;
+  }
+
+  .autotrade-landing .hero-visual {
+    min-height: 520px;
+  }
+
+  .autotrade-landing .visual-content {
+    min-height: 465px;
+  }
+
+  .autotrade-landing .cards-3,
+  .autotrade-landing .cards-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 660px) {
+  .autotrade-landing .container {
+    width: min(100% - 22px, var(--max));
+  }
+
+  .autotrade-landing .brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .autotrade-landing .brand-text strong {
+    font-size: 11px;
+  }
+
+  .autotrade-landing .brand-text small {
+    display: none;
+  }
+
+  .autotrade-landing .nav {
+    min-height: 66px;
+  }
+
+  .autotrade-landing .hero {
+    padding: 48px 0 34px;
+  }
+
+  .autotrade-landing h1 {
+    font-size: clamp(46px, 18vw, 72px);
+  }
+
+  .autotrade-landing .hero-actions,
+  .autotrade-landing .cta-actions {
+    flex-direction: column;
+  }
+
+  .autotrade-landing .btn {
+    width: 100%;
+  }
+
+  .autotrade-landing .cards-3,
+  .autotrade-landing .cards-2,
+  .autotrade-landing .capital-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .autotrade-landing .full-bleed {
+    width: min(100% - 14px, 1480px);
+    border-radius: 30px;
+  }
+
+  .autotrade-landing .pill {
+    align-items: flex-start;
+    flex-direction: column;
+    border-radius: 22px;
+  }
+
+  .autotrade-landing .hero-visual {
+    min-height: 470px;
+    padding: 18px;
+    border-radius: 30px;
+  }
+
+  .autotrade-landing .hero-visual::before {
+    width: 330px;
+    height: 330px;
+  }
+
+  .autotrade-landing .visual-title {
+    padding-top: 235px;
+  }
+}

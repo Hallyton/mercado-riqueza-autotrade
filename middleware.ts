@@ -5,7 +5,15 @@ import { isInternalRoute } from "@/lib/auth/roles";
 
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/planos", "/cadastro", "/termos/autotrade"]);
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/login",
+  "/planos",
+  "/cadastro",
+  "/autotrade",
+  "/mr-fibo-d1-guard",
+  "/termos/autotrade",
+]);
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;

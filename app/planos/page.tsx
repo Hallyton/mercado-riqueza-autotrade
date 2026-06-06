@@ -72,6 +72,22 @@ export default async function PlanosPage() {
           </div>
         </div>
 
+        <section className="mt-10 rounded-xl border border-white/10 bg-white/[0.02] p-8">
+          <h2 className="text-xl font-semibold text-foreground">
+            AutoTrade — MR Fibo D1 Guard
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+            Estratégia automatizada para Mini Dólar com gestão de risco, controle
+            operacional e avaliação prévia.
+          </p>
+          <Link
+            href="/autotrade"
+            className="mt-6 inline-flex h-10 items-center rounded-lg border border-gold/30 px-5 text-sm font-semibold text-gold transition hover:bg-gold/10"
+          >
+            Ver detalhes
+          </Link>
+        </section>
+
         <section className="mt-12 space-y-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-6">
           <h2 className="text-lg font-semibold text-amber-200">Avisos de risco</h2>
           <p className="text-sm text-muted-foreground">{PUBLIC_PLANOS_COPY.riskBlock}</p>
