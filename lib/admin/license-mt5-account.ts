@@ -4,6 +4,9 @@ import {
   TradeMode,
 } from "@prisma/client";
 import { z } from "zod";
+import {
+  assertMt5AccountAvailableForLicense,
+} from "@/lib/admin/mt5-account-ownership";
 import { recordAdminAction } from "@/lib/admin/record-action";
 import { LicenseDeviceAdminError } from "@/lib/admin/license-devices";
 import {
@@ -205,11 +208,12 @@ export async function bindLicenseMt5Account(input: {
   });
 
   if (existingMt5 && existingMt5.userId !== license.userId) {
-    throw new LicenseDeviceAdminError(
-      "Esta conta MT5 já está vinculada a outro usuário.",
-      "MT5_ALREADY_REGISTERED",
-      403
-    );
+    await assertMt5AccountAvailableForLicense({
+      licenseId: license.id,
+      userId: license.userId,
+      accountLogin: login,
+      accountServer: server,
+    });
   }
 
   const mt5 =

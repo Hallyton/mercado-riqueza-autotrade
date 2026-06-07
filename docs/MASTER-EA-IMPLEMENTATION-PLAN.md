@@ -2689,6 +2689,18 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | MQL5 | Handler `HEALTH_CHECK`, timers independentes (15/30/60s) |
 | Doc | [`docs/EA-LIVENESS-AND-HEALTH-CHECK.md`](EA-LIVENESS-AND-HEALTH-CHECK.md) |
 
+### Fase 15.7 — Liberação e transferência de conta MT5
+
+**Status:** `MT5_ACCOUNT_OWNERSHIP_RELEASE_AND_TRANSFER_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Diagnóstico | `GET /api/admin/mt5-accounts/ownership/trace` |
+| Liberação | `POST /api/admin/mt5-accounts/ownership/release` |
+| Transferência | `POST /api/admin/mt5-accounts/ownership/transfer` |
+| UI | Card conflito MT5 em `/admin/licenses/[licenseId]` |
+| Doc | [`docs/MT5-ACCOUNT-OWNERSHIP-ADMIN.md`](MT5-ACCOUNT-OWNERSHIP-ADMIN.md) |
+
 ### Fase 15.4.1 — Contract Limit Regularization Flow
 
 **Status:** `MR_FIBO_D1_GUARD_CONTRACT_LIMIT_REGULARIZATION_FLOW_IMPLEMENTED`

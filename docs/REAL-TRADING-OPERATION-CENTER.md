@@ -59,6 +59,23 @@ Eventos em `AdminAction` / `AuditLog`:
 - Comandos críticos exigem role OPS/SUPERADMIN (emergency).
 - EA offline: comando fica PENDING ou bloqueado com aviso.
 
+## Liberação e transferência administrativa de conta MT5
+
+Contas MT5 permanecem vinculadas por `(login, servidor)` mesmo após cancelamento ou exclusão do usuário antigo — por design de segurança e preservação de histórico operacional. O admin deve diagnosticar e liberar ou transferir antes de vincular a uma licença nova.
+
+| Recurso | Descrição |
+|---------|-----------|
+| Trace | `GET /api/admin/mt5-accounts/ownership/trace?accountLogin=&accountServer=` |
+| Release | `POST /api/admin/mt5-accounts/ownership/release` — confirmação `LIBERAR CONTA MT5 ORFA` |
+| Transfer | `POST /api/admin/mt5-accounts/ownership/transfer` — confirmação `TRANSFERIR CONTA MT5 PARA ESTA LICENCA` |
+| UI | Card **Conflito de propriedade MT5** em `/admin/licenses/[licenseId]` ao falhar vínculo |
+
+Travas de release/transfer: usuário/licença ativos, device com heartbeat recente, snapshot com posição aberta, ordens pendentes, comando operacional PENDING, approval REAL ativa. **Não** cria instruction, **não** envia ordem real, **não** altera strategy-config ou approval automaticamente.
+
+Auditoria: `mt5_account.ownership.trace`, `.released`, `.transfered`, `.release_failed`, `.transfer_failed`.
+
+Documentação completa: [`docs/MT5-ACCOUNT-OWNERSHIP-ADMIN.md`](MT5-ACCOUNT-OWNERSHIP-ADMIN.md).
+
 ## Fase 15.5
 
 Ver `docs/MASTER-EA-IMPLEMENTATION-PLAN.md` — Real Trading Operation Center & Remote Commands.

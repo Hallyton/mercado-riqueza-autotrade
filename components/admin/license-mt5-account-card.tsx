@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Mt5AccountOwnershipConflictCard } from "@/components/admin/mt5-account-ownership-conflict-card";
 import {
   MT5_ACCOUNT_DEMO_CONFIRM_PHRASE,
   MT5_ACCOUNT_REAL_CONFIRM_PHRASE,
@@ -26,6 +27,10 @@ function mapBindError(code?: string, fallback?: string): string {
     case "MAGIC_NUMBER_COLLISION":
       return "MagicNumber já está em uso por outra licença ou robô.";
     case "MT5_ALREADY_REGISTERED":
+    case "MT5_ACCOUNT_HELD_BY_CANCELLED_LICENSE":
+    case "MT5_ACCOUNT_HELD_BY_DELETED_USER":
+    case "MT5_ACCOUNT_OWNED_BY_ACTIVE_USER":
+    case "MT5_ACCOUNT_OWNED_BY_ACTIVE_LICENSE":
       return "Esta conta MT5 pertence a outro usuário.";
     case "MT5_ALREADY_LICENSED":
       return "Esta conta MT5 já está em outra licença ativa.";
@@ -69,6 +74,10 @@ export function LicenseMt5AccountCard({
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ownershipConflict, setOwnershipConflict] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   const confirmPhrase =
     mode === "REAL" ? MT5_ACCOUNT_REAL_CONFIRM_PHRASE : MT5_ACCOUNT_DEMO_CONFIRM_PHRASE;
@@ -80,6 +89,7 @@ export function LicenseMt5AccountCard({
     }
     setBusy(true);
     setError(null);
+    setOwnershipConflict(null);
     try {
       const res = await fetch(`/api/admin/licenses/${licenseId}/mt5-account`, {
         method: "POST",
@@ -97,6 +107,14 @@ export function LicenseMt5AccountCard({
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.detail && typeof data.detail === "object") {
+          setOwnershipConflict({
+            ...(data.detail as Record<string, unknown>),
+            actionHint: data.actionHint,
+            traceLink: data.traceLink,
+            reasonCode: data.code,
+          });
+        }
         setError(mapBindError(data.code, data.error));
         return;
       }
@@ -186,6 +204,7 @@ export function LicenseMt5AccountCard({
           setMode(expectedTradeMode);
           setConfirm("");
           setError(null);
+          setOwnershipConflict(null);
         }}
       >
         {open ? "Fechar formulário" : "Vincular / editar conta MT5"}
@@ -279,6 +298,20 @@ export function LicenseMt5AccountCard({
           </button>
 
           {error && <p className="text-sm text-red-300">{error}</p>}
+
+          {ownershipConflict && (
+            <Mt5AccountOwnershipConflictCard
+              licenseId={licenseId}
+              detail={ownershipConflict as never}
+              accountLogin={accountLogin.trim()}
+              accountServer={accountServer.trim()}
+              symbol={symbol.trim()}
+              magicNumber={
+                magic.trim() ? Number.parseInt(magic.trim(), 10) : null
+              }
+              environment={mode}
+            />
+          )}
         </div>
       )}
     </div>

@@ -5,6 +5,10 @@ export function canRunEmergencyActions(adminRole: string): boolean {
   return EMERGENCY_ADMIN_ROLES.has(adminRole);
 }
 
+export function canManageMt5AccountOwnership(adminRole: string): boolean {
+  return adminRole === "SUPERADMIN" || adminRole === "OPS";
+}
+
 export function canRunStandardAdminActions(adminRole: string): boolean {
   return ["SUPERADMIN", "SUPPORT", "OPS", "FINANCE"].includes(adminRole);
 }

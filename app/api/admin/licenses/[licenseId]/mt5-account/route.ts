@@ -36,7 +36,15 @@ export async function POST(request: Request, context: RouteContext) {
   } catch (e) {
     if (e instanceof LicenseDeviceAdminError) {
       return NextResponse.json(
-        { error: e.message, code: e.code },
+        {
+          error: e.message,
+          code: e.code,
+          detail: e.detail ?? null,
+          actionHint:
+            typeof e.detail?.actionHint === "string" ? e.detail.actionHint : null,
+          traceLink:
+            typeof e.detail?.traceLink === "string" ? e.detail.traceLink : null,
+        },
         { status: e.status }
       );
     }

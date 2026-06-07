@@ -29,7 +29,8 @@ export class LicenseDeviceAdminError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly status: number
+    public readonly status: number,
+    public readonly detail?: Record<string, unknown>
   ) {
     super(message);
     this.name = "LicenseDeviceAdminError";
