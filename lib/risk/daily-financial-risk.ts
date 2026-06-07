@@ -31,6 +31,10 @@ export type DailyRiskSnapshot = {
 
 const DAILY_RISK_STALE_MS = 20 * 60 * 1000;
 
+export function getDailyRiskStaleThresholdSeconds(): number {
+  return DAILY_RISK_STALE_MS / 1000;
+}
+
 export type DailyRiskReportProcessResult = {
   state: Awaited<ReturnType<typeof upsertDailyFinancialRiskState>>;
   requestId: string;
@@ -337,10 +341,29 @@ export async function evaluateDailyFinancialStopForEntry(input: {
   }
 
   if (isDailyRiskStateStale(state.lastUpdatedAt)) {
+    const ageSeconds = Math.max(
+      0,
+      Math.floor((Date.now() - state.lastUpdatedAt.getTime()) / 1000)
+    );
+    const expectedKey = resolveDailyRiskStateKey({
+      licenseId: input.licenseId,
+      accountLogin: input.accountLogin,
+      accountServer: input.accountServer,
+      symbol: input.symbol,
+      strategyCode: input.strategyCode,
+    }).effectiveKey;
     return {
       ok: false,
       reasonCode: "DAILY_RISK_REPORT_STALE",
-      detail: `Último relatório de risco em ${state.lastUpdatedAt.toISOString()}. Aguarde o EA enviar daily-risk/report.`,
+      detail: JSON.stringify({
+        message:
+          "O relatório de risco foi recebido, mas não foi atualizado dentro da janela de segurança. O EA precisa reenviar POST /api/v1/ea/daily-risk/report.",
+        lastReportAt: state.lastUpdatedAt.toISOString(),
+        ageSeconds,
+        staleThresholdSeconds: getDailyRiskStaleThresholdSeconds(),
+        expectedKey,
+        stateId: state.id,
+      }),
       snapshot,
     };
   }

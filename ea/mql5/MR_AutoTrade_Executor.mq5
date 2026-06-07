@@ -42,6 +42,7 @@ input string InpAutonomousStrategyCode = "MR_FIBO_D1_GUARD";               // C�
 #include "includes/MR_AT_Execution.mqh"
 #include "includes/MR_AT_Signal.mqh"
 #include "includes/MR_AT_RealTrading.mqh"
+#include "includes/MR_AT_DailyRisk.mqh"
 #include "includes/MR_AT_AutonomousStrategy.mqh"
 #include "includes/MR_AT_OperationalCommands.mqh"
 
@@ -147,7 +148,7 @@ int OnInit()
    if(InpDebugMode)
       MR_AT_LogInfo("Init", "DEBUG_MODE ativo — nenhuma ordem real será enviada");
 
-   if(MR_AT_IsLicensed() && MR_AT_ShouldSendDailyRiskReport())
+   if(MR_AT_IsLicensed())
       MR_AT_ReportDailyRisk(true);
 
    if(InpSendPreMarketOnInit && MR_AT_GetTradeMode() == "REAL")
@@ -192,7 +193,7 @@ void OnTimer()
         }
      }
 
-   if(!MR_AT_SendHeartbeat())
+   if(!MR_AT_HeartbeatOnTimer())
      {
       MR_AT_LogError("Timer", "Heartbeat falhou");
      }
@@ -203,8 +204,7 @@ void OnTimer()
    if(MR_AT_GetTradeMode() == "REAL")
       MR_AT_EnsurePreMarketSnapshot();
 
-   if(MR_AT_ShouldSendDailyRiskReport())
-      MR_AT_ReportDailyRisk(false);
+   MR_AT_DailyRiskOnTimer();
 
    MR_AT_FetchAndProcessSignals();
    MR_AT_ProcessAutonomousStrategy();

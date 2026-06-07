@@ -8,6 +8,8 @@ const prismaMock = vi.hoisted(() => ({
   eaErrorReport: { findFirst: vi.fn() },
   dailyFinancialRiskLimit: { findFirst: vi.fn() },
   dailyFinancialRiskState: { findUnique: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
+  eAOperationalSnapshot: { findFirst: vi.fn() },
+  eAOperationalCommand: { findFirst: vi.fn() },
   instrumentPointValue: { findFirst: vi.fn() },
   strategyRuntimeConfig: { findFirst: vi.fn() },
   autonomousStrategyDecision: { findMany: vi.fn() },
@@ -104,6 +106,8 @@ describe("fibo d1 guard operation center", () => {
     });
     prismaMock.eaHeartbeat.findFirst.mockResolvedValue(null);
     prismaMock.eaErrorReport.findFirst.mockResolvedValue(null);
+    prismaMock.eAOperationalSnapshot.findFirst.mockResolvedValue(null);
+    prismaMock.eAOperationalCommand.findFirst.mockResolvedValue(null);
     prismaMock.strategyRuntimeConfig.findFirst.mockResolvedValue(null);
     prismaMock.autonomousStrategyDecision.findMany.mockResolvedValue([]);
     vi.mocked(getPublishedStrategyConfigForEa).mockResolvedValue(null);

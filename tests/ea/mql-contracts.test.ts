@@ -120,6 +120,7 @@ describe("contratos MQL5 — EA cliente", () => {
 
   it("integra comandos operacionais remotos e snapshot operacional", () => {
     const opCmd = readMql(path.join("includes", "MR_AT_OperationalCommands.mqh"));
+    const dailyRisk = readMql(path.join("includes", "MR_AT_DailyRisk.mqh"));
     expect(opCmd).toContain("/api/v1/ea/commands");
     expect(opCmd).toContain("/api/v1/ea/operation-snapshot");
     expect(opCmd).toContain("PAUSE_NEW_ENTRIES");
@@ -128,6 +129,26 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(executor).toContain("MR_AT_OperationalCommandsOnTimer");
     expect(executor).toContain("MR_AT_OperationalCommands.mqh");
     expect(opCmd).not.toMatch(/MR_AT_Log(?:Info|Debug|Error)\([^)]*g_device_token/);
+    expect(opCmd).toContain("REFRESH_STATUS: sending operation snapshot and daily risk now");
+    expect(opCmd).toContain("MR_AT_ReportDailyRisk(true)");
+    expect(opCmd).toContain("g_lastCommandsPollAt");
+    expect(opCmd).toContain("g_lastOperationSnapshotSentAt");
+  });
+
+  it("mantém cadência contínua de DailyRisk independente de estratégia", () => {
+    const dailyRisk = readMql(path.join("includes", "MR_AT_DailyRisk.mqh"));
+    const autonomous = readMql(path.join("includes", "MR_AT_AutonomousStrategy.mqh"));
+    const heartbeat = readMql(path.join("includes", "MR_AT_Heartbeat.mqh"));
+    expect(dailyRisk).toContain("g_lastDailyRiskSentAt");
+    expect(dailyRisk).toContain("MR_AT_DAILY_RISK_INTERVAL_SEC");
+    expect(dailyRisk).toContain("MR_AT_DailyRiskOnTimer");
+    expect(dailyRisk).not.toContain("InpEnableAutonomousStrategy");
+    expect(executor).toContain("MR_AT_DailyRiskOnTimer");
+    expect(executor).toContain("MR_AT_HeartbeatOnTimer");
+    expect(heartbeat).toContain("g_lastHeartbeatSentAt");
+    expect(autonomous).not.toContain("MR_AT_ShouldSendDailyRiskReport");
+    expect(dailyRisk).toContain("nextIn=");
+    expect(dailyRisk).not.toMatch(/MR_AT_Log(?:Info|Debug|Error)\([^)]*g_device_token/);
   });
 });
 

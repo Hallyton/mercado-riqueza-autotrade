@@ -10,7 +10,7 @@ import {
   type CanTradeReasonCode,
   MR_FIBO_D1_GUARD_CODE,
 } from "@/lib/risk/autonomous-strategy-reasons";
-import { evaluateDailyFinancialStopForEntry } from "@/lib/risk/daily-financial-risk";
+import { evaluateDailyFinancialStopForEntry, tradeDateKeySaoPaulo, getDailyRiskStaleThresholdSeconds } from "@/lib/risk/daily-financial-risk";
 import { isRealTradingEnabled } from "@/lib/risk/real-trading-guard";
 import {
   buildDailyRiskLinkageDetail,
@@ -21,6 +21,7 @@ import {
   buildDailyRiskReportTrace,
   dailyRiskReportActionHint,
   dailyRiskReportOperationalMessage,
+  formatDailyRiskCompositeStatus,
   type DailyRiskReportTrace,
 } from "@/lib/admin/daily-risk-report-trace";
 import {
@@ -31,7 +32,6 @@ import {
 import type { DailyRiskStateEffectiveKey } from "@/lib/risk/daily-risk-state-key";
 import { buildDefaultMrFiboD1GuardConfig, mrFiboD1GuardConfigSchema } from "@/lib/strategy/mr-fibo-d1-guard-config";
 import { LOT_TOTAL_EXCEEDS_MAX_CONTRACTS } from "@/lib/strategy/mr-fibo-d1-guard-readiness";
-import { tradeDateKeySaoPaulo } from "@/lib/risk/daily-financial-risk";
 
 export type FiboGuardClientBucket = "READY" | "EA_NOT_READY" | "PLATFORM_BLOCKED";
 
@@ -58,6 +58,18 @@ export type DailyRiskLinkageDiagnostic = {
   detailMessage: string | null;
   operationalMessage: string | null;
   recommendedAction: string | null;
+  compositeStatus: {
+    configuredLabel: string;
+    reportLabel: string;
+    blockLabel: string | null;
+  } | null;
+  latestOperationSnapshotAt: string | null;
+  latestHeartbeatAt: string | null;
+  lastDailyRiskSentAtFromSnapshot: string | null;
+  lastDailyRiskStatusFromSnapshot: string | null;
+  lastDailyRiskErrorFromSnapshot: string | null;
+  latestRefreshCommandStatus: string | null;
+  staleThresholdMinutes: number;
 };
 
 export type FiboGuardClientRow = {
@@ -110,6 +122,12 @@ function hintFor(code: string): string {
     CAN_TRADE_REASON_MESSAGES[code as CanTradeReasonCode] ??
     code
   );
+}
+
+function readSnapshotField(raw: unknown, key: string): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = (raw as Record<string, unknown>)[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 export async function getFiboD1GuardOperationCenterView() {
@@ -247,6 +265,36 @@ export async function getFiboD1GuardOperationCenterView() {
     let dailyRiskStatus: string | null = null;
 
     if (accountLogin && accountServer && symbol) {
+      const [operationSnapshot, latestRefreshCommand, latestHeartbeat] =
+        await Promise.all([
+          prisma.eAOperationalSnapshot.findFirst({
+            where: {
+              licenseId: license.id,
+              accountLogin,
+              accountServer,
+              symbol,
+            },
+            orderBy: { updatedAt: "desc" },
+          }),
+          prisma.eAOperationalCommand.findFirst({
+            where: {
+              licenseId: license.id,
+              commandType: "REFRESH_STATUS",
+            },
+            orderBy: { createdAt: "desc" },
+          }),
+          prisma.eaHeartbeat.findFirst({
+            where: { licenseId: license.id },
+            orderBy: { receivedAt: "desc" },
+          }),
+        ]);
+
+      const rawSnapshot = operationSnapshot?.rawSnapshotJson;
+      const compositeStatus = formatDailyRiskCompositeStatus({
+        stopConfigured: Boolean(dailyLimit?.enabled),
+        report: reportTrace,
+      });
+
       dailyRiskDiagnostic = {
         licenseId: license.id,
         accountLogin,
@@ -292,6 +340,25 @@ export async function getFiboD1GuardOperationCenterView() {
           : dailyLimit?.enabled
             ? dailyRiskReportActionHint("MISSING")
             : null,
+        compositeStatus,
+        latestOperationSnapshotAt:
+          operationSnapshot?.updatedAt.toISOString() ?? null,
+        latestHeartbeatAt: latestHeartbeat?.receivedAt?.toISOString() ?? null,
+        lastDailyRiskSentAtFromSnapshot: readSnapshotField(
+          rawSnapshot,
+          "last_daily_risk_sent_at"
+        ),
+        lastDailyRiskStatusFromSnapshot: readSnapshotField(
+          rawSnapshot,
+          "last_daily_risk_status"
+        ),
+        lastDailyRiskErrorFromSnapshot:
+          readSnapshotField(rawSnapshot, "last_daily_risk_error_code") ??
+          readSnapshotField(rawSnapshot, "last_daily_risk_error_message"),
+        latestRefreshCommandStatus: latestRefreshCommand?.status ?? null,
+        staleThresholdMinutes: Math.floor(
+          getDailyRiskStaleThresholdSeconds() / 60
+        ),
       };
     }
 

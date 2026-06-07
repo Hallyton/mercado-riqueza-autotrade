@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildDailyRiskAdminTraceView } from "@/lib/admin/daily-risk-state-trace";
+import { buildDailyRiskFullTraceView } from "@/lib/admin/daily-risk-state-trace";
 import { requireAdminApiSession } from "@/lib/auth/admin-api";
 
 export async function GET(request: Request) {
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const trace = await buildDailyRiskAdminTraceView({
+  const trace = await buildDailyRiskFullTraceView({
     licenseId,
     accountLogin: url.searchParams.get("accountLogin"),
     accountServer: url.searchParams.get("accountServer"),
@@ -34,11 +34,18 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       licenseId,
+      diagnosis: "DAILY_RISK_STATE_MISSING",
       diagnosisCode: "DAILY_RISK_STATE_MISSING",
       riskLimit: null,
       exactState: null,
       nearbyRiskStates: [],
       latestReports: [],
+      latestDailyRiskState: null,
+      latestDailyRiskStateAgeSeconds: null,
+      staleThresholdSeconds: null,
+      reportTrace: null,
+      latestOperationSnapshot: null,
+      latestHeartbeat: null,
     });
   }
 
@@ -53,5 +60,12 @@ export async function GET(request: Request) {
     latestReports: trace.latestReports,
     diagnosisCode: trace.diagnosisCode,
     received: trace.received,
+    latestDailyRiskState: trace.latestDailyRiskState,
+    latestDailyRiskStateAgeSeconds: trace.latestDailyRiskStateAgeSeconds,
+    staleThresholdSeconds: trace.staleThresholdSeconds,
+    reportTrace: trace.reportTrace,
+    latestOperationSnapshot: trace.latestOperationSnapshot,
+    latestHeartbeat: trace.latestHeartbeat,
+    diagnosis: trace.diagnosis,
   });
 }

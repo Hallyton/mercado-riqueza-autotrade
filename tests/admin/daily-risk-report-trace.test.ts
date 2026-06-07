@@ -57,13 +57,30 @@ describe("daily-risk-report-trace", () => {
       limitConfigured: true,
       report: buildDailyRiskReportTrace(null, tradeDate),
     });
-    expect(message).toContain("Stop diário configurado");
+    expect(message).toContain("Stop financeiro diário configurado");
     expect(message).toContain("EA ainda não enviou");
   });
 
-  it("suggests EA endpoint when report is missing", () => {
-    expect(dailyRiskReportActionHint("MISSING")).toContain(
-      "/api/v1/ea/daily-risk/report"
+  it("suggests refresh action when report is missing", () => {
+    expect(dailyRiskReportActionHint("MISSING")).toContain("Atualizar status");
+  });
+
+  it("exposes age seconds and stale threshold in trace", () => {
+    const trace = buildDailyRiskReportTrace(
+      {
+        tradeDate,
+        lastUpdatedAt: new Date(Date.now() - 25 * 60 * 1000),
+        realizedPnlCents: 0,
+        openPnlCents: 0,
+        totalPnlCents: 0,
+        remainingLossCents: 40000,
+        status: DailyFinancialRiskStatus.OK,
+        id: "state-1",
+      } as never,
+      tradeDate
     );
+    expect(trace.reportAgeSeconds).toBeGreaterThan(1000);
+    expect(trace.staleThresholdSeconds).toBe(1200);
+    expect(trace.stateId).toBe("state-1");
   });
 });

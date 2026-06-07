@@ -65,6 +65,7 @@ describe("evaluateDailyFinancialStopForEntry report linkage", () => {
 
   it("returns DAILY_RISK_REPORT_STALE when state is outdated", async () => {
     prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue({
+      id: "state-stale",
       tradeDate: "2026-06-02",
       lastUpdatedAt: new Date(Date.now() - 25 * 60 * 1000),
       realizedPnlCents: 0,
@@ -78,6 +79,16 @@ describe("evaluateDailyFinancialStopForEntry report linkage", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reasonCode).toBe("DAILY_RISK_REPORT_STALE");
+    const parsed = JSON.parse(result.detail) as {
+      ageSeconds: number;
+      staleThresholdSeconds: number;
+      stateId: string;
+      lastReportAt: string;
+    };
+    expect(parsed.stateId).toBe("state-stale");
+    expect(parsed.ageSeconds).toBeGreaterThan(1000);
+    expect(parsed.staleThresholdSeconds).toBe(1200);
+    expect(parsed.lastReportAt).toBeTruthy();
   });
 
   it("returns ok when recent state exists", async () => {

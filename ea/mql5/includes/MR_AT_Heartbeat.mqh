@@ -20,6 +20,17 @@ extern bool g_can_accept_new_entries;
 extern bool g_can_manage_open_positions;
 extern int  g_heartbeat_interval_sec;
 
+datetime g_lastHeartbeatSentAt = 0;
+
+//+------------------------------------------------------------------+
+bool MR_AT_HeartbeatOnTimer()
+  {
+   if(g_lastHeartbeatSentAt > 0 &&
+      TimeCurrent() - g_lastHeartbeatSentAt < g_heartbeat_interval_sec)
+      return true;
+   return MR_AT_SendHeartbeat();
+  }
+
 //+------------------------------------------------------------------+
 string MR_AT_HeartbeatEaReadyJson()
   {
@@ -84,5 +95,6 @@ bool MR_AT_SendHeartbeat()
    int pending_instr = MR_AT_JsonGetInt(response, "pending_instructions");
    MR_AT_LogDebug("Heartbeat", "OK — equity=" + DoubleToString(MR_AT_GetEquity(), 2) +
                   " pendentes=" + IntegerToString(pending_instr));
+   g_lastHeartbeatSentAt = TimeCurrent();
    return true;
   }

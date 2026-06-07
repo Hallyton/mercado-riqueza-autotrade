@@ -1,5 +1,6 @@
 import { DailyFinancialRiskStatus, type DailyFinancialRiskState } from "@prisma/client";
 import {
+  getDailyRiskStaleThresholdSeconds,
   isDailyRiskStateStale,
   tradeDateKeySaoPaulo,
 } from "@/lib/risk/daily-financial-risk";
@@ -12,6 +13,9 @@ export type DailyRiskReportTrace = {
   tradeDate: string;
   lastReportAt: string | null;
   reportAgeMinutes: number | null;
+  reportAgeSeconds: number | null;
+  staleThresholdSeconds: number;
+  stateId: string | null;
   realizedPnlBrl: number | null;
   openPnlBrl: number | null;
   totalPnlBrl: number | null;
@@ -23,6 +27,8 @@ export function buildDailyRiskReportTrace(
   state: DailyFinancialRiskState | null | undefined,
   tradeDate: string = tradeDateKeySaoPaulo()
 ): DailyRiskReportTrace {
+  const staleThresholdSeconds = getDailyRiskStaleThresholdSeconds();
+
   if (!state || state.tradeDate !== tradeDate) {
     return {
       reportReceived: false,
@@ -30,6 +36,9 @@ export function buildDailyRiskReportTrace(
       tradeDate,
       lastReportAt: null,
       reportAgeMinutes: null,
+      reportAgeSeconds: null,
+      staleThresholdSeconds,
+      stateId: null,
       realizedPnlBrl: null,
       openPnlBrl: null,
       totalPnlBrl: null,
@@ -40,6 +49,7 @@ export function buildDailyRiskReportTrace(
 
   const stale = isDailyRiskStateStale(state.lastUpdatedAt);
   const ageMs = Date.now() - state.lastUpdatedAt.getTime();
+  const reportAgeSeconds = Math.max(0, Math.floor(ageMs / 1000));
 
   return {
     reportReceived: true,
@@ -47,6 +57,9 @@ export function buildDailyRiskReportTrace(
     tradeDate: state.tradeDate,
     lastReportAt: state.lastUpdatedAt.toISOString(),
     reportAgeMinutes: Math.max(0, Math.floor(ageMs / 60_000)),
+    reportAgeSeconds,
+    staleThresholdSeconds,
+    stateId: state.id,
     realizedPnlBrl: state.realizedPnlCents / 100,
     openPnlBrl: state.openPnlCents / 100,
     totalPnlBrl: state.totalPnlCents / 100,
@@ -61,17 +74,45 @@ export function dailyRiskReportOperationalMessage(input: {
 }): string | null {
   if (!input.limitConfigured) return null;
   if (input.report.reportStatus === "MISSING") {
-    return "Stop diário configurado, mas o EA ainda não enviou o relatório de PnL/risco do dia para esta conta.";
+    return "Stop financeiro diário configurado, mas o EA ainda não enviou o relatório de PnL/risco do dia para esta conta.";
   }
   if (input.report.reportStatus === "STALE") {
-    return `Stop diário configurado, mas o último relatório (${input.report.lastReportAt}) está desatualizado.`;
+    return "O relatório de risco foi recebido, mas não foi atualizado dentro da janela de segurança. O EA precisa reenviar POST /api/v1/ea/daily-risk/report.";
   }
   return null;
 }
 
 export function dailyRiskReportActionHint(reportStatus: DailyRiskReportTraceStatus): string {
   if (reportStatus === "MISSING" || reportStatus === "STALE") {
-    return "Verificar se o EA atualizado está online e enviando POST /api/v1/ea/daily-risk/report.";
+    return "Use Atualizar status ou verifique se o EA recompilado está rodando com o módulo DailyRisk contínuo.";
   }
-  return "Relatório diário recebido.";
+  return "Relatório diário recebido e dentro da janela de segurança.";
+}
+
+export function formatDailyRiskCompositeStatus(input: {
+  stopConfigured: boolean;
+  report: DailyRiskReportTrace | null;
+}): {
+  configuredLabel: string;
+  reportLabel: string;
+  blockLabel: string | null;
+} {
+  const report = input.report;
+  const reportLabel =
+    report?.reportStatus === "OK"
+      ? "OK"
+      : report?.reportStatus === "STALE"
+        ? "STALE"
+        : "MISSING";
+
+  return {
+    configuredLabel: input.stopConfigured ? "Sim" : "Não",
+    reportLabel,
+    blockLabel:
+      report?.reportStatus === "STALE"
+        ? "Report stale"
+        : report?.reportStatus === "MISSING"
+          ? "Report ausente"
+          : null,
+  };
 }

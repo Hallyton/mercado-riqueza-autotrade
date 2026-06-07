@@ -1,3 +1,5 @@
+#ifndef MR_AT_OPERATIONAL_COMMANDS_MQH
+#define MR_AT_OPERATIONAL_COMMANDS_MQH
 //+------------------------------------------------------------------+
 //| MR_AT_OperationalCommands.mqh — comandos operacionais remotos     |
 //+------------------------------------------------------------------+
@@ -10,6 +12,7 @@
 #include "MR_AT_Equity.mqh"
 #include "MR_AT_Orders.mqh"
 #include "MR_AT_Position.mqh"
+#include "MR_AT_DailyRisk.mqh"
 #include "MR_FiboD1_Config.mqh"
 
 extern string g_license_id;
@@ -20,8 +23,11 @@ extern bool   g_autonomous_strategy_site_enabled;
 bool   g_admin_paused = false;
 string g_admin_pause_reason = "";
 
-static datetime g_last_command_poll = 0;
-static datetime g_last_snapshot_sent = 0;
+static datetime g_lastCommandsPollAt = 0;
+static datetime g_lastOperationSnapshotSentAt = 0;
+
+#define MR_AT_COMMANDS_POLL_INTERVAL_SEC 15
+#define MR_AT_OPERATION_SNAPSHOT_INTERVAL_SEC 30
 
 //+------------------------------------------------------------------+
 void MR_AT_ApplyOperationControlFromConfig(const string json)
@@ -248,8 +254,25 @@ bool MR_AT_ExecuteOperationalCommand(
 
    if(command_type == "REFRESH_STATUS")
      {
-      result_message = "Snapshot solicitado";
-      MR_AT_SendOperationSnapshot(true);
+      MR_AT_LogInfo("OpCmd", "REFRESH_STATUS: sending operation snapshot and daily risk now");
+      const bool snapshotOk = MR_AT_SendOperationSnapshot(true);
+      const bool dailyRiskOk = MR_AT_ReportDailyRisk(true);
+      details_json = "{";
+      details_json += "\"snapshot_sent\":" + (snapshotOk ? "true" : "false") + ",";
+      details_json += "\"daily_risk_sent\":" + (dailyRiskOk ? "true" : "false") + ",";
+      details_json += "\"daily_risk_status\":" + MR_AT_JsonQuote(g_lastDailyRiskStatus) + ",";
+      details_json += "\"daily_risk_state_id\":" + MR_AT_JsonQuote(g_lastDailyRiskStateId) + ",";
+      details_json += "\"daily_risk_error_code\":" + MR_AT_JsonQuote(g_lastDailyRiskErrorCode);
+      details_json += "}";
+      if(!snapshotOk)
+        {
+         result_code = "SNAPSHOT_FAILED";
+         result_message = "Snapshot operacional falhou";
+         return false;
+        }
+      result_message = dailyRiskOk
+         ? "Snapshot e DailyRisk enviados"
+         : "Snapshot enviado; DailyRisk falhou";
       return true;
      }
 
@@ -284,7 +307,8 @@ bool MR_AT_SendOperationSnapshot(const bool force = false)
   {
    if(StringLen(g_license_id) < 4)
       return false;
-   if(!force && TimeCurrent() - g_last_snapshot_sent < 30)
+   if(!force && g_lastOperationSnapshotSentAt > 0 &&
+      TimeCurrent() - g_lastOperationSnapshotSentAt < MR_AT_OPERATION_SNAPSHOT_INTERVAL_SEC)
       return true;
 
    const string symbol = _Symbol;
@@ -350,7 +374,16 @@ bool MR_AT_SendOperationSnapshot(const bool force = false)
    body += "\"realized_pnl_day\":" + DoubleToString(realized_day, 2) + ",";
    body += "\"realized_pnl_month\":" + DoubleToString(realized_month, 2) + ",";
    body += "\"open_pnl\":" + DoubleToString(open_pnl, 2) + ",";
-   body += "\"last_tick_time\":" + MR_AT_JsonQuote(TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS));
+   body += "\"last_tick_time\":" + MR_AT_JsonQuote(TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)) + ",";
+   body += "\"last_daily_risk_sent_at\":" + MR_AT_JsonQuote(
+      g_lastDailyRiskSentAt > 0
+         ? TimeToString(g_lastDailyRiskSentAt, TIME_DATE|TIME_SECONDS)
+         : ""
+   ) + ",";
+   body += "\"last_daily_risk_status\":" + MR_AT_JsonQuote(g_lastDailyRiskStatus) + ",";
+   body += "\"last_daily_risk_state_id\":" + MR_AT_JsonQuote(g_lastDailyRiskStateId) + ",";
+   body += "\"last_daily_risk_error_code\":" + MR_AT_JsonQuote(g_lastDailyRiskErrorCode) + ",";
+   body += "\"last_daily_risk_error_message\":" + MR_AT_JsonQuote(g_lastDailyRiskErrorMessage);
    body += "}";
 
    string response = "";
@@ -359,7 +392,7 @@ bool MR_AT_SendOperationSnapshot(const bool force = false)
       return false;
    if(status >= 200 && status < 300)
      {
-      g_last_snapshot_sent = TimeCurrent();
+      g_lastOperationSnapshotSentAt = TimeCurrent();
       return true;
      }
    return false;
@@ -370,7 +403,7 @@ void MR_AT_PollOperationalCommands()
   {
    if(StringLen(g_license_id) < 4)
       return;
-   if(TimeCurrent() - g_last_command_poll < 5)
+   if(TimeCurrent() - g_lastCommandsPollAt < MR_AT_COMMANDS_POLL_INTERVAL_SEC)
       return;
 
    string response = "";
@@ -380,7 +413,7 @@ void MR_AT_PollOperationalCommands()
    if(status < 200 || status >= 300)
       return;
 
-   g_last_command_poll = TimeCurrent();
+   g_lastCommandsPollAt = TimeCurrent();
 
    int idx = 0;
    while(true)
@@ -555,3 +588,4 @@ datetime MR_AT_DayStart(datetime when)
   }
 
 //+------------------------------------------------------------------+
+#endif

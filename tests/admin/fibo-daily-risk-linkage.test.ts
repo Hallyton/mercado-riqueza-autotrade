@@ -14,6 +14,8 @@ const prismaMock = vi.hoisted(() => ({
     delete: vi.fn(),
   },
   dailyFinancialRiskState: { updateMany: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
+  eAOperationalSnapshot: { findFirst: vi.fn() },
+  eAOperationalCommand: { findFirst: vi.fn() },
   instrumentPointValue: { findFirst: vi.fn() },
   strategyRuntimeConfig: { findFirst: vi.fn() },
   autonomousStrategyDecision: { findMany: vi.fn() },
@@ -114,6 +116,9 @@ describe("fibo operation center daily risk linkage", () => {
     prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue(null);
     prismaMock.dailyFinancialRiskState.findMany.mockResolvedValue([]);
     prismaMock.dailyFinancialRiskState.findFirst.mockResolvedValue(null);
+    prismaMock.eAOperationalSnapshot.findFirst.mockResolvedValue(null);
+    prismaMock.eAOperationalCommand.findFirst.mockResolvedValue(null);
+    prismaMock.eaHeartbeat.findFirst.mockResolvedValue(null);
     vi.mocked(evaluateDailyFinancialStopForEntry).mockResolvedValue({
       ok: true,
       snapshot: {
@@ -222,7 +227,7 @@ describe("fibo operation center daily risk linkage", () => {
     expect(blocked?.dailyRiskDiagnostic?.stopConfigured).toBe(true);
     expect(blocked?.dailyRiskDiagnostic?.reportTrace?.reportStatus).toBe("MISSING");
     expect(blocked?.dailyRiskDiagnostic?.operationalMessage).toContain(
-      "Stop diário configurado"
+      "Stop financeiro diário configurado"
     );
   });
 

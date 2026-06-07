@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FiboRefreshStatusButton } from "@/components/admin/fibo-refresh-status-button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFiboD1GuardOperationCenterView } from "@/lib/admin/fibo-d1-guard-operation-center";
 
@@ -72,6 +73,68 @@ function ClientTable({
                           code.startsWith("DAILY_RISK_REPORT")
                         ) && (
                           <dl className="rounded border border-white/10 bg-black/20 p-2 text-[11px] space-y-2">
+                            {row.dailyRiskDiagnostic.compositeStatus && (
+                              <div>
+                                <dt className="text-muted-foreground font-medium">
+                                  Stop diário (visão composta)
+                                </dt>
+                                <dd className="mt-1">
+                                  Configurado:{" "}
+                                  {row.dailyRiskDiagnostic.compositeStatus.configuredLabel}
+                                  {" · "}
+                                  Report:{" "}
+                                  <span
+                                    className={
+                                      row.dailyRiskDiagnostic.compositeStatus
+                                        .reportLabel === "STALE"
+                                        ? "text-amber-300"
+                                        : row.dailyRiskDiagnostic.compositeStatus
+                                              .reportLabel === "OK"
+                                          ? "text-emerald-300"
+                                          : "text-red-300"
+                                    }
+                                  >
+                                    {
+                                      row.dailyRiskDiagnostic.compositeStatus
+                                        .reportLabel
+                                    }
+                                  </span>
+                                  {row.dailyRiskDiagnostic.reportTrace
+                                    ?.reportAgeMinutes != null && (
+                                    <>
+                                      {" · "}
+                                      Último report: há{" "}
+                                      {
+                                        row.dailyRiskDiagnostic.reportTrace
+                                          .reportAgeMinutes
+                                      }{" "}
+                                      min
+                                    </>
+                                  )}
+                                  {row.dailyRiskDiagnostic.remainingLossBrl !=
+                                    null && (
+                                    <>
+                                      {" · "}
+                                      Limite restante: R${" "}
+                                      {row.dailyRiskDiagnostic.remainingLossBrl.toFixed(
+                                        2
+                                      )}
+                                    </>
+                                  )}
+                                  {row.dailyRiskDiagnostic.compositeStatus
+                                    .blockLabel && (
+                                    <>
+                                      {" · "}
+                                      Bloqueio:{" "}
+                                      {
+                                        row.dailyRiskDiagnostic.compositeStatus
+                                          .blockLabel
+                                      }
+                                    </>
+                                  )}
+                                </dd>
+                              </div>
+                            )}
                             <div>
                               <dt className="text-muted-foreground font-medium">
                                 A. Stop financeiro diário configurado
@@ -128,9 +191,15 @@ function ClientTable({
                                     {" · "}
                                     Idade{" "}
                                     {row.dailyRiskDiagnostic.reportTrace.reportAgeMinutes}{" "}
-                                    min
+                                    min (
+                                    {row.dailyRiskDiagnostic.reportTrace.reportAgeSeconds ??
+                                      "—"}{" "}
+                                    s)
                                   </>
                                 )}
+                                {" · "}
+                                Janela máxima{" "}
+                                {row.dailyRiskDiagnostic.staleThresholdMinutes} min
                               </dd>
                               {row.dailyRiskDiagnostic.reportTrace?.reportReceived && (
                                 <dd className="mt-1">
@@ -227,6 +296,52 @@ function ClientTable({
                                 <dd>{row.dailyRiskDiagnostic.recommendedAction}</dd>
                               </div>
                             )}
+                            <div>
+                              <dt className="text-muted-foreground font-medium">
+                                C. Telemetria EA (snapshot / heartbeat)
+                              </dt>
+                              <dd className="mt-1">
+                                Último snapshot:{" "}
+                                {row.dailyRiskDiagnostic.latestOperationSnapshotAt
+                                  ? new Date(
+                                      row.dailyRiskDiagnostic.latestOperationSnapshotAt
+                                    ).toLocaleString("pt-BR")
+                                  : "—"}
+                                {" · "}
+                                Último heartbeat:{" "}
+                                {row.dailyRiskDiagnostic.latestHeartbeatAt
+                                  ? new Date(
+                                      row.dailyRiskDiagnostic.latestHeartbeatAt
+                                    ).toLocaleString("pt-BR")
+                                  : "—"}
+                              </dd>
+                              <dd className="mt-1">
+                                Última tentativa DailyRisk (EA):{" "}
+                                {row.dailyRiskDiagnostic.lastDailyRiskSentAtFromSnapshot ??
+                                  "—"}
+                                {" · "}
+                                Status:{" "}
+                                {row.dailyRiskDiagnostic.lastDailyRiskStatusFromSnapshot ??
+                                  "—"}
+                              </dd>
+                              {row.dailyRiskDiagnostic.lastDailyRiskErrorFromSnapshot && (
+                                <dd className="mt-1 text-red-300">
+                                  Último erro DailyRisk:{" "}
+                                  {row.dailyRiskDiagnostic.lastDailyRiskErrorFromSnapshot}
+                                </dd>
+                              )}
+                            </div>
+                            <div>
+                              <dt className="text-muted-foreground">Comando remoto</dt>
+                              <dd className="mt-1">
+                                <FiboRefreshStatusButton
+                                  licenseId={row.licenseId}
+                                  latestStatus={
+                                    row.dailyRiskDiagnostic.latestRefreshCommandStatus
+                                  }
+                                />
+                              </dd>
+                            </div>
                             {row.dailyRiskDiagnostic.detailMessage && (
                               <div>
                                 <dt className="text-muted-foreground">Diagnóstico técnico</dt>

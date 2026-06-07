@@ -276,6 +276,11 @@ export const operationSnapshotBodySchema = z.object({
   pnl_status: z.enum(["OK", "PARTIAL"]).optional(),
   last_tick_time: z.string().max(64).optional(),
   last_execution_error: z.string().max(500).optional(),
+  last_daily_risk_sent_at: z.string().max(64).optional(),
+  last_daily_risk_status: z.string().max(32).optional(),
+  last_daily_risk_state_id: z.string().max(64).optional(),
+  last_daily_risk_error_code: z.string().max(64).optional(),
+  last_daily_risk_error_message: z.string().max(500).optional(),
 });
 
 export const eaCommandAckBodySchema = z.object({

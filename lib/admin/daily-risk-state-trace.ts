@@ -1,6 +1,15 @@
 import type { DailyFinancialRiskLimit, DailyFinancialRiskState } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
+  buildDailyRiskReportTrace,
+  type DailyRiskReportTrace,
+} from "@/lib/admin/daily-risk-report-trace";
+import { isEaOffline } from "@/lib/ea/status";
+import {
+  getDailyRiskStaleThresholdSeconds,
+  isDailyRiskStateStale,
+} from "@/lib/risk/daily-financial-risk";
+import {
   classifyNearbyDailyRiskState,
   dailyRiskStateUniqueWhere,
   formatDailyRiskStateKey,
@@ -215,4 +224,188 @@ export function describeDailyRiskStateMismatch(input: {
   }
 
   return `Existe relatório diário com chave divergente (${nearby.keyLabel}). Diagnóstico: ${nearby.diagnosisCode}.`;
+}
+
+export type DailyRiskTraceDiagnosisCode =
+  | "DAILY_RISK_STATE_FOUND_FRESH"
+  | "DAILY_RISK_STATE_FOUND_STALE"
+  | "DAILY_RISK_STATE_MISSING"
+  | "DAILY_RISK_EA_ONLINE_BUT_NOT_REPORTING"
+  | "DAILY_RISK_EA_OFFLINE"
+  | "DAILY_RISK_LAST_ATTEMPT_FAILED";
+
+export type DailyRiskFullTraceView = DailyRiskAdminTraceView & {
+  latestDailyRiskState: DailyFinancialRiskState | null;
+  latestDailyRiskStateAgeSeconds: number | null;
+  staleThresholdSeconds: number;
+  reportTrace: DailyRiskReportTrace;
+  latestOperationSnapshot: {
+    id: string;
+    receivedAt: string;
+    lastHeartbeatAt: string | null;
+    lastDailyRiskSentAtFromSnapshot: string | null;
+    lastDailyRiskStatusFromSnapshot: string | null;
+    lastDailyRiskStateIdFromSnapshot: string | null;
+    lastDailyRiskErrorCodeFromSnapshot: string | null;
+    lastDailyRiskErrorMessageFromSnapshot: string | null;
+  } | null;
+  latestHeartbeat: {
+    receivedAt: string;
+    eaStatus: string | null;
+  } | null;
+  diagnosis: DailyRiskTraceDiagnosisCode;
+};
+
+function readSnapshotDailyRiskField(
+  raw: unknown,
+  key: string
+): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = (raw as Record<string, unknown>)[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+export function resolveDailyRiskTraceDiagnosis(input: {
+  exactState: DailyFinancialRiskState | null;
+  tradeDate: string;
+  eaOnline: boolean;
+  lastDailyRiskStatusFromSnapshot: string | null;
+  lastDailyRiskErrorCodeFromSnapshot: string | null;
+}): DailyRiskTraceDiagnosisCode {
+  if (!input.exactState) {
+    if (input.lastDailyRiskStatusFromSnapshot === "FAILED") {
+      return "DAILY_RISK_LAST_ATTEMPT_FAILED";
+    }
+    if (input.eaOnline) {
+      return "DAILY_RISK_EA_ONLINE_BUT_NOT_REPORTING";
+    }
+    return "DAILY_RISK_EA_OFFLINE";
+  }
+
+  if (input.exactState.tradeDate !== input.tradeDate) {
+    return "DAILY_RISK_STATE_MISSING";
+  }
+
+  if (isDailyRiskStateStale(input.exactState.lastUpdatedAt)) {
+    if (input.lastDailyRiskStatusFromSnapshot === "FAILED") {
+      return "DAILY_RISK_LAST_ATTEMPT_FAILED";
+    }
+    if (input.eaOnline) {
+      return "DAILY_RISK_EA_ONLINE_BUT_NOT_REPORTING";
+    }
+    return "DAILY_RISK_STATE_FOUND_STALE";
+  }
+
+  return "DAILY_RISK_STATE_FOUND_FRESH";
+}
+
+export async function buildDailyRiskFullTraceView(input: {
+  licenseId: string;
+  accountLogin?: string | null;
+  accountServer?: string | null;
+  symbol?: string | null;
+  strategyCode?: string;
+}): Promise<DailyRiskFullTraceView | null> {
+  const base = await buildDailyRiskAdminTraceView(input);
+  if (!base) return null;
+
+  const tradeDate = base.expectedKey.tradeDate;
+  const reportTrace = buildDailyRiskReportTrace(base.exactState, tradeDate);
+  const staleThresholdSeconds = getDailyRiskStaleThresholdSeconds();
+
+  const snapshot = await prisma.eAOperationalSnapshot.findFirst({
+    where: {
+      licenseId: input.licenseId,
+      ...(input.accountLogin
+        ? { accountLogin: String(input.accountLogin).trim() }
+        : {}),
+      ...(input.accountServer
+        ? { accountServer: String(input.accountServer).trim() }
+        : {}),
+      ...(input.symbol
+        ? { symbol: String(input.symbol).trim().toUpperCase() }
+        : {}),
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const heartbeat = await prisma.eaHeartbeat.findFirst({
+    where: { licenseId: input.licenseId },
+    orderBy: { receivedAt: "desc" },
+  });
+
+  const device = await prisma.device.findFirst({
+    where: { licenseId: input.licenseId },
+    orderBy: { lastSeenAt: "desc" },
+  });
+  const eaOnline = device ? !isEaOffline(device.lastSeenAt) : false;
+
+  const rawSnapshot = snapshot?.rawSnapshotJson;
+  const lastDailyRiskStatusFromSnapshot = readSnapshotDailyRiskField(
+    rawSnapshot,
+    "last_daily_risk_status"
+  );
+  const lastDailyRiskErrorCodeFromSnapshot = readSnapshotDailyRiskField(
+    rawSnapshot,
+    "last_daily_risk_error_code"
+  );
+
+  const diagnosis = resolveDailyRiskTraceDiagnosis({
+    exactState: base.exactState,
+    tradeDate,
+    eaOnline,
+    lastDailyRiskStatusFromSnapshot,
+    lastDailyRiskErrorCodeFromSnapshot,
+  });
+
+  const latestDailyRiskStateAgeSeconds =
+    base.exactState != null
+      ? Math.max(
+          0,
+          Math.floor((Date.now() - base.exactState.lastUpdatedAt.getTime()) / 1000)
+        )
+      : null;
+
+  return {
+    ...base,
+    latestDailyRiskState: base.exactState,
+    latestDailyRiskStateAgeSeconds,
+    staleThresholdSeconds,
+    reportTrace,
+    latestOperationSnapshot: snapshot
+      ? {
+          id: snapshot.id,
+          receivedAt: snapshot.updatedAt.toISOString(),
+          lastHeartbeatAt: snapshot.lastHeartbeatAt?.toISOString() ?? null,
+          lastDailyRiskSentAtFromSnapshot: readSnapshotDailyRiskField(
+            rawSnapshot,
+            "last_daily_risk_sent_at"
+          ),
+          lastDailyRiskStatusFromSnapshot,
+          lastDailyRiskStateIdFromSnapshot: readSnapshotDailyRiskField(
+            rawSnapshot,
+            "last_daily_risk_state_id"
+          ),
+          lastDailyRiskErrorCodeFromSnapshot,
+          lastDailyRiskErrorMessageFromSnapshot: readSnapshotDailyRiskField(
+            rawSnapshot,
+            "last_daily_risk_error_message"
+          ),
+        }
+      : null,
+    latestHeartbeat: heartbeat
+      ? {
+          receivedAt: heartbeat.receivedAt.toISOString(),
+          eaStatus:
+            heartbeat.reportPayload &&
+            typeof heartbeat.reportPayload === "object" &&
+            "ea_status" in (heartbeat.reportPayload as object)
+              ? String(
+                  (heartbeat.reportPayload as Record<string, unknown>).ea_status
+                )
+              : null,
+        }
+      : null,
+    diagnosis,
+  };
 }
