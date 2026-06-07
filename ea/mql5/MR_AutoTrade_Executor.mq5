@@ -15,7 +15,7 @@
 #property strict
 
 //--- Inputs permitidos (whitelist — sem parâmetros estratégicos)
-input string InpApiBaseUrl      = "https://api.mercadodariqueza.com.br"; // URL base da API
+input string InpApiBaseUrl      = "https://autotrade-staging.mercadodariqueza.com.br"; // URL base da API
 input string InpActivationCode  = "";                                    // Código de ativação (primeira vez)
 input string InpDeviceId        = "";                                    // ID do dispositivo/VPS (vazio = auto)
 input bool   InpShowPanel       = true;                                  // Painel mínimo no gráfico
@@ -54,6 +54,8 @@ string g_device_token;
 string g_license_id;
 int    g_log_level;
 bool   g_debug_mode;
+#define MR_AT_BASE_TIMER_SEC 15
+
 int    g_heartbeat_interval_sec = 30;
 bool   g_halt_new_entries = true;
 bool   g_halt_all_trading = false;
@@ -142,7 +144,7 @@ int OnInit()
    if(InpEnableAutonomousStrategy && InpAutonomousStrategyCode == "MR_FIBO_D1_GUARD")
       MR_Fibo_InitStrategy();
 
-   EventSetTimer(g_heartbeat_interval_sec);
+   EventSetTimer(MR_AT_BASE_TIMER_SEC);
    MR_AT_UpdatePanel();
 
    if(InpDebugMode)
@@ -183,7 +185,7 @@ void OnTimer()
          if(MR_AT_Activate(InpActivationCode))
            {
             MR_AT_FetchConfig();
-            EventSetTimer(g_heartbeat_interval_sec);
+            EventSetTimer(MR_AT_BASE_TIMER_SEC);
            }
          }
       if(!MR_AT_IsLicensed())
@@ -199,7 +201,6 @@ void OnTimer()
      }
 
    MR_AT_FetchConfig();
-   EventSetTimer(g_heartbeat_interval_sec);
 
    if(MR_AT_GetTradeMode() == "REAL")
       MR_AT_EnsurePreMarketSnapshot();
@@ -209,8 +210,11 @@ void OnTimer()
    MR_AT_FetchAndProcessSignals();
    MR_AT_ProcessAutonomousStrategy();
    MR_AT_ManagementOnTimer();
-   MR_AT_OperationalCommandsOnTimer();
+   MR_AT_PollOperationalCommands();
+   MR_AT_SendOperationSnapshot(false);
    MR_AT_UpdatePanel();
+
+   EventSetTimer(MR_AT_BASE_TIMER_SEC);
   }
 
 //+------------------------------------------------------------------+

@@ -13,6 +13,7 @@
 #include "MR_AT_Orders.mqh"
 #include "MR_AT_Position.mqh"
 #include "MR_AT_DailyRisk.mqh"
+#include "MR_AT_Heartbeat.mqh"
 #include "MR_FiboD1_Config.mqh"
 
 extern string g_license_id;
@@ -28,6 +29,24 @@ static datetime g_lastOperationSnapshotSentAt = 0;
 
 #define MR_AT_COMMANDS_POLL_INTERVAL_SEC 15
 #define MR_AT_OPERATION_SNAPSHOT_INTERVAL_SEC 30
+
+//+------------------------------------------------------------------+
+int MR_AT_CountPendingOrdersForSymbol(const string symbol, const int magic)
+  {
+   int count = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+     {
+      ulong ticket = OrderGetTicket(i);
+      if(ticket == 0 || !OrderSelect(ticket))
+         continue;
+      if(OrderGetString(ORDER_SYMBOL) != symbol)
+         continue;
+      if((int)OrderGetInteger(ORDER_MAGIC) != magic)
+         continue;
+      count++;
+     }
+   return count;
+  }
 
 //+------------------------------------------------------------------+
 void MR_AT_ApplyOperationControlFromConfig(const string json)
@@ -276,6 +295,64 @@ bool MR_AT_ExecuteOperationalCommand(
       return true;
      }
 
+   if(command_type == "HEALTH_CHECK")
+     {
+      MR_AT_LogInfo("OpCmd", "HEALTH_CHECK received commandId=" + command_id);
+      const bool heartbeatOk = MR_AT_SendHeartbeat();
+      const bool snapshotOk = MR_AT_SendOperationSnapshot(true);
+      const bool dailyRiskOk = MR_AT_ReportDailyRisk(true);
+      const int pending_count = MR_AT_CountPendingOrdersForSymbol(symbol, magic);
+      bool has_position = false;
+      for(int p = PositionsTotal() - 1; p >= 0; p--)
+        {
+         ulong t = PositionGetTicket(p);
+         if(t == 0 || !PositionSelectByTicket(t))
+            continue;
+         if(PositionGetString(POSITION_SYMBOL) != symbol)
+            continue;
+         if((int)PositionGetInteger(POSITION_MAGIC) != magic)
+            continue;
+         has_position = true;
+         break;
+        }
+
+      details_json = "{";
+      details_json += "\"terminal_connected\":" + (TerminalInfoInteger(TERMINAL_CONNECTED) ? "true" : "false") + ",";
+      details_json += "\"auto_trading_allowed\":" + (TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) ? "true" : "false") + ",";
+      details_json += "\"real_orders_enabled\":" + (g_debug_mode ? "false" : "true") + ",";
+      details_json += "\"trade_mode\":" + MR_AT_JsonQuote(MR_AT_GetTradeMode()) + ",";
+      details_json += "\"account_login\":" + MR_AT_JsonQuote(MR_AT_AccountLoginStr()) + ",";
+      details_json += "\"account_server\":" + MR_AT_JsonQuote(MR_AT_AccountServerStr()) + ",";
+      details_json += "\"symbol\":" + MR_AT_JsonQuote(symbol) + ",";
+      details_json += "\"strategy_code\":" + MR_AT_JsonQuote("MR_FIBO_D1_GUARD") + ",";
+      details_json += "\"has_open_position\":" + (has_position ? "true" : "false") + ",";
+      details_json += "\"pending_orders_count\":" + IntegerToString(pending_count) + ",";
+      details_json += "\"snapshot_sent\":" + (snapshotOk ? "true" : "false") + ",";
+      details_json += "\"daily_risk_sent\":" + (dailyRiskOk ? "true" : "false") + ",";
+      details_json += "\"daily_risk_state_id\":" + MR_AT_JsonQuote(g_lastDailyRiskStateId) + ",";
+      details_json += "\"heartbeat_sent\":" + (heartbeatOk ? "true" : "false") + ",";
+      details_json += "\"last_error_code\":" + MR_AT_JsonQuote(g_lastDailyRiskErrorCode);
+      details_json += "}";
+
+      if(!snapshotOk || !dailyRiskOk)
+        {
+         result_code = "HEALTH_CHECK_FAILED";
+         result_message = "Falha ao enviar snapshot ou daily risk";
+         MR_AT_LogError("OpCmd", "HEALTH_CHECK failed code=" + result_code +
+                        " snapshot=" + (snapshotOk ? "true" : "false") +
+                        " dailyRisk=" + (dailyRiskOk ? "true" : "false"));
+         return false;
+        }
+
+      result_code = "HEALTH_CHECK_OK";
+      result_message = "EA respondeu health check";
+      MR_AT_LogInfo("OpCmd", "HEALTH_CHECK result executed snapshot=" +
+                    (snapshotOk ? "true" : "false") + " dailyRisk=" +
+                    (dailyRiskOk ? "true" : "false") + " heartbeat=" +
+                    (heartbeatOk ? "true" : "false"));
+      return true;
+     }
+
    result_code = "UNKNOWN_COMMAND";
    result_message = "Tipo de comando desconhecido";
    return false;
@@ -393,6 +470,8 @@ bool MR_AT_SendOperationSnapshot(const bool force = false)
    if(status >= 200 && status < 300)
      {
       g_lastOperationSnapshotSentAt = TimeCurrent();
+      MR_AT_LogInfo("OpCmd", "OperationSnapshot ok nextIn=" +
+                    IntegerToString(MR_AT_OPERATION_SNAPSHOT_INTERVAL_SEC) + "s");
       return true;
      }
    return false;
@@ -416,11 +495,13 @@ void MR_AT_PollOperationalCommands()
    g_lastCommandsPollAt = TimeCurrent();
 
    int idx = 0;
+   int cmd_count = 0;
    while(true)
      {
       string cmd_obj = "";
       if(!MR_AT_JsonGetArrayObject(response, "commands", idx, cmd_obj))
          break;
+      cmd_count++;
 
       string command_id = MR_AT_JsonGetString(cmd_obj, "command_id");
       string command_type = MR_AT_JsonGetString(cmd_obj, "command_type");
@@ -469,6 +550,9 @@ void MR_AT_PollOperationalCommands()
 
       idx++;
      }
+
+   MR_AT_LogInfo("OpCmd", "Commands poll ok count=" + IntegerToString(cmd_count) +
+                 " nextIn=" + IntegerToString(MR_AT_COMMANDS_POLL_INTERVAL_SEC) + "s");
   }
 
 //+------------------------------------------------------------------+
@@ -574,17 +658,6 @@ bool MR_AT_JsonGetArrayObject(const string json, const string key, const int ind
          return false;
      }
    return false;
-  }
-
-//+------------------------------------------------------------------+
-datetime MR_AT_DayStart(datetime when)
-  {
-   MqlDateTime dt;
-   TimeToStruct(when, dt);
-   dt.hour = 0;
-   dt.min = 0;
-   dt.sec = 0;
-   return StructToTime(dt);
   }
 
 //+------------------------------------------------------------------+

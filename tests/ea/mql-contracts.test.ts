@@ -125,8 +125,11 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(opCmd).toContain("/api/v1/ea/operation-snapshot");
     expect(opCmd).toContain("PAUSE_NEW_ENTRIES");
     expect(opCmd).toContain("FLATTEN_AND_PAUSE");
+    expect(opCmd).toContain("HEALTH_CHECK received commandId=");
+    expect(opCmd).toContain("HEALTH_CHECK_OK");
     expect(opCmd).toContain("g_admin_paused");
-    expect(executor).toContain("MR_AT_OperationalCommandsOnTimer");
+    expect(executor).toContain("MR_AT_PollOperationalCommands");
+    expect(executor).toContain("MR_AT_BASE_TIMER_SEC");
     expect(executor).toContain("MR_AT_OperationalCommands.mqh");
     expect(opCmd).not.toMatch(/MR_AT_Log(?:Info|Debug|Error)\([^)]*g_device_token/);
     expect(opCmd).toContain("REFRESH_STATUS: sending operation snapshot and daily risk now");

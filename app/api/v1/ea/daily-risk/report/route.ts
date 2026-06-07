@@ -134,5 +134,5 @@ export const POST = withEaAuth(
       last_updated_at: result.state.lastUpdatedAt.toISOString(),
     });
   },
-  { rateLimit: "heartbeat" }
+  { rateLimit: "heartbeat", activitySource: "DAILY_RISK_REPORT" }
 );

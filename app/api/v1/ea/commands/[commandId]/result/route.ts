@@ -66,5 +66,5 @@ export async function POST(request: Request, context: RouteContext) {
       }
       throw error;
     }
-  })(request);
+  }, { activitySource: "COMMAND_RESULT" })(request);
 }

@@ -49,4 +49,4 @@ export const GET = withEaAuth(async (ctx) => {
       payload: {},
     })),
   });
-});
+}, { activitySource: "COMMANDS_POLL" });

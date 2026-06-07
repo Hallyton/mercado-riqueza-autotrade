@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { FiboHealthCheckButton } from "@/components/admin/fibo-health-check-button";
 import { FiboRefreshStatusButton } from "@/components/admin/fibo-refresh-status-button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getFiboD1GuardOperationCenterView } from "@/lib/admin/fibo-d1-guard-operation-center";
+
+function livenessTone(status: string): string {
+  if (status === "ONLINE") return "text-emerald-300";
+  if (status === "DEGRADED") return "text-amber-300";
+  if (status === "CHECKING") return "text-sky-300";
+  if (status === "UNRESPONSIVE") return "text-orange-300";
+  return "text-red-300";
+}
 
 function ClientTable({
   title,
@@ -32,7 +41,7 @@ function ClientTable({
               <th className="py-2 pr-3">Conta</th>
               <th className="py-2 pr-3">Contratos</th>
               <th className="py-2 pr-3">Risco est.</th>
-              <th className="py-2 pr-3">EA</th>
+              <th className="py-2 pr-3">Liveness</th>
               <th className="py-2 pr-3">Motivo / ação</th>
               <th className="py-2">Links</th>
             </tr>
@@ -54,7 +63,65 @@ function ClientTable({
                     ? `R$ ${row.estimatedRiskBrl.toFixed(2)}`
                     : "—"}
                 </td>
-                <td className="py-2 pr-3">{row.eaOnline ? "Online" : "Offline"}</td>
+                <td className="py-2 pr-3 text-xs">
+                  <div className={`font-mono font-medium ${livenessTone(row.liveness.computedStatus)}`}>
+                    {row.liveness.computedStatus}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">{row.liveness.message}</div>
+                  <dl className="mt-2 space-y-0.5 font-mono text-[10px] text-muted-foreground">
+                    <div>
+                      HB:{" "}
+                      {row.liveness.latestHeartbeatAt
+                        ? new Date(row.liveness.latestHeartbeatAt).toLocaleString("pt-BR")
+                        : "—"}
+                    </div>
+                    <div>
+                      DailyRisk:{" "}
+                      {row.liveness.latestDailyRiskReportAt
+                        ? new Date(row.liveness.latestDailyRiskReportAt).toLocaleString("pt-BR")
+                        : "—"}
+                    </div>
+                    <div>
+                      Snapshot:{" "}
+                      {row.liveness.latestOperationSnapshotAt
+                        ? new Date(row.liveness.latestOperationSnapshotAt).toLocaleString("pt-BR")
+                        : "—"}
+                    </div>
+                    <div>
+                      Poll:{" "}
+                      {row.liveness.latestCommandsPollAt
+                        ? new Date(row.liveness.latestCommandsPollAt).toLocaleString("pt-BR")
+                        : "—"}
+                    </div>
+                    <div>
+                      Atividade: {row.liveness.lastActivitySource ?? "—"}
+                      {row.liveness.ageSeconds != null
+                        ? ` · há ${row.liveness.ageSeconds}s`
+                        : ""}
+                    </div>
+                    <div>Threshold: {row.liveness.thresholdSeconds}s</div>
+                    {row.liveness.latestHealthCheckStatus && (
+                      <div>
+                        HC: {row.liveness.latestHealthCheckStatus}
+                        {row.liveness.latestHealthCheckRequestedAt
+                          ? ` · ${new Date(row.liveness.latestHealthCheckRequestedAt).toLocaleString("pt-BR")}`
+                          : ""}
+                      </div>
+                    )}
+                  </dl>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <FiboHealthCheckButton
+                      licenseId={row.licenseId}
+                      latestStatus={row.liveness.latestHealthCheckStatus}
+                    />
+                    <FiboRefreshStatusButton
+                      licenseId={row.licenseId}
+                      latestStatus={
+                        row.dailyRiskDiagnostic?.latestRefreshCommandStatus ?? null
+                      }
+                    />
+                  </div>
+                </td>
                 <td className="py-2 pr-3 text-xs">
                   {row.reasonCodes.length > 0 ? (
                     <div className="space-y-2">
@@ -330,17 +397,6 @@ function ClientTable({
                                   {row.dailyRiskDiagnostic.lastDailyRiskErrorFromSnapshot}
                                 </dd>
                               )}
-                            </div>
-                            <div>
-                              <dt className="text-muted-foreground">Comando remoto</dt>
-                              <dd className="mt-1">
-                                <FiboRefreshStatusButton
-                                  licenseId={row.licenseId}
-                                  latestStatus={
-                                    row.dailyRiskDiagnostic.latestRefreshCommandStatus
-                                  }
-                                />
-                              </dd>
                             </div>
                             {row.dailyRiskDiagnostic.detailMessage && (
                               <div>

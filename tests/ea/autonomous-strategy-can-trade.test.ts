@@ -37,6 +37,20 @@ vi.mock("@/lib/ea/status", () => ({
   isEaOffline: vi.fn().mockReturnValue(false),
 }));
 
+vi.mock("@/lib/admin/ea-liveness-trace", () => ({
+  loadEaLivenessForLicense: vi.fn().mockResolvedValue({
+    liveness: {
+      computedStatus: "ONLINE",
+      blocksTrading: false,
+      lastActivityAt: new Date().toISOString(),
+      lastActivitySource: "OPERATION_SNAPSHOT",
+      ageSeconds: 10,
+      thresholdSeconds: 300,
+      diagnosisCode: "EA_LIVENESS_ONLINE",
+    },
+  }),
+}));
+
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
 import { runAutonomousStrategyCanTrade } from "@/lib/ea/autonomous-strategy-can-trade";
 

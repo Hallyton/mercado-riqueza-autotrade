@@ -46,8 +46,24 @@ vi.mock("@/lib/risk/daily-financial-risk", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/ea/status", () => ({
-  isEaOffline: vi.fn().mockReturnValue(false),
+vi.mock("@/lib/admin/ea-liveness-trace", () => ({
+  loadEaLivenessForLicense: vi.fn().mockResolvedValue({
+    latestHeartbeatAt: new Date().toISOString(),
+    latestDailyRiskReportAt: new Date().toISOString(),
+    latestOperationSnapshotAt: new Date().toISOString(),
+    latestCommandsPollAt: new Date().toISOString(),
+    latestHealthCheck: null,
+    liveness: {
+      computedStatus: "ONLINE",
+      diagnosisCode: "EA_LIVENESS_ONLINE",
+      message: "EA comunicou via OPERATION_SNAPSHOT há 10s.",
+      lastActivityAt: new Date().toISOString(),
+      lastActivitySource: "OPERATION_SNAPSHOT",
+      ageSeconds: 10,
+      thresholdSeconds: 300,
+      blocksTrading: false,
+    },
+  }),
 }));
 
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";

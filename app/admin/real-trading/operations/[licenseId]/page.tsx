@@ -43,8 +43,20 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
         </CardHeader>
         <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div>
+            <dt className="text-muted-foreground">Liveness</dt>
+            <dd>
+              {row.livenessStatus} — {row.livenessMessage}
+              <div className="text-xs text-muted-foreground">
+                Atividade: {row.lastActivitySource ?? "—"}
+                {row.lastActivityAgeSeconds != null
+                  ? ` · há ${row.lastActivityAgeSeconds}s`
+                  : ""}
+              </div>
+            </dd>
+          </div>
+          <div>
             <dt className="text-muted-foreground">EA</dt>
-            <dd>{row.eaOnline ? "Online" : "Offline"}</dd>
+            <dd>{row.eaOnline ? "Comunicação recente" : "Sem comunicação recente"}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Pausa admin</dt>
@@ -149,7 +161,49 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
       </Card>
 
       <Card className="border-gold/20 p-5">
-        <CardTitle className="text-base">Heartbeats recentes</CardTitle>
+        <CardTitle className="text-base">Histórico HEALTH_CHECK</CardTitle>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-muted-foreground">
+                <th className="py-2 pr-2">Status</th>
+                <th className="py-2 pr-2">Solicitado</th>
+                <th className="py-2 pr-2">ACK</th>
+                <th className="py-2 pr-2">Executado</th>
+                <th className="py-2">Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {commands
+                .filter((cmd) => cmd.commandType === "HEALTH_CHECK")
+                .map((cmd) => (
+                  <tr key={cmd.id} className="border-b border-white/5">
+                    <td className="py-2 pr-2">{cmd.status}</td>
+                    <td className="py-2 pr-2">
+                      {cmd.requestedAt.toLocaleString("pt-BR")}
+                    </td>
+                    <td className="py-2 pr-2">
+                      {cmd.ackedAt?.toLocaleString("pt-BR") ?? "—"}
+                    </td>
+                    <td className="py-2 pr-2">
+                      {cmd.executedAt?.toLocaleString("pt-BR") ?? "—"}
+                    </td>
+                    <td className="py-2">
+                      {cmd.resultCode ?? "—"} {cmd.resultMessage ?? ""}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+          {commands.filter((cmd) => cmd.commandType === "HEALTH_CHECK").length === 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Nenhum health check registrado para esta licença.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <Card className="border-gold/20 p-5">
         <ul className="mt-3 space-y-2 text-xs">
           {heartbeats.map((hb) => (
             <li key={hb.id} className="rounded border border-white/10 p-2">

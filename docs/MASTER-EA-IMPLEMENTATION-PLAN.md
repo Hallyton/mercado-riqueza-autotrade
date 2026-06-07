@@ -2674,6 +2674,21 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Config EA | `operation_control.paused` em `/api/v1/ea/config` |
 | Doc | [`docs/REAL-TRADING-OPERATION-CENTER.md`](REAL-TRADING-OPERATION-CENTER.md), [`docs/EA-OPERATIONAL-COMMANDS.md`](EA-OPERATIONAL-COMMANDS.md) |
 
+### Fase 15.6 — EA Liveness, Activity Trace & Health Check
+
+**Status:** `EA_LIVENESS_HEALTH_CHECK_AND_ACTIVITY_TRACE_FIXED`
+
+| Item | Resultado |
+|------|-----------|
+| Activity trace | `touchEaDeviceActivity()` em endpoints autenticados EA |
+| Liveness | `resolveEaLiveness()` — ONLINE/DEGRADED/CHECKING/UNRESPONSIVE/OFFLINE |
+| Comando | `HEALTH_CHECK` — prova de vida ativa sem ordem/instruction |
+| Admin UI | Centro Fibo + Operações — coluna liveness, botão **Verificar agora** |
+| Can-trade | Bloqueio por resolver central (não só heartbeat) |
+| Trace API | `GET /api/admin/real-trading/ea-liveness/trace?licenseId=...` |
+| MQL5 | Handler `HEALTH_CHECK`, timers independentes (15/30/60s) |
+| Doc | [`docs/EA-LIVENESS-AND-HEALTH-CHECK.md`](EA-LIVENESS-AND-HEALTH-CHECK.md) |
+
 ### Fase 15.4.1 — Contract Limit Regularization Flow
 
 **Status:** `MR_FIBO_D1_GUARD_CONTRACT_LIMIT_REGULARIZATION_FLOW_IMPLEMENTED`

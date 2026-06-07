@@ -82,4 +82,4 @@ export const POST = withEaAuth(async (ctx, request) => {
     strategy_code: parsed.data.strategy_code ?? MR_FIBO_D1_GUARD_CODE,
     updated_at: snapshot.updatedAt.toISOString(),
   });
-});
+}, { activitySource: "OPERATION_SNAPSHOT" });

@@ -11,9 +11,15 @@ export const OPERATIONAL_COMMAND_CONFIRMATIONS: Record<
   CLOSE_ALL_POSITIONS: "ENCERRAR TODAS AS POSICOES",
   FLATTEN_AND_PAUSE: "ENCERRAR TUDO E PAUSAR",
   REFRESH_STATUS: "ATUALIZAR STATUS",
+  HEALTH_CHECK: "VERIFICAR AGORA",
 };
 
 export const OPERATIONAL_COMMAND_EXPIRY_MS = 2 * 60 * 1000;
+export const HEALTH_CHECK_COMMAND_EXPIRY_MS = 60 * 1000;
+
+export const NON_CONFIRMATION_OPERATIONAL_COMMANDS = new Set<EAOperationalCommandType>([
+  EAOperationalCommandType.HEALTH_CHECK,
+]);
 
 export const CRITICAL_OPERATIONAL_COMMANDS = new Set<EAOperationalCommandType>([
   EAOperationalCommandType.CANCEL_PENDING_ORDERS,
@@ -30,4 +36,5 @@ export const OPERATIONAL_COMMAND_LABELS: Record<EAOperationalCommandType, string
   CLOSE_ALL_POSITIONS: "Encerrar todas as posições",
   FLATTEN_AND_PAUSE: "Encerrar tudo e pausar",
   REFRESH_STATUS: "Atualizar status",
+  HEALTH_CHECK: "Verificar agora",
 };

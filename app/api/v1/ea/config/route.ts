@@ -9,5 +9,5 @@ export const GET = withEaAuth(
     const config = await buildEaConfigResponse(ctx);
     return eaJson(config);
   },
-  { rateLimit: "config" }
+  { rateLimit: "config", activitySource: "CONFIG" }
 );

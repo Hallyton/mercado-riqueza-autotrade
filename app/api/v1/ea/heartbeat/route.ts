@@ -31,5 +31,5 @@ export const POST = withEaAuth(
   const result = await processHeartbeat(ctx, parsed.data);
   return eaJson(result);
   },
-  { rateLimit: "heartbeat" }
+  { rateLimit: "heartbeat", activitySource: "HEARTBEAT" }
 );

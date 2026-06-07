@@ -4,7 +4,8 @@ import {
   RealTradingApprovalStatus,
 } from "@prisma/client";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
-import { isEaOffline } from "@/lib/ea/status";
+import { loadEaLivenessForLicense } from "@/lib/admin/ea-liveness-trace";
+import type { EaLivenessStatus } from "@/lib/ea/liveness";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
 import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
@@ -12,6 +13,9 @@ import prisma from "@/lib/prisma";
 
 export type OperationalStatusBadge =
   | "ONLINE"
+  | "DEGRADED"
+  | "CHECKING"
+  | "UNRESPONSIVE"
   | "OFFLINE"
   | "PAUSADO"
   | "EM OPERACAO"
@@ -32,6 +36,11 @@ export type RealTradingOperationRow = {
   magicNumber: number | null;
   strategyCode: string;
   eaOnline: boolean;
+  livenessStatus: EaLivenessStatus;
+  livenessMessage: string;
+  lastActivityAt: string | null;
+  lastActivitySource: string | null;
+  lastActivityAgeSeconds: number | null;
   pausedByAdmin: boolean;
   inOperation: boolean;
   hasOpenPosition: boolean;
@@ -90,7 +99,7 @@ function decimalToNumber(value: unknown): number | null {
 }
 
 function buildBadges(row: {
-  eaOnline: boolean;
+  livenessStatus: EaLivenessStatus;
   pausedByAdmin: boolean;
   inOperation: boolean;
   hasOpenPosition: boolean;
@@ -99,7 +108,11 @@ function buildBadges(row: {
   lastCommandStatus: string | null;
 }): OperationalStatusBadge[] {
   const badges: OperationalStatusBadge[] = [];
-  badges.push(row.eaOnline ? "ONLINE" : "OFFLINE");
+  if (row.livenessStatus === "ONLINE") badges.push("ONLINE");
+  else if (row.livenessStatus === "DEGRADED") badges.push("DEGRADED");
+  else if (row.livenessStatus === "CHECKING") badges.push("CHECKING");
+  else if (row.livenessStatus === "UNRESPONSIVE") badges.push("UNRESPONSIVE");
+  else badges.push("OFFLINE");
   if (row.pausedByAdmin) badges.push("PAUSADO");
   if (row.inOperation) badges.push("EM OPERACAO");
   if (!row.hasOpenPosition) badges.push("SEM POSICAO");
@@ -132,8 +145,13 @@ async function mapLicenseToRow(
 
   if (!accountLogin || !accountServer || !symbol) return null;
 
-  const device = license.devices[0];
-  const eaOnline = device ? !isEaOffline(device.lastSeenAt) : false;
+  const livenessTrace = await loadEaLivenessForLicense(license.id);
+  const liveness = livenessTrace?.liveness;
+  const livenessStatus = liveness?.computedStatus ?? "UNKNOWN";
+  const eaOnline =
+    livenessStatus === "ONLINE" ||
+    livenessStatus === "DEGRADED" ||
+    livenessStatus === "CHECKING";
 
   const snapshot = license.eaOperationalSnapshots[0];
   const control = license.licenseOperationControls.find(
@@ -177,6 +195,11 @@ async function mapLicenseToRow(
     magicNumber: robot?.magicNumber ?? license.expectedMagicNumber ?? null,
     strategyCode,
     eaOnline,
+    livenessStatus,
+    livenessMessage: liveness?.message ?? "Sem dados de liveness.",
+    lastActivityAt: liveness?.lastActivityAt ?? null,
+    lastActivitySource: liveness?.lastActivitySource ?? null,
+    lastActivityAgeSeconds: liveness?.ageSeconds ?? null,
     pausedByAdmin,
     inOperation,
     hasOpenPosition,
@@ -192,12 +215,12 @@ async function mapLicenseToRow(
     dailyRemainingBrl,
     dailyStopHit,
     pendingOrdersCount,
-    lastHeartbeatAt: (snapshot?.lastHeartbeatAt ?? device?.lastSeenAt)?.toISOString() ?? null,
+    lastHeartbeatAt: (snapshot?.lastHeartbeatAt)?.toISOString() ?? livenessTrace?.latestHeartbeatAt ?? null,
     lastCommandType: lastCommand?.commandType ?? null,
     lastCommandStatus: lastCommand?.status ?? snapshot?.lastCommandStatus ?? null,
     lastCommandAt: lastCommand?.requestedAt.toISOString() ?? null,
     badges: buildBadges({
-      eaOnline,
+      livenessStatus,
       pausedByAdmin,
       inOperation,
       hasOpenPosition,
@@ -295,6 +318,8 @@ export async function getRealTradingOperationDetailView(licenseId: string) {
   const row = await mapLicenseToRow(license);
   if (!row) return null;
 
+  const livenessTrace = await loadEaLivenessForLicense(licenseId);
+
   const snapshot = license.eaOperationalSnapshots[0];
   const device = license.devices[0];
   const commands = await prisma.eAOperationalCommand.findMany({
@@ -321,7 +346,8 @@ export async function getRealTradingOperationDetailView(licenseId: string) {
   return {
     row,
     snapshot,
-    device,
+    device: license.devices[0],
+    livenessTrace,
     commands,
     heartbeats,
     canTradeDecisions,

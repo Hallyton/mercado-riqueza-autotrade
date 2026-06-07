@@ -80,11 +80,31 @@ Payload inclui posição, pendentes, PnL dia/mês, flags de terminal/autotrading
 }
 ```
 
+## HEALTH_CHECK (Fase 15.6)
+
+Comando de **prova de vida** — não envia ordem, não cria instruction, não altera approval/config.
+
+Admin: `POST /api/admin/real-trading/operations/commands` com `commandType: "HEALTH_CHECK"`.
+
+EA executa:
+
+1. ACK imediato
+2. `POST /api/v1/ea/heartbeat` (se disponível)
+3. `POST /api/v1/ea/operation-snapshot` (forçado)
+4. `POST /api/v1/ea/daily-risk/report` (forçado)
+5. RESULT com `result_code: "HEALTH_CHECK_OK"` ou `HEALTH_CHECK_FAILED`
+
+Expira em **60s**. Duplicata `PENDING`/`ACKED` retorna comando existente.
+
+Ver [`docs/EA-LIVENESS-AND-HEALTH-CHECK.md`](EA-LIVENESS-AND-HEALTH-CHECK.md).
+
 ## MQL5
 
 Módulo: `ea/mql5/includes/MR_AT_OperationalCommands.mqh`
 
-- `MR_AT_PollOperationalCommands()` no `OnTimer`
+- `MR_AT_PollOperationalCommands()` no `OnTimer` (intervalo 15s)
+- `MR_AT_SendOperationSnapshot()` (intervalo 30s)
+- Handler `HEALTH_CHECK` separado de `REFRESH_STATUS`
 - Flag `g_admin_paused` restaurada via config
 - `InpDebugMode=true` simula cancel/close sem `OrderSend` real
 

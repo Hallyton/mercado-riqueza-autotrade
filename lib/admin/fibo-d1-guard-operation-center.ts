@@ -1,9 +1,9 @@
 import { LicenseStatus, RealTradingApprovalStatus, StrategyRuntimeConfigStatus } from "@prisma/client";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
+import { loadEaLivenessForLicense } from "@/lib/admin/ea-liveness-trace";
 import { isAutonomousStrategyServerEnabled } from "@/lib/ea/autonomous-strategy-preflight";
-import { isEaOffline } from "@/lib/ea/status";
+import type { EaLivenessStatus } from "@/lib/ea/liveness";
 import prisma from "@/lib/prisma";
-import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import {
   CAN_TRADE_ACTION_HINTS,
   CAN_TRADE_REASON_MESSAGES,
@@ -69,7 +69,25 @@ export type DailyRiskLinkageDiagnostic = {
   lastDailyRiskStatusFromSnapshot: string | null;
   lastDailyRiskErrorFromSnapshot: string | null;
   latestRefreshCommandStatus: string | null;
+  latestHealthCheckStatus: string | null;
+  latestHealthCheckRequestedAt: string | null;
   staleThresholdMinutes: number;
+};
+
+export type FiboGuardLivenessInfo = {
+  computedStatus: EaLivenessStatus;
+  diagnosisCode: string;
+  message: string;
+  lastActivityAt: string | null;
+  lastActivitySource: string | null;
+  ageSeconds: number | null;
+  thresholdSeconds: number;
+  latestHeartbeatAt: string | null;
+  latestDailyRiskReportAt: string | null;
+  latestOperationSnapshotAt: string | null;
+  latestCommandsPollAt: string | null;
+  latestHealthCheckStatus: string | null;
+  latestHealthCheckRequestedAt: string | null;
 };
 
 export type FiboGuardClientRow = {
@@ -86,6 +104,7 @@ export type FiboGuardClientRow = {
   dailyStopLimitBrl: number | null;
   dailyStopStatus: string | null;
   eaOnline: boolean;
+  liveness: FiboGuardLivenessInfo;
   configHash: string | null;
   configVersion: number | null;
   reasonCodes: string[];
@@ -265,7 +284,7 @@ export async function getFiboD1GuardOperationCenterView() {
     let dailyRiskStatus: string | null = null;
 
     if (accountLogin && accountServer && symbol) {
-      const [operationSnapshot, latestRefreshCommand, latestHeartbeat] =
+      const [operationSnapshot, latestRefreshCommand, latestHealthCheck, latestHeartbeat] =
         await Promise.all([
           prisma.eAOperationalSnapshot.findFirst({
             where: {
@@ -282,6 +301,13 @@ export async function getFiboD1GuardOperationCenterView() {
               commandType: "REFRESH_STATUS",
             },
             orderBy: { createdAt: "desc" },
+          }),
+          prisma.eAOperationalCommand.findFirst({
+            where: {
+              licenseId: license.id,
+              commandType: "HEALTH_CHECK",
+            },
+            orderBy: { requestedAt: "desc" },
           }),
           prisma.eaHeartbeat.findFirst({
             where: { licenseId: license.id },
@@ -356,6 +382,9 @@ export async function getFiboD1GuardOperationCenterView() {
           readSnapshotField(rawSnapshot, "last_daily_risk_error_code") ??
           readSnapshotField(rawSnapshot, "last_daily_risk_error_message"),
         latestRefreshCommandStatus: latestRefreshCommand?.status ?? null,
+        latestHealthCheckStatus: latestHealthCheck?.status ?? null,
+        latestHealthCheckRequestedAt:
+          latestHealthCheck?.requestedAt.toISOString() ?? null,
         staleThresholdMinutes: Math.floor(
           getDailyRiskStaleThresholdSeconds() / 60
         ),
@@ -443,14 +472,47 @@ export async function getFiboD1GuardOperationCenterView() {
       }
     }
 
-    const device = await prisma.device.findFirst({
-      where: { licenseId: license.id, ...ACTIVE_DEVICE_WHERE },
-      orderBy: { lastSeenAt: "desc" },
-    });
-    const eaOnline = device ? !isEaOffline(device.lastSeenAt) : false;
-    if (!eaOnline) {
-      reasonCodes.push("EA_OFFLINE");
+    const livenessTrace = await loadEaLivenessForLicense(license.id);
+    const liveness = livenessTrace?.liveness;
+    const livenessInfo: FiboGuardLivenessInfo = {
+      computedStatus: liveness?.computedStatus ?? "UNKNOWN",
+      diagnosisCode: liveness?.diagnosisCode ?? "EA_LIVENESS_DEVICE_NOT_FOUND",
+      message:
+        liveness?.message ??
+        "Nenhum device ativo encontrado para a licença.",
+      lastActivityAt: liveness?.lastActivityAt ?? null,
+      lastActivitySource: liveness?.lastActivitySource ?? null,
+      ageSeconds: liveness?.ageSeconds ?? null,
+      thresholdSeconds: liveness?.thresholdSeconds ?? 300,
+      latestHeartbeatAt: livenessTrace?.latestHeartbeatAt ?? null,
+      latestDailyRiskReportAt: livenessTrace?.latestDailyRiskReportAt ?? null,
+      latestOperationSnapshotAt:
+        livenessTrace?.latestOperationSnapshotAt ?? null,
+      latestCommandsPollAt: livenessTrace?.latestCommandsPollAt ?? null,
+      latestHealthCheckStatus:
+        livenessTrace?.latestHealthCheck?.status ?? null,
+      latestHealthCheckRequestedAt:
+        livenessTrace?.latestHealthCheck?.requestedAt ?? null,
+    };
+
+    const eaOnline =
+      livenessInfo.computedStatus === "ONLINE" ||
+      livenessInfo.computedStatus === "DEGRADED" ||
+      livenessInfo.computedStatus === "CHECKING";
+
+    if (
+      livenessInfo.computedStatus === "OFFLINE" ||
+      livenessInfo.computedStatus === "UNRESPONSIVE" ||
+      livenessInfo.computedStatus === "UNKNOWN"
+    ) {
+      const offlineCode =
+        livenessInfo.computedStatus === "UNRESPONSIVE"
+          ? "EA_LIVENESS_UNRESPONSIVE"
+          : "EA_OFFLINE_NO_RECENT_ACTIVITY";
+      reasonCodes.push(offlineCode);
       if (bucket === "READY") bucket = "EA_NOT_READY";
+    } else if (livenessInfo.computedStatus === "DEGRADED") {
+      reasonCodes.push("EA_ACTIVITY_DEGRADED");
     }
 
     const heartbeat = await prisma.eaHeartbeat.findFirst({
@@ -510,6 +572,7 @@ export async function getFiboD1GuardOperationCenterView() {
             ? "INACTIVE"
             : "MISSING",
       eaOnline,
+      liveness: livenessInfo,
       configHash: published?.configHash ?? null,
       configVersion: published?.version ?? null,
       reasonCodes: [...new Set(reasonCodes)],

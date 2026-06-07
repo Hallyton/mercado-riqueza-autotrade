@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { authenticateEaRequest, EaAuthError } from "./auth";
+import {
+  applyDeviceActivityToContext,
+  touchEaDeviceActivity,
+  type EaActivitySource,
+} from "./device-activity";
 import { problemJson } from "./problem";
 import type { EaRateLimitScope } from "./rate-limit";
 import {
@@ -16,6 +21,7 @@ type EaHandler = (ctx: EaContext, request: Request) => Promise<NextResponse>;
 
 export type WithEaAuthOptions = {
   rateLimit?: EaRateLimitScope;
+  activitySource?: EaActivitySource;
 };
 
 const ERROR_TITLES: Record<string, string> = {
@@ -35,6 +41,16 @@ export function withEaAuth(handler: EaHandler, options?: WithEaAuthOptions) {
   return async (request: Request) => {
     try {
       const ctx = await authenticateEaRequest(request);
+
+      if (options?.activitySource) {
+        const activity = await touchEaDeviceActivity({
+          deviceId: ctx.device.id,
+          licenseId: ctx.license.id,
+          source: options.activitySource,
+          requestId: ctx.requestId,
+        });
+        ctx.device = applyDeviceActivityToContext(ctx.device, activity);
+      }
 
       let rl: EaRateLimitCheckResult | undefined;
       if (options?.rateLimit) {

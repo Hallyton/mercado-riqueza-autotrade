@@ -26,6 +26,11 @@ export const CAN_TRADE_REASON_CODES = [
   "DAILY_RISK_REPORT_DATE_MISMATCH",
   "REAL_TRADING_NOT_ENABLED",
   "EA_OFFLINE",
+  "EA_OFFLINE_NO_RECENT_ACTIVITY",
+  "EA_LIVENESS_CHECKING",
+  "EA_LIVENESS_UNRESPONSIVE",
+  "EA_ACTIVITY_DEGRADED",
+  "EA_HEARTBEAT_STALE_BUT_ACTIVITY_RECENT",
   "EA_CONFIG_OUTDATED",
   "EA_AUTOTRADING_DISABLED",
   "EA_REAL_ORDERS_DISABLED",
@@ -70,6 +75,16 @@ export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
     "Stop diário configurado, mas o relatório foi salvo com tradeDate diferente do dia operacional.",
   REAL_TRADING_NOT_ENABLED: "Conta REAL não habilitada no servidor.",
   EA_OFFLINE: "EA offline ou sem heartbeat recente.",
+  EA_OFFLINE_NO_RECENT_ACTIVITY:
+    "Nenhuma atividade autenticada recente do EA.",
+  EA_LIVENESS_CHECKING:
+    "Verificação de presença do EA em andamento — aguardando resposta.",
+  EA_LIVENESS_UNRESPONSIVE:
+    "Health check expirou sem resposta do EA.",
+  EA_ACTIVITY_DEGRADED:
+    "EA com atividade recente, porém heartbeat específico atrasado.",
+  EA_HEARTBEAT_STALE_BUT_ACTIVITY_RECENT:
+    "Heartbeat atrasado, mas outras rotinas do EA comunicaram recentemente.",
   EA_CONFIG_OUTDATED: "EA com config desatualizada — aguardar sync.",
   EA_AUTOTRADING_DISABLED: "AutoTrading desligado no MetaTrader.",
   EA_REAL_ORDERS_DISABLED: "EA em modo que não envia ordens reais.",
@@ -95,6 +110,9 @@ export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>>
   DAILY_RISK_REPORT_DATE_MISMATCH:
     "Verificar tradeDate do EA vs America/Sao_Paulo e reenviar daily-risk/report",
   EA_OFFLINE: "Verificar VPS/MT5",
+  EA_OFFLINE_NO_RECENT_ACTIVITY: "Verificar VPS/MT5 e rotinas do EA",
+  EA_LIVENESS_CHECKING: "Aguardar health check ou usar Verificar agora",
+  EA_LIVENESS_UNRESPONSIVE: "Verificar VPS/MT5 e polling de comandos",
   EA_AUTOTRADING_DISABLED: "Ativar AutoTrading",
   EA_REAL_ORDERS_DISABLED: "Desativar modo não envia ordens reais",
   STRATEGY_CONFIG_HASH_MISMATCH: "Recompilar/atualizar EA ou republicar config",

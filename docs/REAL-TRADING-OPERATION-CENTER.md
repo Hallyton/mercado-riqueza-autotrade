@@ -31,9 +31,17 @@ Centro administrativo para monitorar clientes MR Fibo D1 Guard em conta real e e
 | `CLOSE_OPEN_POSITION` | Fecha posição aberta; não cancela pendentes por padrão |
 | `CLOSE_ALL_POSITIONS` | Fecha todas as posições do símbolo/magic |
 | `FLATTEN_AND_PAUSE` | Cancela pendentes + fecha posição + pausa entradas |
-| `REFRESH_STATUS` | Força envio de snapshot operacional |
+| `REFRESH_STATUS` | Força envio de snapshot operacional + DailyRisk |
+| `HEALTH_CHECK` | Prova de vida ativa — snapshot + DailyRisk + heartbeat; **sem ordem** |
 
-Confirmação textual obrigatória (ex.: `ENCERRAR TUDO E PAUSAR`).
+Confirmação textual obrigatória para comandos críticos (ex.: `ENCERRAR TUDO E PAUSAR`). `HEALTH_CHECK` não exige confirmação forte.
+
+## Liveness (Fase 15.6)
+
+- Coluna **Liveness** na lista de operações (ONLINE/DEGRADED/CHECKING/UNRESPONSIVE/OFFLINE).
+- Botão **Verificar agora** dispara `HEALTH_CHECK`.
+- Trace: `GET /api/admin/real-trading/ea-liveness/trace?licenseId=...`
+- Ver [`docs/EA-LIVENESS-AND-HEALTH-CHECK.md`](EA-LIVENESS-AND-HEALTH-CHECK.md).
 
 ## Auditoria
 

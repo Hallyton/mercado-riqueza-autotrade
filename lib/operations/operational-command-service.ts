@@ -11,10 +11,13 @@ import { pauseLicenseNewEntries } from "@/lib/admin/commands";
 import { setLicenseOperationPaused } from "@/lib/operations/license-operation-control-service";
 import {
   CRITICAL_OPERATIONAL_COMMANDS,
+  HEALTH_CHECK_COMMAND_EXPIRY_MS,
+  NON_CONFIRMATION_OPERATIONAL_COMMANDS,
   OPERATIONAL_COMMAND_CONFIRMATIONS,
   OPERATIONAL_COMMAND_EXPIRY_MS,
 } from "@/lib/operations/operational-command-constants";
-import { isEaOffline } from "@/lib/ea/status";
+import { loadEaLivenessForLicense } from "@/lib/admin/ea-liveness-trace";
+import { touchEaDeviceActivity } from "@/lib/ea/device-activity";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
 import { maskAccountLogin } from "@/lib/risk/real-trading-guard-status";
@@ -84,6 +87,11 @@ async function resolveLicenseContext(licenseId: string) {
     orderBy: { lastSeenAt: "desc" },
   });
 
+  const livenessTrace = await loadEaLivenessForLicense(licenseId);
+  const livenessStatus = livenessTrace?.liveness.computedStatus ?? "OFFLINE";
+  const eaOnline =
+    livenessStatus === "ONLINE" || livenessStatus === "DEGRADED";
+
   return {
     license,
     robot,
@@ -92,20 +100,44 @@ async function resolveLicenseContext(licenseId: string) {
     symbol: symbol.trim().toUpperCase(),
     magicNumber,
     device,
-    eaOnline: device ? !isEaOffline(device.lastSeenAt) : false,
+    eaOnline,
+    livenessStatus,
   };
 }
 
 export async function expireStaleOperationalCommands(now = new Date()) {
-  const expired = await prisma.eAOperationalCommand.updateMany({
+  const stale = await prisma.eAOperationalCommand.findMany({
     where: {
       status: {
         in: [EAOperationalCommandStatus.PENDING, EAOperationalCommandStatus.ACKED],
       },
       expiresAt: { lt: now },
     },
+    select: { id: true, licenseId: true, commandType: true },
+  });
+
+  if (stale.length === 0) return 0;
+
+  const expired = await prisma.eAOperationalCommand.updateMany({
+    where: {
+      id: { in: stale.map((row) => row.id) },
+    },
     data: { status: EAOperationalCommandStatus.EXPIRED },
   });
+
+  for (const row of stale) {
+    await recordOperationalAudit({
+      action:
+        row.commandType === "HEALTH_CHECK"
+          ? "operation.health_check.expired"
+          : "operation.command.expired",
+      entityType: "ea_operational_command",
+      entityId: row.id,
+      licenseId: row.licenseId,
+      metadata: { commandId: row.id, commandType: row.commandType },
+    });
+  }
+
   return expired.count;
 }
 
@@ -121,14 +153,16 @@ export async function createOperationalCommand(input: {
 }) {
   await expireStaleOperationalCommands();
 
-  const expected = OPERATIONAL_COMMAND_CONFIRMATIONS[input.commandType];
-  if (input.adminConfirmation.trim() !== expected) {
-    throw new OperationalCommandError(
-      "Confirmação textual inválida.",
-      "CONFIRMATION_INVALID",
-      400,
-      `Digite exatamente: ${expected}`
-    );
+  if (!NON_CONFIRMATION_OPERATIONAL_COMMANDS.has(input.commandType)) {
+    const expected = OPERATIONAL_COMMAND_CONFIRMATIONS[input.commandType];
+    if (input.adminConfirmation.trim() !== expected) {
+      throw new OperationalCommandError(
+        "Confirmação textual inválida.",
+        "CONFIRMATION_INVALID",
+        400,
+        `Digite exatamente: ${expected}`
+      );
+    }
   }
 
   const ctx = await resolveLicenseContext(input.licenseId);
@@ -146,6 +180,14 @@ export async function createOperationalCommand(input: {
     },
   });
   if (existingPending) {
+    if (input.commandType === "HEALTH_CHECK") {
+      return {
+        command: existingPending,
+        eaOnline: ctx.eaOnline,
+        warning: "Health check já pendente — aguardando resposta do EA.",
+        reused: true,
+      };
+    }
     throw new OperationalCommandError(
       "Já existe comando pendente deste tipo para a licença.",
       "DUPLICATE_PENDING_COMMAND",
@@ -223,7 +265,12 @@ export async function createOperationalCommand(input: {
     );
   }
 
-  const expiresAt = new Date(Date.now() + OPERATIONAL_COMMAND_EXPIRY_MS);
+  const expiresAt = new Date(
+    Date.now() +
+      (input.commandType === "HEALTH_CHECK"
+        ? HEALTH_CHECK_COMMAND_EXPIRY_MS
+        : OPERATIONAL_COMMAND_EXPIRY_MS)
+  );
   const command = await prisma.eAOperationalCommand.create({
     data: {
       licenseId: input.licenseId,
@@ -315,7 +362,10 @@ export async function createOperationalCommand(input: {
 
   await recordAdminAction({
     actorId: input.actorId,
-    action: "operation.command.created",
+    action:
+      input.commandType === "HEALTH_CHECK"
+        ? "operation.health_check.created"
+        : "operation.command.created",
     targetType: "ea_operational_command",
     targetId: command.id,
     ipAddress: input.ipAddress,
@@ -336,6 +386,7 @@ export async function createOperationalCommand(input: {
     warning: ctx.eaOnline
       ? null
       : "EA offline — comando ficará PENDING até o EA buscar.",
+    reused: false,
   };
 }
 
@@ -397,8 +448,26 @@ export async function ackOperationalCommand(input: {
     },
   });
 
+  const deviceRow = await prisma.device.findFirst({
+    where: { licenseId: input.licenseId, deviceId: input.deviceId },
+  });
+  if (deviceRow) {
+    await touchEaDeviceActivity({
+      deviceId: deviceRow.id,
+      licenseId: input.licenseId,
+      source:
+        command.commandType === "HEALTH_CHECK"
+          ? "HEALTH_CHECK_ACK"
+          : "COMMAND_ACK",
+      requestId: command.id,
+    });
+  }
+
   await recordOperationalAudit({
-    action: "operation.command.acked",
+    action:
+      command.commandType === "HEALTH_CHECK"
+        ? "operation.health_check.acked"
+        : "operation.command.acked",
     entityType: "ea_operational_command",
     entityId: updated.id,
     licenseId: updated.licenseId,
@@ -449,11 +518,36 @@ export async function completeOperationalCommand(input: {
     },
   });
 
+  const deviceRow = await prisma.device.findFirst({
+    where: {
+      licenseId: input.licenseId,
+      ...(updated.deviceId ?? command.deviceId
+        ? { deviceId: updated.deviceId ?? command.deviceId ?? undefined }
+        : ACTIVE_DEVICE_WHERE),
+    },
+    orderBy: { lastActivityAt: "desc" },
+  });
+  if (deviceRow) {
+    await touchEaDeviceActivity({
+      deviceId: deviceRow.id,
+      licenseId: input.licenseId,
+      source:
+        command.commandType === "HEALTH_CHECK"
+          ? "HEALTH_CHECK_RESULT"
+          : "COMMAND_RESULT",
+      requestId: command.id,
+    });
+  }
+
   await recordOperationalAudit({
     action:
       input.status === "EXECUTED"
-        ? "operation.command.executed"
-        : "operation.command.failed",
+        ? command.commandType === "HEALTH_CHECK"
+          ? "operation.health_check.executed"
+          : "operation.command.executed"
+        : command.commandType === "HEALTH_CHECK"
+          ? "operation.health_check.failed"
+          : "operation.command.failed",
     entityType: "ea_operational_command",
     entityId: updated.id,
     licenseId: updated.licenseId,

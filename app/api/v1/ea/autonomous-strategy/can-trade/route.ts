@@ -40,5 +40,5 @@ export const POST = withEaAuth(
     const result = await runAutonomousStrategyCanTrade(ctx, parsed.data);
     return eaJson(result);
   },
-  { rateLimit: "instructions" }
+  { rateLimit: "instructions", activitySource: "CAN_TRADE" }
 );

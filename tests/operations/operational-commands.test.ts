@@ -12,7 +12,7 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
-    findMany: vi.fn(),
+    findMany: vi.fn().mockResolvedValue([]),
     update: vi.fn(),
     updateMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
@@ -32,6 +32,20 @@ vi.mock("@/lib/operations/operational-audit", () => ({
 
 vi.mock("@/lib/admin/commands", () => ({
   pauseLicenseNewEntries: vi.fn(),
+}));
+
+vi.mock("@/lib/admin/ea-liveness-trace", () => ({
+  loadEaLivenessForLicense: vi.fn().mockResolvedValue({
+    liveness: {
+      computedStatus: "ONLINE",
+      blocksTrading: false,
+      message: "EA online",
+    },
+  }),
+}));
+
+vi.mock("@/lib/ea/device-activity", () => ({
+  touchEaDeviceActivity: vi.fn(),
 }));
 
 import {
@@ -121,6 +135,36 @@ describe("operational commands", () => {
         actorId: "admin1",
       })
     ).rejects.toMatchObject({ code: "DUPLICATE_PENDING_COMMAND" });
+  });
+
+  it("HEALTH_CHECK sem confirmação forte cria comando", async () => {
+    const result = await createOperationalCommand({
+      licenseId: "lic1",
+      commandType: EAOperationalCommandType.HEALTH_CHECK,
+      adminConfirmation: "",
+      actorId: "admin1",
+    });
+
+    expect(result.command.commandType).toBe("HEALTH_CHECK");
+    expect(result.reused).toBe(false);
+  });
+
+  it("HEALTH_CHECK duplicado pendente retorna existente", async () => {
+    prismaMock.eAOperationalCommand.findFirst.mockResolvedValue({
+      id: "existing-hc",
+      status: EAOperationalCommandStatus.PENDING,
+      commandType: EAOperationalCommandType.HEALTH_CHECK,
+    });
+
+    const result = await createOperationalCommand({
+      licenseId: "lic1",
+      commandType: EAOperationalCommandType.HEALTH_CHECK,
+      adminConfirmation: "",
+      actorId: "admin1",
+    });
+
+    expect(result.reused).toBe(true);
+    expect(result.command.id).toBe("existing-hc");
   });
 
   it("GET pending retorna só comandos da licença/conta", async () => {

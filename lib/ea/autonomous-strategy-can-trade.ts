@@ -6,7 +6,7 @@ import {
   TradeMode,
 } from "@prisma/client";
 import type { EaAuthContext } from "@/lib/ea/auth";
-import { isEaOffline } from "@/lib/ea/status";
+import { loadEaLivenessForLicense } from "@/lib/admin/ea-liveness-trace";
 import { isAutonomousStrategyServerEnabled } from "@/lib/ea/autonomous-strategy-preflight";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
 import { getLicenseOperationControl } from "@/lib/operations/license-operation-control-service";
@@ -362,10 +362,41 @@ export async function runAutonomousStrategyCanTrade(
     return result;
   }
 
-  if (isEaOffline(device.lastSeenAt)) {
-    result = block("EA_OFFLINE");
-    await recordCanTradeDecision(ctx, body, result);
-    return result;
+  const livenessTrace = await loadEaLivenessForLicense(ctx.license.id);
+  const liveness = livenessTrace?.liveness;
+  if (liveness) {
+    const livenessDetail = JSON.stringify({
+      reasonCode: null as string | null,
+      lastActivityAt: liveness.lastActivityAt,
+      lastActivitySource: liveness.lastActivitySource,
+      ageSeconds: liveness.ageSeconds,
+      thresholdSeconds: liveness.thresholdSeconds,
+      latestDailyRiskReportAt: livenessTrace?.latestDailyRiskReportAt ?? null,
+      latestOperationSnapshotAt:
+        livenessTrace?.latestOperationSnapshotAt ?? null,
+      latestHealthCheckStatus:
+        livenessTrace?.latestHealthCheck?.status ?? null,
+      computedStatus: liveness.computedStatus,
+      diagnosisCode: liveness.diagnosisCode,
+    });
+
+    if (liveness.computedStatus === "UNRESPONSIVE") {
+      result = block("EA_LIVENESS_UNRESPONSIVE", livenessDetail);
+      await recordCanTradeDecision(ctx, body, result);
+      return result;
+    }
+
+    if (liveness.computedStatus === "OFFLINE" || liveness.computedStatus === "UNKNOWN") {
+      result = block("EA_OFFLINE_NO_RECENT_ACTIVITY", livenessDetail);
+      await recordCanTradeDecision(ctx, body, result);
+      return result;
+    }
+
+    if (liveness.computedStatus === "CHECKING") {
+      result = block("EA_LIVENESS_CHECKING", livenessDetail);
+      await recordCanTradeDecision(ctx, body, result);
+      return result;
+    }
   }
 
   result = {

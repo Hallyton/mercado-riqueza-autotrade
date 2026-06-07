@@ -93,8 +93,7 @@ bool MR_AT_SendHeartbeat()
       g_heartbeat_interval_sec = interval;
 
    int pending_instr = MR_AT_JsonGetInt(response, "pending_instructions");
-   MR_AT_LogDebug("Heartbeat", "OK — equity=" + DoubleToString(MR_AT_GetEquity(), 2) +
-                  " pendentes=" + IntegerToString(pending_instr));
+   MR_AT_LogInfo("Heartbeat", "ok nextIn=" + IntegerToString(g_heartbeat_interval_sec) + "s");
    g_lastHeartbeatSentAt = TimeCurrent();
    return true;
   }

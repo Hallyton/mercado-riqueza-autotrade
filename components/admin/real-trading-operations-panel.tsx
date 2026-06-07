@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { FiboHealthCheckButton } from "@/components/admin/fibo-health-check-button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type {
@@ -197,6 +198,7 @@ export function RealTradingOperationsPanel({
                 <th className="py-2 pr-2">PnL mês</th>
                 <th className="py-2 pr-2">Stop diário</th>
                 <th className="py-2 pr-2">Pendentes</th>
+                <th className="py-2 pr-2">Liveness</th>
                 <th className="py-2 pr-2">Heartbeat</th>
                 <th className="py-2 pr-2">Último comando</th>
                 <th className="py-2">Ações</th>
@@ -247,6 +249,26 @@ export function RealTradingOperationsPanel({
                     </div>
                   </td>
                   <td className="py-2 pr-2">{row.pendingOrdersCount}</td>
+                  <td className="py-2 pr-2">
+                    <div className="font-mono">{row.livenessStatus}</div>
+                    <div className="text-muted-foreground">{row.livenessMessage}</div>
+                    <div className="mt-1 text-muted-foreground">
+                      {row.lastActivitySource ?? "—"}
+                      {row.lastActivityAgeSeconds != null
+                        ? ` · há ${row.lastActivityAgeSeconds}s`
+                        : ""}
+                    </div>
+                    <div className="mt-2">
+                      <FiboHealthCheckButton
+                        licenseId={row.licenseId}
+                        latestStatus={
+                          row.lastCommandType === "HEALTH_CHECK"
+                            ? row.lastCommandStatus
+                            : null
+                        }
+                      />
+                    </div>
+                  </td>
                   <td className="py-2 pr-2">{formatDate(row.lastHeartbeatAt)}</td>
                   <td className="py-2 pr-2">
                     {row.lastCommandType ?? "—"}
