@@ -24,6 +24,13 @@ export const CAN_TRADE_REASON_CODES = [
   "DAILY_RISK_REPORT_MISSING",
   "DAILY_RISK_REPORT_STALE",
   "DAILY_RISK_REPORT_DATE_MISMATCH",
+  "DAILY_RISK_OK_FOR_DAY",
+  "POSITION_RISK_REPORT_STALE",
+  "PENDING_ORDERS_RISK_REPORT_STALE",
+  "DAILY_RISK_REVALIDATION_REQUIRED_AFTER_TRADE",
+  "DAILY_RISK_REVALIDATION_REQUIRED_AFTER_ADMIN_CHANGE",
+  "DAILY_RISK_TRADE_DATE_MISMATCH",
+  "EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY",
   "REAL_TRADING_NOT_ENABLED",
   "EA_OFFLINE",
   "EA_OFFLINE_NO_RECENT_ACTIVITY",
@@ -73,6 +80,20 @@ export const CAN_TRADE_REASON_MESSAGES: Record<CanTradeReasonCode, string> = {
     "Stop diário configurado, mas o relatório de risco diário está desatualizado.",
   DAILY_RISK_REPORT_DATE_MISMATCH:
     "Stop diário configurado, mas o relatório foi salvo com tradeDate diferente do dia operacional.",
+  DAILY_RISK_OK_FOR_DAY:
+    "DailyRisk do pregão válido — sem exposição operacional exigindo atualização recente.",
+  POSITION_RISK_REPORT_STALE:
+    "Existe posição aberta e o DailyRisk não foi atualizado na janela operacional curta.",
+  PENDING_ORDERS_RISK_REPORT_STALE:
+    "Existem ordens pendentes e o DailyRisk não foi atualizado na janela operacional curta.",
+  DAILY_RISK_REVALIDATION_REQUIRED_AFTER_TRADE:
+    "Houve execução após o último DailyRisk — aguardar novo report do EA.",
+  DAILY_RISK_REVALIDATION_REQUIRED_AFTER_ADMIN_CHANGE:
+    "Houve alteração administrativa após o último DailyRisk — aguardar novo report do EA.",
+  DAILY_RISK_TRADE_DATE_MISMATCH:
+    "Relatório de risco diário pertence a outro tradeDate operacional.",
+  EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY:
+    "DailyRisk do pregão válido, mas o EA está offline — bloqueio por liveness.",
   REAL_TRADING_NOT_ENABLED: "Conta REAL não habilitada no servidor.",
   EA_OFFLINE: "EA offline ou sem heartbeat recente.",
   EA_OFFLINE_NO_RECENT_ACTIVITY:
@@ -109,6 +130,15 @@ export const CAN_TRADE_ACTION_HINTS: Partial<Record<CanTradeReasonCode, string>>
     "Aguardar novo report do EA ou verificar heartbeat",
   DAILY_RISK_REPORT_DATE_MISMATCH:
     "Verificar tradeDate do EA vs America/Sao_Paulo e reenviar daily-risk/report",
+  POSITION_RISK_REPORT_STALE:
+    "Aguardar DailyRisk recente enquanto houver posição aberta",
+  PENDING_ORDERS_RISK_REPORT_STALE:
+    "Aguardar DailyRisk recente enquanto houver ordens pendentes",
+  DAILY_RISK_REVALIDATION_REQUIRED_AFTER_TRADE:
+    "Aguardar novo DailyRisk após operação ou usar HEALTH_CHECK",
+  DAILY_RISK_REVALIDATION_REQUIRED_AFTER_ADMIN_CHANGE:
+    "Aguardar novo DailyRisk após alteração admin ou usar HEALTH_CHECK",
+  EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY: "Verificar VPS/MT5 — risco diário do pregão já está OK",
   EA_OFFLINE: "Verificar VPS/MT5",
   EA_OFFLINE_NO_RECENT_ACTIVITY: "Verificar VPS/MT5 e rotinas do EA",
   EA_LIVENESS_CHECKING: "Aguardar health check ou usar Verificar agora",

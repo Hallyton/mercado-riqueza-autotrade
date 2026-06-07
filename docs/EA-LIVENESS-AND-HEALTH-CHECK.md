@@ -52,4 +52,13 @@ Duplicidade: se já existe `HEALTH_CHECK` `PENDING`/`ACKED`, retorna o existente
 
 ## Can-trade
 
+Liveness bloqueia com `EA_OFFLINE_NO_RECENT_ACTIVITY` / `EA_LIVENESS_UNRESPONSIVE` — **separado** do DailyRisk.
+
+Quando o DailyRisk do pregão está `OK_FOR_DAY`, EA offline retorna `EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY` (não `DAILY_RISK_REPORT_STALE`).
+
+## DailyRisk vs Liveness
+
+- **HEALTH_CHECK** valida vida do EA e força snapshot + DailyRisk — não substitui heartbeat contínuo.
+- **DailyRisk** valida risco do pregão; report antigo sem posição/pendentes/eventos permanece `OK_FOR_DAY` (ver `docs/DAILY-FINANCIAL-STOP-GUARD.md`).
+
 Usa o mesmo `resolveEaLiveness()`. Não bloqueia por heartbeat stale se snapshot/DailyRisk/poll recentes (`DEGRADED` continua permitido). Bloqueia em `OFFLINE`, `UNRESPONSIVE` e `CHECKING`.

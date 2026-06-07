@@ -133,7 +133,7 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(executor).toContain("MR_AT_OperationalCommands.mqh");
     expect(opCmd).not.toMatch(/MR_AT_Log(?:Info|Debug|Error)\([^)]*g_device_token/);
     expect(opCmd).toContain("REFRESH_STATUS: sending operation snapshot and daily risk now");
-    expect(opCmd).toContain("MR_AT_ReportDailyRisk(true)");
+    expect(opCmd).toContain("MR_AT_ForceDailyRiskAfterCommand");
     expect(opCmd).toContain("g_lastCommandsPollAt");
     expect(opCmd).toContain("g_lastOperationSnapshotSentAt");
   });

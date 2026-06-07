@@ -10,7 +10,12 @@ import {
   type CanTradeReasonCode,
   MR_FIBO_D1_GUARD_CODE,
 } from "@/lib/risk/autonomous-strategy-reasons";
-import { evaluateDailyFinancialStopForEntry, tradeDateKeySaoPaulo, getDailyRiskStaleThresholdSeconds } from "@/lib/risk/daily-financial-risk";
+import { evaluateDailyFinancialStopForEntry, tradeDateKeySaoPaulo } from "@/lib/risk/daily-financial-risk";
+import {
+  DAILY_RISK_POSITION_PENDING_THRESHOLD_SEC,
+  dailyRiskPolicyAllowsDay,
+  loadDailyRiskFreshnessPolicyForLicense,
+} from "@/lib/risk/daily-risk-freshness-policy";
 import { isRealTradingEnabled } from "@/lib/risk/real-trading-guard";
 import {
   buildDailyRiskLinkageDetail,
@@ -22,6 +27,7 @@ import {
   dailyRiskReportActionHint,
   dailyRiskReportOperationalMessage,
   formatDailyRiskCompositeStatus,
+  isDailyRiskPlatformBlockReason,
   type DailyRiskReportTrace,
 } from "@/lib/admin/daily-risk-report-trace";
 import {
@@ -271,11 +277,25 @@ export async function getFiboD1GuardOperationCenterView() {
     }
 
     const dailyRiskState = stateLookup?.exactState ?? null;
+    const dailyRiskPolicy =
+      dailyLimit && accountLogin && accountServer && symbol
+        ? await loadDailyRiskFreshnessPolicyForLicense({
+            licenseId: license.id,
+            accountLogin,
+            accountServer,
+            symbol,
+            strategyCode: dailyLimit.strategyCode,
+            tradeDate: stateLookup?.expectedKey.tradeDate ?? tradeDate,
+            riskLimit: dailyLimit,
+            riskState: dailyRiskState,
+          })
+        : null;
     const reportTrace =
       stateLookup != null
         ? buildDailyRiskReportTrace(
             dailyRiskState,
-            stateLookup.expectedKey.tradeDate
+            stateLookup.expectedKey.tradeDate,
+            dailyRiskPolicy
           )
         : null;
 
@@ -360,6 +380,7 @@ export async function getFiboD1GuardOperationCenterView() {
         operationalMessage: dailyRiskReportOperationalMessage({
           limitConfigured: Boolean(dailyLimit?.enabled),
           report: reportTrace ?? buildDailyRiskReportTrace(null, tradeDate),
+          policyMessage: dailyRiskPolicy?.message ?? null,
         }),
         recommendedAction: reportTrace
           ? dailyRiskReportActionHint(reportTrace.reportStatus)
@@ -386,7 +407,7 @@ export async function getFiboD1GuardOperationCenterView() {
         latestHealthCheckRequestedAt:
           latestHealthCheck?.requestedAt.toISOString() ?? null,
         staleThresholdMinutes: Math.floor(
-          getDailyRiskStaleThresholdSeconds() / 60
+          DAILY_RISK_POSITION_PENDING_THRESHOLD_SEC / 60
         ),
       };
     }
@@ -450,7 +471,9 @@ export async function getFiboD1GuardOperationCenterView() {
       }
       if (!dailyCheck.ok) {
         reasonCodes.push(dailyCheck.reasonCode);
-        bucket = "PLATFORM_BLOCKED";
+        if (isDailyRiskPlatformBlockReason(dailyCheck.reasonCode)) {
+          bucket = "PLATFORM_BLOCKED";
+        }
         if (dailyRiskDiagnostic) {
           dailyRiskDiagnostic.primaryReasonCode = dailyCheck.reasonCode;
           dailyRiskDiagnostic.detailMessage = dailyCheck.detail;
@@ -460,15 +483,23 @@ export async function getFiboD1GuardOperationCenterView() {
               report:
                 dailyRiskDiagnostic.reportTrace ??
                 buildDailyRiskReportTrace(null, tradeDate),
+              policyMessage: dailyRiskPolicy?.message ?? null,
             });
           dailyRiskDiagnostic.recommendedAction = dailyRiskReportActionHint(
-            dailyCheck.reasonCode === "DAILY_RISK_REPORT_STALE"
-              ? "STALE"
-              : dailyCheck.reasonCode === "DAILY_RISK_REPORT_MISSING"
-                ? "MISSING"
-                : reportTrace?.reportStatus ?? "MISSING"
+            dailyCheck.reasonCode === "DAILY_RISK_REPORT_MISSING"
+              ? "MISSING"
+              : dailyCheck.reasonCode.includes("REVALIDATION")
+                ? "REVALIDATION_REQUIRED"
+                : dailyRiskDiagnostic.reportTrace?.reportStatus ?? "STALE"
           );
         }
+      } else if (dailyRiskPolicy && dailyRiskDiagnostic) {
+        dailyRiskDiagnostic.operationalMessage =
+          dailyRiskReportOperationalMessage({
+            limitConfigured: true,
+            report: dailyRiskDiagnostic.reportTrace!,
+            policyMessage: dailyRiskPolicy.message,
+          });
       }
     }
 
@@ -508,7 +539,9 @@ export async function getFiboD1GuardOperationCenterView() {
       const offlineCode =
         livenessInfo.computedStatus === "UNRESPONSIVE"
           ? "EA_LIVENESS_UNRESPONSIVE"
-          : "EA_OFFLINE_NO_RECENT_ACTIVITY";
+          : dailyRiskPolicy && dailyRiskPolicyAllowsDay(dailyRiskPolicy)
+            ? "EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY"
+            : "EA_OFFLINE_NO_RECENT_ACTIVITY";
       reasonCodes.push(offlineCode);
       if (bucket === "READY") bucket = "EA_NOT_READY";
     } else if (livenessInfo.computedStatus === "DEGRADED") {

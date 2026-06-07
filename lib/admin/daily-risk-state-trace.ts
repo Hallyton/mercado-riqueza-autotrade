@@ -10,6 +10,11 @@ import {
   isDailyRiskStateStale,
 } from "@/lib/risk/daily-financial-risk";
 import {
+  DAILY_RISK_POSITION_PENDING_THRESHOLD_SEC,
+  loadDailyRiskFreshnessPolicyForLicense,
+  type DailyRiskFreshnessPolicyResult,
+} from "@/lib/risk/daily-risk-freshness-policy";
+import {
   classifyNearbyDailyRiskState,
   dailyRiskStateUniqueWhere,
   formatDailyRiskStateKey,
@@ -271,6 +276,7 @@ export function resolveDailyRiskTraceDiagnosis(input: {
   eaOnline: boolean;
   lastDailyRiskStatusFromSnapshot: string | null;
   lastDailyRiskErrorCodeFromSnapshot: string | null;
+  policy?: DailyRiskFreshnessPolicyResult | null;
 }): DailyRiskTraceDiagnosisCode {
   if (!input.exactState) {
     if (input.lastDailyRiskStatusFromSnapshot === "FAILED") {
@@ -284,6 +290,13 @@ export function resolveDailyRiskTraceDiagnosis(input: {
 
   if (input.exactState.tradeDate !== input.tradeDate) {
     return "DAILY_RISK_STATE_MISSING";
+  }
+
+  if (
+    input.policy &&
+    (input.policy.status === "OK_FOR_DAY" || input.policy.status === "RECENT_OK")
+  ) {
+    return "DAILY_RISK_STATE_FOUND_FRESH";
   }
 
   if (isDailyRiskStateStale(input.exactState.lastUpdatedAt)) {
@@ -310,8 +323,25 @@ export async function buildDailyRiskFullTraceView(input: {
   if (!base) return null;
 
   const tradeDate = base.expectedKey.tradeDate;
-  const reportTrace = buildDailyRiskReportTrace(base.exactState, tradeDate);
-  const staleThresholdSeconds = getDailyRiskStaleThresholdSeconds();
+  const policy =
+    base.riskLimit && base.exactState
+      ? await loadDailyRiskFreshnessPolicyForLicense({
+          licenseId: input.licenseId,
+          accountLogin: base.expectedKey.accountLogin,
+          accountServer: base.expectedKey.accountServer,
+          symbol: base.expectedKey.symbol,
+          strategyCode: base.expectedKey.strategyCode,
+          tradeDate,
+          riskLimit: base.riskLimit,
+          riskState: base.exactState,
+        })
+      : null;
+  const reportTrace = buildDailyRiskReportTrace(
+    base.exactState,
+    tradeDate,
+    policy
+  );
+  const staleThresholdSeconds = DAILY_RISK_POSITION_PENDING_THRESHOLD_SEC;
 
   const snapshot = await prisma.eAOperationalSnapshot.findFirst({
     where: {
@@ -356,6 +386,7 @@ export async function buildDailyRiskFullTraceView(input: {
     eaOnline,
     lastDailyRiskStatusFromSnapshot,
     lastDailyRiskErrorCodeFromSnapshot,
+    policy,
   });
 
   const latestDailyRiskStateAgeSeconds =

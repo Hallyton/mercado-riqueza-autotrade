@@ -15,8 +15,22 @@
 | Limite não configurado (produto exige) | `DAILY_FINANCIAL_STOP_NOT_CONFIGURED` |
 | PnL total ≤ -limite | `DAILY_FINANCIAL_STOP_REACHED` |
 | Perda potencial do stop > saldo restante | `DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED` |
-| Estado sem report há >20 min | `DAILY_RISK_STATE_STALE` |
+| Estado sem report há >20 min | `DAILY_RISK_STATE_STALE` (legado) |
 | Sem state no dia | `DAILY_RISK_REPORT_MISSING` |
+
+## Política de validade diária do DailyRisk
+
+**Status:** `DAILY_RISK_TRADE_DATE_VALIDITY_AND_EVENT_REVALIDATION_IMPLEMENTED`
+
+- DailyRisk zerado do pregão pode valer o **dia inteiro** se não houve operação/evento após o report.
+- **Posição aberta** ou **ordens pendentes** exigem report recente (janela **180s**).
+- **Execução**, **alteração admin** (stop, approval, strategy-config, pause, comando) invalidam o report e exigem reenvio.
+- **EA offline** é tratado como **liveness** (`EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY`), não como `DAILY_RISK_REPORT_STALE`, quando o report do pregão está `OK_FOR_DAY`.
+- **HEALTH_CHECK** valida vida do EA e força novo report — não substitui heartbeat.
+
+Função central: `evaluateDailyRiskFreshnessPolicy()` em `lib/risk/daily-risk-freshness-policy.ts`.
+
+Reason codes: `DAILY_RISK_OK_FOR_DAY`, `POSITION_RISK_REPORT_STALE`, `PENDING_ORDERS_RISK_REPORT_STALE`, `DAILY_RISK_REVALIDATION_REQUIRED_AFTER_TRADE`, `DAILY_RISK_REVALIDATION_REQUIRED_AFTER_ADMIN_CHANGE`, `EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY`.
 
 **Perda potencial:** `requestedContracts × stopPoints × centsPerPoint`.
 

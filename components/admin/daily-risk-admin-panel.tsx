@@ -15,8 +15,11 @@ import { formatDailyRiskLicenseLabel } from "@/lib/admin/daily-risk-eligible-lic
 
 const REPORT_STATUS_LABELS = {
   OK: "OK",
+  OK_FOR_DAY: "OK_FOR_DAY",
+  RECENT_OK: "RECENT_OK",
   STALE: "STALE",
   MISSING: "MISSING",
+  REVALIDATION_REQUIRED: "REVALIDATION_REQUIRED",
 } as const;
 
 function formatReportTrace(row: DailyRiskExistingConfigView["reportTrace"]) {
@@ -440,6 +443,7 @@ export function DailyRiskAdminPanel({
                 <th className="px-2 py-2">Estratégia</th>
                 <th className="px-2 py-2">Limite diário</th>
                 <th className="px-2 py-2">Include open PnL</th>
+                <th className="px-2 py-2">Policy DailyRisk</th>
                 <th className="px-2 py-2">Relatório diário</th>
                 <th className="px-2 py-2">stateId</th>
                 <th className="px-2 py-2">Último report</th>
@@ -469,6 +473,11 @@ export function DailyRiskAdminPanel({
                     R$ {row.dailyLossLimitBrl.toFixed(2)}
                   </td>
                   <td className="px-2 py-2">{row.includeOpenPnL ? "Sim" : "Não"}</td>
+                  <td className="px-2 py-2 text-xs">
+                    <div className="font-mono">{row.policyStatus ?? "—"}</div>
+                    <div className="text-muted-foreground">{row.policyReasonCode ?? "—"}</div>
+                    <div className="text-muted-foreground">{row.policyMessage ?? "—"}</div>
+                  </td>
                   <td className="px-2 py-2 text-xs">
                     <div>{report.summary}</div>
                     <div className="text-muted-foreground">

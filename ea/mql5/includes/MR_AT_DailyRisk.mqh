@@ -124,7 +124,7 @@ bool MR_AT_ReportDailyRisk(const bool force = false)
      {
       MR_AT_ResetDailyRiskTelemetryOnSuccess(response);
       string tradeDate = MR_AT_JsonGetString(response, "trade_date");
-      MR_AT_LogInfo("DailyRisk", "report ok stateId=" + g_lastDailyRiskStateId +
+      MR_AT_LogInfo("DailyRisk", "DailyRisk report ok policyCandidate=OK_FOR_DAY stateId=" + g_lastDailyRiskStateId +
                     " tradeDate=" + tradeDate +
                     " strategy=" + MR_AT_DAILY_RISK_STRATEGY_CODE +
                     " symbol=" + _Symbol +
@@ -145,11 +145,42 @@ bool MR_AT_ReportDailyRisk(const bool force = false)
   }
 
 //+------------------------------------------------------------------+
+bool MR_AT_HasOpenSymbolPosition()
+  {
+   for(int p = PositionsTotal() - 1; p >= 0; p--)
+     {
+      ulong t = PositionGetTicket(p);
+      if(t == 0 || !PositionSelectByTicket(t))
+         continue;
+      if(PositionGetString(POSITION_SYMBOL) == _Symbol)
+         return true;
+     }
+   return false;
+  }
+
+//+------------------------------------------------------------------+
+void MR_AT_ForceDailyRiskAfterTradeEvent(const string reason)
+  {
+   MR_AT_LogInfo("DailyRisk", "DailyRisk forced after trade event reason=" + reason);
+   MR_AT_ReportDailyRisk(true);
+  }
+
+//+------------------------------------------------------------------+
+bool MR_AT_ForceDailyRiskAfterCommand(const string commandType)
+  {
+   MR_AT_LogInfo("DailyRisk", "DailyRisk forced after command type=" + commandType);
+   return MR_AT_ReportDailyRisk(true);
+  }
+
+//+------------------------------------------------------------------+
 void MR_AT_DailyRiskOnTimer()
   {
    if(!MR_AT_ShouldSendDailyRiskReport())
       return;
-   MR_AT_ReportDailyRisk(false);
+   const bool force = MR_AT_HasOpenSymbolPosition();
+   if(force)
+      MR_AT_LogInfo("DailyRisk", "DailyRisk forced while position open");
+   MR_AT_ReportDailyRisk(force);
   }
 
 //+------------------------------------------------------------------+

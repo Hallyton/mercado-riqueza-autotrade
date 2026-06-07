@@ -275,7 +275,7 @@ bool MR_AT_ExecuteOperationalCommand(
      {
       MR_AT_LogInfo("OpCmd", "REFRESH_STATUS: sending operation snapshot and daily risk now");
       const bool snapshotOk = MR_AT_SendOperationSnapshot(true);
-      const bool dailyRiskOk = MR_AT_ReportDailyRisk(true);
+      const bool dailyRiskOk = MR_AT_ForceDailyRiskAfterCommand("REFRESH_STATUS");
       details_json = "{";
       details_json += "\"snapshot_sent\":" + (snapshotOk ? "true" : "false") + ",";
       details_json += "\"daily_risk_sent\":" + (dailyRiskOk ? "true" : "false") + ",";
@@ -300,7 +300,7 @@ bool MR_AT_ExecuteOperationalCommand(
       MR_AT_LogInfo("OpCmd", "HEALTH_CHECK received commandId=" + command_id);
       const bool heartbeatOk = MR_AT_SendHeartbeat();
       const bool snapshotOk = MR_AT_SendOperationSnapshot(true);
-      const bool dailyRiskOk = MR_AT_ReportDailyRisk(true);
+      const bool dailyRiskOk = MR_AT_ForceDailyRiskAfterCommand("HEALTH_CHECK");
       const int pending_count = MR_AT_CountPendingOrdersForSymbol(symbol, magic);
       bool has_position = false;
       for(int p = PositionsTotal() - 1; p >= 0; p--)

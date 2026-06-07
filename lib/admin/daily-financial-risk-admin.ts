@@ -15,6 +15,7 @@ import {
   buildDailyRiskReportTrace,
   type DailyRiskReportTrace,
 } from "@/lib/admin/daily-risk-report-trace";
+import { loadDailyRiskFreshnessPolicyForLicense } from "@/lib/risk/daily-risk-freshness-policy";
 import {
   describeDailyRiskStateMismatch,
   resolveDailyRiskStateLookup,
@@ -83,6 +84,9 @@ export type DailyRiskExistingConfigView = {
   savedKeyLabel: string | null;
   nearbyStateKey: string | null;
   mismatchAlert: string | null;
+  policyStatus: string | null;
+  policyReasonCode: string | null;
+  policyMessage: string | null;
 };
 
 export async function listDailyFinancialRiskLimits(licenseId?: string) {
@@ -118,6 +122,16 @@ export async function listDailyRiskExistingConfigViews(
       });
       const state = lookup.exactState;
       const nearby = lookup.nearbyStates[0] ?? null;
+      const policy = await loadDailyRiskFreshnessPolicyForLicense({
+        licenseId: row.licenseId,
+        accountLogin: row.accountLogin,
+        accountServer: row.accountServer,
+        symbol: row.symbol,
+        strategyCode: row.strategyCode,
+        tradeDate: lookup.expectedKey.tradeDate,
+        riskLimit: row,
+        riskState: state,
+      });
 
       return {
         id: row.id,
@@ -134,7 +148,8 @@ export async function listDailyRiskExistingConfigViews(
         updatedAt: row.updatedAt.toISOString(),
         reportTrace: buildDailyRiskReportTrace(
           state,
-          lookup.expectedKey.tradeDate
+          lookup.expectedKey.tradeDate,
+          policy
         ),
         expectedStateKey: lookup.expectedKey,
         stateId: state?.id ?? null,
@@ -149,6 +164,9 @@ export async function listDailyRiskExistingConfigViews(
           diagnosisCode: lookup.diagnosisCode,
           received: lookup.received,
         }),
+        policyStatus: policy.status,
+        policyReasonCode: policy.reasonCode,
+        policyMessage: policy.message,
       };
     })
   );

@@ -8,6 +8,7 @@
 #include "MR_FiboD1_Config.mqh"
 #include "MR_AT_Constants.mqh"
 #include "MR_AT_Log.mqh"
+#include "MR_AT_DailyRisk.mqh"
 
 extern bool g_debug_mode;
 
@@ -410,6 +411,7 @@ void MR_Fibo_StrategyOnTradeTransaction(const MqlTradeTransaction &trans,
                   effective_comment);
 
       HandleTakeLimitFill(effective_comment, deal_type);
+      MR_AT_ForceDailyRiskAfterTradeEvent("exit_or_take");
       return;
    }
 
@@ -435,6 +437,8 @@ void MR_Fibo_StrategyOnTradeTransaction(const MqlTradeTransaction &trans,
       CancelOppositeEntryOrder(POSITION_TYPE_SELL);
       Print("Venda limit executada");
    }
+
+   MR_AT_ForceDailyRiskAfterTradeEvent("entry_fill");
 }
 
 bool IsNewDay()

@@ -20,6 +20,9 @@ import {
   MR_FIBO_D1_GUARD_VERSION,
 } from "@/lib/risk/autonomous-strategy-reasons";
 import { evaluateDailyFinancialStopForEntry } from "@/lib/risk/daily-financial-risk";
+import {
+  type DailyRiskPolicyPublicDetail,
+} from "@/lib/risk/daily-risk-freshness-policy";
 import { isRealTradingEnabled } from "@/lib/risk/real-trading-guard";
 import {
   findActiveRealTradingApproval,
@@ -50,6 +53,7 @@ export type CanTradeResult =
       decision: "STRATEGY_CAN_TRADE";
       reason_code: "OK";
       detail?: string;
+      dailyRiskPolicy?: DailyRiskPolicyPublicDetail;
     }
   | {
       allowed: false;
@@ -57,6 +61,7 @@ export type CanTradeResult =
       reason_code: CanTradeReasonCode;
       detail: string;
       action_hint?: string;
+      dailyRiskPolicy?: DailyRiskPolicyPublicDetail;
     };
 
 function block(
@@ -286,6 +291,8 @@ export async function runAutonomousStrategyCanTrade(
     return result;
   }
 
+  let dailyRiskPolicyForResponse: DailyRiskPolicyPublicDetail | undefined;
+
   if (robot.robotProduct.requiresDailyFinancialStop) {
     const dailyCheck = await evaluateDailyFinancialStopForEntry({
       licenseId: ctx.license.id,
@@ -298,12 +305,17 @@ export async function runAutonomousStrategyCanTrade(
       requiresDailyStop: true,
     });
 
+    dailyRiskPolicyForResponse = dailyCheck.snapshot?.dailyRiskPolicy;
+
     if (!dailyCheck.ok) {
       const code = dailyCheck.reasonCode as CanTradeReasonCode;
       result =
         code in CAN_TRADE_REASON_MESSAGES
-          ? block(code, dailyCheck.detail)
-          : block("DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED", dailyCheck.detail);
+          ? { ...block(code, dailyCheck.detail), dailyRiskPolicy: dailyRiskPolicyForResponse }
+          : {
+              ...block("DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED", dailyCheck.detail),
+              dailyRiskPolicy: dailyRiskPolicyForResponse,
+            };
       await recordCanTradeDecision(ctx, body, result);
       return result;
     }
@@ -387,7 +399,16 @@ export async function runAutonomousStrategyCanTrade(
     }
 
     if (liveness.computedStatus === "OFFLINE" || liveness.computedStatus === "UNKNOWN") {
-      result = block("EA_OFFLINE_NO_RECENT_ACTIVITY", livenessDetail);
+      const policyOk =
+        dailyRiskPolicyForResponse?.status === "OK_FOR_DAY" ||
+        dailyRiskPolicyForResponse?.status === "RECENT_OK";
+      const offlineCode = policyOk
+        ? "EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY"
+        : "EA_OFFLINE_NO_RECENT_ACTIVITY";
+      result = {
+        ...block(offlineCode, livenessDetail),
+        dailyRiskPolicy: dailyRiskPolicyForResponse,
+      };
       await recordCanTradeDecision(ctx, body, result);
       return result;
     }
@@ -403,6 +424,7 @@ export async function runAutonomousStrategyCanTrade(
     allowed: true,
     decision: "STRATEGY_CAN_TRADE",
     reason_code: "OK",
+    dailyRiskPolicy: dailyRiskPolicyForResponse,
   };
   await recordCanTradeDecision(ctx, body, result);
   return result;

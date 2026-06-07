@@ -3,13 +3,15 @@ import {
   LicenseStatus,
   RealTradingApprovalStatus,
 } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { getPublishedStrategyConfigForEa } from "@/lib/admin/strategy-runtime-config";
 import { loadEaLivenessForLicense } from "@/lib/admin/ea-liveness-trace";
 import type { EaLivenessStatus } from "@/lib/ea/liveness";
 import { ACTIVE_DEVICE_WHERE } from "@/lib/licensing/device-lifecycle";
 import { MR_FIBO_D1_GUARD_CODE } from "@/lib/risk/autonomous-strategy-reasons";
 import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
-import prisma from "@/lib/prisma";
+import { loadDailyRiskFreshnessPolicyForLicense } from "@/lib/risk/daily-risk-freshness-policy";
+import { loadDailyRiskContext } from "@/lib/risk/daily-financial-risk";
 
 export type OperationalStatusBadge =
   | "ONLINE"
@@ -68,6 +70,8 @@ export type RealTradingOperationRow = {
   estimatedRiskBrl: number | null;
   configHash: string | null;
   pnlStatus: string | null;
+  dailyRiskPolicyStatus: string | null;
+  dailyRiskPolicyReason: string | null;
 };
 
 export type RealTradingOperationSummary = {
@@ -160,6 +164,23 @@ async function mapLicenseToRow(
   const lastCommand = license.eaOperationalCommands[0];
   const published = await getPublishedStrategyConfigForEa(license.id);
 
+  const dailyContext = await loadDailyRiskContext({
+    licenseId: license.id,
+    accountLogin,
+    accountServer,
+    strategyCode,
+    symbol,
+  });
+  const dailyPolicy = await loadDailyRiskFreshnessPolicyForLicense({
+    licenseId: license.id,
+    accountLogin,
+    accountServer,
+    strategyCode,
+    symbol,
+    riskLimit: dailyContext.limit,
+    riskState: dailyContext.state,
+  });
+
   const pausedByAdmin =
     control?.paused ?? snapshot?.pausedByAdmin ?? license.adminHaltNewEntries;
   const hasOpenPosition = snapshot?.hasOpenPosition ?? false;
@@ -239,6 +260,8 @@ async function mapLicenseToRow(
       ? ((snapshot.rawSnapshotJson as Record<string, unknown>)?.strategy_config_hash as string | undefined) ?? null
       : published?.configHash ?? null,
     pnlStatus: snapshot?.pnlStatus ?? null,
+    dailyRiskPolicyStatus: dailyPolicy.status,
+    dailyRiskPolicyReason: dailyPolicy.reasonCode,
   };
 }
 

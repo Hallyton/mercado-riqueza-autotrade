@@ -10,6 +10,11 @@ const prismaMock = vi.hoisted(() => ({
     upsert: vi.fn(),
   },
   instrumentPointValue: { findUnique: vi.fn() },
+  eAOperationalSnapshot: { findFirst: vi.fn() },
+  execution: { findFirst: vi.fn() },
+  eAOperationalCommand: { findFirst: vi.fn() },
+  adminAction: { findMany: vi.fn() },
+  strategyRuntimeConfigHistory: { findFirst: vi.fn() },
 }));
 
 vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
@@ -17,7 +22,10 @@ vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
 import {
   evaluateDailyFinancialStopForEntry,
   processDailyRiskReport,
+  tradeDateKeySaoPaulo,
 } from "@/lib/risk/daily-financial-risk";
+
+const tradeDate = tradeDateKeySaoPaulo();
 
 const baseInput = {
   licenseId: "lic1",
@@ -50,6 +58,15 @@ describe("evaluateDailyFinancialStopForEntry report linkage", () => {
     prismaMock.instrumentPointValue.findUnique.mockResolvedValue({
       centsPerPointPerContract: 1000,
     });
+    prismaMock.eAOperationalSnapshot.findFirst.mockResolvedValue({
+      hasOpenPosition: false,
+      pendingOrdersCount: 0,
+      updatedAt: new Date(),
+    });
+    prismaMock.execution.findFirst.mockResolvedValue(null);
+    prismaMock.eAOperationalCommand.findFirst.mockResolvedValue(null);
+    prismaMock.adminAction.findMany.mockResolvedValue([]);
+    prismaMock.strategyRuntimeConfigHistory.findFirst.mockResolvedValue(null);
   });
 
   it("returns DAILY_RISK_REPORT_MISSING when limit exists but state is absent", async () => {
@@ -63,37 +80,29 @@ describe("evaluateDailyFinancialStopForEntry report linkage", () => {
     expect(result.detail).not.toContain("não configurado");
   });
 
-  it("returns DAILY_RISK_REPORT_STALE when state is outdated", async () => {
+  it("returns OK_FOR_DAY when state is hours old but no operational exposure", async () => {
     prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue({
-      id: "state-stale",
-      tradeDate: "2026-06-02",
+      tradeDate,
       lastUpdatedAt: new Date(Date.now() - 25 * 60 * 1000),
+      lastReportReceivedAt: new Date(Date.now() - 25 * 60 * 1000),
       realizedPnlCents: 0,
       openPnlCents: 0,
       totalPnlCents: 0,
       remainingLossCents: 40000,
       status: DailyFinancialRiskStatus.OK,
     });
+    prismaMock.instrumentPointValue.findUnique.mockResolvedValue(null);
 
     const result = await evaluateDailyFinancialStopForEntry(baseInput);
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.reasonCode).toBe("DAILY_RISK_REPORT_STALE");
-    const parsed = JSON.parse(result.detail) as {
-      ageSeconds: number;
-      staleThresholdSeconds: number;
-      stateId: string;
-      lastReportAt: string;
-    };
-    expect(parsed.stateId).toBe("state-stale");
-    expect(parsed.ageSeconds).toBeGreaterThan(1000);
-    expect(parsed.staleThresholdSeconds).toBe(1200);
-    expect(parsed.lastReportAt).toBeTruthy();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshot.dailyRiskPolicy?.status).toBe("OK_FOR_DAY");
+    }
   });
 
   it("returns ok when recent state exists", async () => {
     prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue({
-      tradeDate: "2026-06-02",
+      tradeDate,
       lastUpdatedAt: new Date(),
       realizedPnlCents: 0,
       openPnlCents: 0,
@@ -136,7 +145,7 @@ describe("processDailyRiskReport", () => {
       includeOpenPnL: true,
     });
     prismaMock.dailyFinancialRiskState.upsert.mockResolvedValue({
-      tradeDate: "2026-06-02",
+      tradeDate,
       status: DailyFinancialRiskStatus.OK,
       realizedPnlCents: 0,
       openPnlCents: 0,

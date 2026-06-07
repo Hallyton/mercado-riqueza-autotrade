@@ -14,6 +14,12 @@ import {
 } from "@/lib/risk/daily-risk-state-key";
 import { resolveFiboDailyRiskLimit } from "@/lib/admin/daily-risk-limit-resolver";
 import { normalizeFiboStrategyCode } from "@/lib/strategy/normalize-strategy-code";
+import {
+  loadDailyRiskFreshnessPolicyForLicense,
+  mapDailyRiskPolicyToEntryBlock,
+  toDailyRiskPolicyPublicDetail,
+  type DailyRiskFreshnessPolicyResult,
+} from "@/lib/risk/daily-risk-freshness-policy";
 
 export { tradeDateKeySaoPaulo } from "@/lib/risk/daily-risk-state-key";
 
@@ -27,10 +33,12 @@ export type DailyRiskSnapshot = {
   status: DailyFinancialRiskStatus;
   tradeDate: string;
   lastUpdatedAt: string | null;
+  dailyRiskPolicy?: ReturnType<typeof toDailyRiskPolicyPublicDetail>;
 };
 
 const DAILY_RISK_STALE_MS = 20 * 60 * 1000;
 
+/** @deprecated Prefer DAILY_RISK_POSITION_PENDING_THRESHOLD_SEC for dynamic exposure. */
 export function getDailyRiskStaleThresholdSeconds(): number {
   return DAILY_RISK_STALE_MS / 1000;
 }
@@ -340,40 +348,37 @@ export async function evaluateDailyFinancialStopForEntry(input: {
     };
   }
 
-  if (isDailyRiskStateStale(state.lastUpdatedAt)) {
-    const ageSeconds = Math.max(
-      0,
-      Math.floor((Date.now() - state.lastUpdatedAt.getTime()) / 1000)
-    );
-    const expectedKey = resolveDailyRiskStateKey({
-      licenseId: input.licenseId,
-      accountLogin: input.accountLogin,
-      accountServer: input.accountServer,
-      symbol: input.symbol,
-      strategyCode: input.strategyCode,
-    }).effectiveKey;
+  const policy = await loadDailyRiskFreshnessPolicyForLicense({
+    licenseId: input.licenseId,
+    accountLogin: input.accountLogin,
+    accountServer: input.accountServer,
+    strategyCode: input.strategyCode,
+    symbol: input.symbol,
+    riskLimit: limit,
+    riskState: state,
+  });
+
+  const snapshotWithPolicy: DailyRiskSnapshot = {
+    ...snapshot,
+    dailyRiskPolicy: toDailyRiskPolicyPublicDetail(policy),
+  };
+
+  const policyBlock = mapDailyRiskPolicyToEntryBlock(policy);
+  if (!policyBlock.ok) {
     return {
       ok: false,
-      reasonCode: "DAILY_RISK_REPORT_STALE",
-      detail: JSON.stringify({
-        message:
-          "O relatório de risco foi recebido, mas não foi atualizado dentro da janela de segurança. O EA precisa reenviar POST /api/v1/ea/daily-risk/report.",
-        lastReportAt: state.lastUpdatedAt.toISOString(),
-        ageSeconds,
-        staleThresholdSeconds: getDailyRiskStaleThresholdSeconds(),
-        expectedKey,
-        stateId: state.id,
-      }),
-      snapshot,
+      reasonCode: policyBlock.reasonCode,
+      detail: policyBlock.detail,
+      snapshot: snapshotWithPolicy,
     };
   }
 
-  if (snapshot.status === DailyFinancialRiskStatus.BLOCKED) {
+  if (snapshotWithPolicy.status === DailyFinancialRiskStatus.BLOCKED) {
     return {
       ok: false,
       reasonCode: "DAILY_FINANCIAL_STOP_REACHED",
       detail: "Stop financeiro diário atingido.",
-      snapshot,
+      snapshot: snapshotWithPolicy,
     };
   }
 
@@ -382,17 +387,17 @@ export async function evaluateDailyFinancialStopForEntry(input: {
     const potentialLossCents = Math.round(
       input.requestedContracts * input.stopPoints * centsPerPoint
     );
-    if (potentialLossCents > snapshot.remainingLossCents) {
+    if (potentialLossCents > snapshotWithPolicy.remainingLossCents) {
       return {
         ok: false,
         reasonCode: "DAILY_FINANCIAL_STOP_WOULD_BE_EXCEEDED",
-        detail: `Perda potencial (${potentialLossCents} centavos) excede saldo restante (${snapshot.remainingLossCents}).`,
-        snapshot,
+        detail: `Perda potencial (${potentialLossCents} centavos) excede saldo restante (${snapshotWithPolicy.remainingLossCents}).`,
+        snapshot: snapshotWithPolicy,
       };
     }
   }
 
-  return { ok: true, snapshot };
+  return { ok: true, snapshot: snapshotWithPolicy };
 }
 
 export async function processDailyRiskReport(input: {

@@ -7,6 +7,10 @@ const prismaMock = vi.hoisted(() => ({
   eAOperationalSnapshot: { findFirst: vi.fn() },
   eaHeartbeat: { findFirst: vi.fn() },
   device: { findFirst: vi.fn() },
+  execution: { findFirst: vi.fn() },
+  eAOperationalCommand: { findFirst: vi.fn() },
+  adminAction: { findMany: vi.fn() },
+  strategyRuntimeConfigHistory: { findFirst: vi.fn() },
 }));
 
 vi.mock("@/lib/prisma", () => ({ default: prismaMock }));
@@ -81,16 +85,20 @@ describe("daily risk full trace", () => {
     prismaMock.device.findFirst.mockResolvedValue({
       lastSeenAt: new Date(),
     });
+    prismaMock.execution.findFirst.mockResolvedValue(null);
+    prismaMock.eAOperationalCommand.findFirst.mockResolvedValue(null);
+    prismaMock.adminAction.findMany.mockResolvedValue([]);
+    prismaMock.strategyRuntimeConfigHistory.findFirst.mockResolvedValue(null);
   });
 
-  it("returns stale trace with snapshot daily risk telemetry", async () => {
+  it("returns OK_FOR_DAY trace with snapshot daily risk telemetry when no exposure", async () => {
     const trace = await buildDailyRiskFullTraceView({ licenseId: "lic1" });
-    expect(trace?.diagnosis).toBe("DAILY_RISK_EA_ONLINE_BUT_NOT_REPORTING");
-    expect(trace?.reportTrace.reportStatus).toBe("STALE");
+    expect(trace?.diagnosis).toBe("DAILY_RISK_STATE_FOUND_FRESH");
+    expect(trace?.reportTrace.reportStatus).toBe("OK_FOR_DAY");
     expect(trace?.latestOperationSnapshot?.lastDailyRiskSentAtFromSnapshot).toBe(
       "2026.06.07 08:26:22"
     );
-    expect(trace?.staleThresholdSeconds).toBe(1200);
+    expect(trace?.staleThresholdSeconds).toBe(180);
   });
 
   it("returns fresh diagnosis for recent state", () => {

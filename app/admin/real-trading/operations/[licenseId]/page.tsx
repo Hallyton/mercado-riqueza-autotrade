@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getRealTradingOperationDetailView } from "@/lib/admin/real-trading-operation-center";
 import { OPERATIONAL_COMMAND_LABELS } from "@/lib/operations/operational-command-constants";
@@ -12,6 +13,13 @@ function formatBrl(cents: number): string {
   return `R$ ${(cents / 100).toFixed(2)}`;
 }
 
+type OperationCommandRow = Prisma.EAOperationalCommandGetPayload<{
+  include: { requestedBy: { select: { email: true; name: true } } };
+}>;
+
+type HeartbeatRow = Prisma.EaHeartbeatGetPayload<Record<string, never>>;
+type CanTradeDecisionRow = Prisma.AutonomousStrategyDecisionGetPayload<Record<string, never>>;
+
 export default async function AdminRealTradingOperationDetailPage({ params }: PageProps) {
   const { licenseId } = await params;
   const detail = await getRealTradingOperationDetailView(licenseId);
@@ -19,6 +27,9 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
 
   const { row, snapshot, device, commands, heartbeats, canTradeDecisions, control } =
     detail;
+  const operationCommands = commands as OperationCommandRow[];
+  const operationHeartbeats = heartbeats as HeartbeatRow[];
+  const operationCanTradeDecisions = canTradeDecisions as CanTradeDecisionRow[];
 
   return (
     <div className="space-y-6">
@@ -140,7 +151,7 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
               </tr>
             </thead>
             <tbody>
-              {commands.map((cmd) => (
+              {operationCommands.map((cmd) => (
                 <tr key={cmd.id} className="border-b border-white/5">
                   <td className="py-2 pr-2">
                     {OPERATIONAL_COMMAND_LABELS[cmd.commandType]}
@@ -152,7 +163,7 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
                   <td className="py-2 pr-2">
                     {cmd.resultCode ?? "—"} {cmd.resultMessage ?? ""}
                   </td>
-                  <td className="py-2">{cmd.requestedBy.email}</td>
+                  <td className="py-2">{cmd.requestedBy?.email ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -174,7 +185,7 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
               </tr>
             </thead>
             <tbody>
-              {commands
+              {operationCommands
                 .filter((cmd) => cmd.commandType === "HEALTH_CHECK")
                 .map((cmd) => (
                   <tr key={cmd.id} className="border-b border-white/5">
@@ -195,7 +206,7 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
                 ))}
             </tbody>
           </table>
-          {commands.filter((cmd) => cmd.commandType === "HEALTH_CHECK").length === 0 && (
+          {operationCommands.filter((cmd) => cmd.commandType === "HEALTH_CHECK").length === 0 && (
             <p className="mt-3 text-xs text-muted-foreground">
               Nenhum health check registrado para esta licença.
             </p>
@@ -205,12 +216,12 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
 
       <Card className="border-gold/20 p-5">
         <ul className="mt-3 space-y-2 text-xs">
-          {heartbeats.map((hb) => (
+          {operationHeartbeats.map((hb) => (
             <li key={hb.id} className="rounded border border-white/10 p-2">
               {hb.receivedAt.toLocaleString("pt-BR")} — {hb.eaStatus ?? "—"}
             </li>
           ))}
-          {heartbeats.length === 0 && (
+          {operationHeartbeats.length === 0 && (
             <li className="text-muted-foreground">Nenhum heartbeat registrado.</li>
           )}
         </ul>
@@ -219,13 +230,13 @@ export default async function AdminRealTradingOperationDetailPage({ params }: Pa
       <Card className="border-gold/20 p-5">
         <CardTitle className="text-base">Decisões can-trade recentes</CardTitle>
         <ul className="mt-3 space-y-2 text-xs">
-          {canTradeDecisions.map((d) => (
+          {operationCanTradeDecisions.map((d) => (
             <li key={d.id} className="rounded border border-white/10 p-2">
               {d.createdAt.toLocaleString("pt-BR")} — {d.decision} · {d.reasonCode} ·{" "}
               {d.side} {d.requestedContracts}
             </li>
           ))}
-          {canTradeDecisions.length === 0 && (
+          {operationCanTradeDecisions.length === 0 && (
             <li className="text-muted-foreground">Nenhuma decisão registrada.</li>
           )}
         </ul>

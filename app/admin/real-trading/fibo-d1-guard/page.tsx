@@ -243,8 +243,30 @@ function ClientTable({
                                   : "Não recebido"}
                                 {" · "}
                                 Status{" "}
-                                {row.dailyRiskDiagnostic.reportTrace?.reportStatus ??
+                                {row.dailyRiskDiagnostic.reportTrace?.policyStatus ??
+                                  row.dailyRiskDiagnostic.reportTrace?.reportStatus ??
                                   "MISSING"}
+                                {" · "}
+                                Posição{" "}
+                                {row.dailyRiskDiagnostic.reportTrace?.hasOpenPosition
+                                  ? "Sim"
+                                  : "Não"}
+                                {" · "}
+                                Pendentes{" "}
+                                {row.dailyRiskDiagnostic.reportTrace?.pendingOrdersCount ??
+                                  0}
+                                {" · "}
+                                Exec após report{" "}
+                                {row.dailyRiskDiagnostic.reportTrace
+                                  ?.latestExecutionAfterReport
+                                  ? "Sim"
+                                  : "Não"}
+                                {" · "}
+                                Admin após report{" "}
+                                {row.dailyRiskDiagnostic.reportTrace
+                                  ?.latestAdminChangeAfterReport
+                                  ? "Sim"
+                                  : "Não"}
                                 {" · "}
                                 Último{" "}
                                 {row.dailyRiskDiagnostic.reportTrace?.lastReportAt
@@ -265,9 +287,14 @@ function ClientTable({
                                   </>
                                 )}
                                 {" · "}
-                                Janela máxima{" "}
+                                Janela dinâmica (posição/pendentes){" "}
                                 {row.dailyRiskDiagnostic.staleThresholdMinutes} min
                               </dd>
+                              {row.dailyRiskDiagnostic.operationalMessage && (
+                                <dd className="mt-1 text-emerald-200/90">
+                                  {row.dailyRiskDiagnostic.operationalMessage}
+                                </dd>
+                              )}
                               {row.dailyRiskDiagnostic.reportTrace?.reportReceived && (
                                 <dd className="mt-1">
                                   RealizedPnL{" "}

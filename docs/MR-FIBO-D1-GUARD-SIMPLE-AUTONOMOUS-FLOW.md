@@ -50,6 +50,16 @@ Campos de identidade da aprovação não são alteráveis. Toda alteração é a
 
 Configure em `/admin/real-trading/daily-risk` selecionando licença ativa — conta, servidor e símbolo preenchidos automaticamente. Usado pelo `can-trade` antes de novas entradas. Link do centro Fibo: `?licenseId=`. **strategyCode canônico:** `MR_FIBO_D1_GUARD`.
 
+#### Política de validade diária do DailyRisk
+
+**Status:** `DAILY_RISK_TRADE_DATE_VALIDITY_AND_EVENT_REVALIDATION_IMPLEMENTED`
+
+- Report do pregão **sem posição, pendentes ou eventos** após o envio → `OK_FOR_DAY` (não expira por tempo).
+- Posição aberta ou ordens pendentes → report recente (**180s**).
+- Execução ou alteração admin após report → revalidação obrigatória.
+- EA offline com DailyRisk OK → bloqueio por **liveness**, não `DAILY_RISK_REPORT_STALE`.
+- Centro Fibo separa **DailyRisk pregão** de **EA/MT5 pronto**; ver [`docs/DAILY-FINANCIAL-STOP-GUARD.md`](DAILY-FINANCIAL-STOP-GUARD.md).
+
 ### Centro de operações conta real
 
 **Status:** `REAL_TRADING_OPERATION_CENTER_AND_REMOTE_COMMANDS_IMPLEMENTED`

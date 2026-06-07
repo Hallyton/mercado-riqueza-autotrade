@@ -39,6 +39,7 @@ Confirmação textual obrigatória para comandos críticos (ex.: `ENCERRAR TUDO 
 ## Liveness (Fase 15.6)
 
 - Coluna **Liveness** na lista de operações (ONLINE/DEGRADED/CHECKING/UNRESPONSIVE/OFFLINE).
+- Coluna **DailyRisk pregão** separada (OK_FOR_DAY / RECENT_OK / MISSING / STALE / REVALIDATION_REQUIRED).
 - Botão **Verificar agora** dispara `HEALTH_CHECK`.
 - Trace: `GET /api/admin/real-trading/ea-liveness/trace?licenseId=...`
 - Ver [`docs/EA-LIVENESS-AND-HEALTH-CHECK.md`](EA-LIVENESS-AND-HEALTH-CHECK.md).

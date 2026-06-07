@@ -80,7 +80,7 @@ describe("daily-risk-report-trace", () => {
       tradeDate
     );
     expect(trace.reportAgeSeconds).toBeGreaterThan(1000);
-    expect(trace.staleThresholdSeconds).toBe(1200);
+    expect(trace.staleThresholdSeconds).toBe(180);
     expect(trace.stateId).toBe("state-1");
   });
 });

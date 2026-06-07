@@ -2762,6 +2762,21 @@ Pendencia externa (B3/broker/MT5/VPS no momento da operacao): `PHASE_14_READY_WI
 | Reason | `DAILY_FINANCIAL_STOP_STRATEGY_MISMATCH` quando só alias existe |
 | UI | Diagnóstico detalhado no centro Fibo + aviso na daily-risk |
 
+### Fase 15.4.6 — Validade diária do DailyRisk com revalidação por evento
+
+**Status:** `DAILY_RISK_TRADE_DATE_VALIDITY_AND_EVENT_REVALIDATION_IMPLEMENTED`
+
+| Item | Resultado |
+|------|-----------|
+| Problema | Threshold fixo (20 min) marcava `DAILY_RISK_REPORT_STALE` sem operação |
+| Política | `evaluateDailyRiskFreshnessPolicy()` — `OK_FOR_DAY` quando report do pregão sem posição/pendentes/eventos |
+| Dinâmico | Posição/pendentes exigem report **180s**; execução/admin invalidam report |
+| Liveness | EA offline com DailyRisk OK → `EA_OFFLINE_WITH_DAILY_RISK_OK_FOR_DAY`, não stale |
+| Can-trade | Resposta inclui `dailyRiskPolicy` com status, reasonCode e detalhes |
+| UI | Centro Fibo, daily-risk admin e operations separam DailyRisk de liveness |
+| EA | DailyRisk forçado após trade, posição aberta, comando e HEALTH_CHECK |
+| Doc | `docs/DAILY-FINANCIAL-STOP-GUARD.md`, `docs/EA-LIVENESS-AND-HEALTH-CHECK.md` |
+
 ### Fase 14.1.5.2 — Void REAL_MANUAL False Broker Execution
 
 **Status:** `REAL_MANUAL_FALSE_EXECUTION_VOID_FLOW_IMPLEMENTED`
