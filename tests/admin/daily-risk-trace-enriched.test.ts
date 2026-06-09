@@ -31,10 +31,12 @@ import {
   buildDailyRiskFullTraceView,
   resolveDailyRiskTraceDiagnosis,
 } from "@/lib/admin/daily-risk-state-trace";
+import { tradeDateKeySaoPaulo as currentTradeDateKeySaoPaulo } from "@/lib/risk/daily-risk-state-key";
 
 describe("daily risk full trace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    const operationalTradeDate = currentTradeDateKeySaoPaulo();
     prismaMock.dailyFinancialRiskLimit.findMany.mockResolvedValue([
       {
         id: "limit1",
@@ -52,21 +54,23 @@ describe("daily risk full trace", () => {
         updatedAt: new Date(),
       },
     ]);
-    prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue({
+    const dailyRiskState = {
       id: "state1",
       licenseId: "lic1",
       accountLogin: "123",
       accountServer: "XPMT5-PRD",
       symbol: "WDON26",
       strategyCode: "MR_FIBO_D1_GUARD",
-      tradeDate: "2026-06-07",
+      tradeDate: operationalTradeDate,
       lastUpdatedAt: new Date(Date.now() - 25 * 60 * 1000),
       realizedPnlCents: 0,
       openPnlCents: 0,
       totalPnlCents: 0,
       remainingLossCents: 40000,
       status: DailyFinancialRiskStatus.OK,
-    });
+    };
+    prismaMock.dailyFinancialRiskState.findUnique.mockResolvedValue(dailyRiskState);
+    prismaMock.dailyFinancialRiskState.findFirst.mockResolvedValue(dailyRiskState);
     prismaMock.dailyFinancialRiskState.findMany.mockResolvedValue([]);
     prismaMock.eAOperationalSnapshot.findFirst.mockResolvedValue({
       id: "snap1",

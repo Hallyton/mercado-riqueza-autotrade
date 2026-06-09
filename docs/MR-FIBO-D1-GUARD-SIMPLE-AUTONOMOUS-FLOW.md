@@ -1,75 +1,63 @@
-# MR Fibo D1 Guard — Simple Autonomous Flow (v2)
+# MR Fibo D1 Guard - Simple Autonomous Flow
 
-**Status:** `MR_FIBO_D1_GUARD_SIMPLIFIED_AUTONOMOUS_OPERATION_IMPLEMENTED`
+**Status:** `MR_FIBO_D1_GUARD_SIMPLE_LOCAL_AUTONOMOUS_FLOW_IMPLEMENTED`
 
-## Arquitetura simplificada
+## Fase 15.7 - fluxo autonomo local
 
-| Camada | Responsabilidade |
-|--------|------------------|
-| **Site** | Config publicada, elegibilidade, `can-trade`, stop financeiro diário, auditoria |
-| **EA Executor** | Licença, heartbeat, config, guard, reportes — **sem** REAL_MANUAL/instruction para Fibo |
-| **MR_Strategy_FiboD1_Guard** | Lógica completa do `EA_FIBO_D1_DOLAR_B3.mq5`: entradas limit, parciais, BE, TS, reversão, zeragem |
+Na Fase 15.7, o fluxo simplificado deixa de depender de `can-trade` por ordem.
 
-## Fluxo
+O site valida a licenca uma vez por `tradeDate`. Depois da autorizacao diaria, a estrategia fica totalmente local no `MR_AutoTrade_Executor.mq5`.
 
-1. Admin publica config em `/admin/licenses/[id]/strategy-config` ou monitora em `/admin/real-trading/fibo-d1-guard`.
-2. EA busca `GET /api/v1/ea/config` → `strategy_config_*`.
-3. A cada tick/timer, estratégia roda internamente.
-4. **Antes** de nova entrada ou reversão: `POST /api/v1/ea/autonomous-strategy/can-trade`.
-5. Se `allowed=true` → estratégia envia ordem e gerencia posição.
-6. Se `allowed=false` → log + decisão auditada, sem ordem.
+## Fluxo atual
 
-## Endpoint can-trade
+1. EA carrega credenciais locais ou ativa o device.
+2. EA aplica inputs locais da Fibo D1.
+3. EA consulta `GET /api/v1/ea/config` apenas para confirmar `license_status=ACTIVE` no `tradeDate`.
+4. `OnTick()` calcula/recupera niveis D1, arma entradas e gerencia posicao.
+5. `OnTimer()` envia apenas infraestrutura: heartbeat, snapshot, DailyRisk informacional e nova tentativa de licenca diaria quando necessario.
 
-- **Não** cria instruction.
-- **Não** despacha REAL_MANUAL.
-- Retorna `allowed`, `decision`, `reason_code`, `detail`.
+## O que saiu do caminho critico
 
-## Centro operacional
+Nao participa da decisao de entrada:
 
-`/admin/real-trading/fibo-d1-guard` — prontos, EA não pronto, bloqueados, decisões recentes.
+- `POST /api/v1/ea/autonomous-strategy/can-trade`;
+- preflight remoto;
+- DailyRisk remoto;
+- heartbeat;
+- snapshot;
+- config hash;
+- strategy config remota;
+- RealTradingApproval;
+- maxContracts do site;
+- health check;
+- posicao remota no site;
+- comandos remotos;
+- instruction/REAL_MANUAL;
+- EA Mestre.
 
-## Limite operacional vs contratos
+## Execucao local
 
-`MaxContracts` vem da aprovação REAL — **não** é editável na strategy-config. Se `loteTotal` exceder o limite, publicação bloqueada (`LOT_TOTAL_EXCEEDS_MAX_CONTRACTS`); rascunho pode ser salvo. Regularizar via aprovação REAL ou reduzir contratos na config.
+O EA decide localmente:
 
-### Edição controlada do limite operacional REAL
+- horario operacional;
+- compra e venda por dia;
+- tipo de ordem de entrada;
+- stop inicial;
+- parciais limit;
+- breakeven;
+- trailing stop;
+- reversao quando habilitada;
+- zeragem;
+- stop financeiro diario local.
 
-Para liberar `loteTotal` maior sem revogar/recriar aprovação:
+## Ponta contraria
 
-1. Abrir `/admin/real-trading/approvals/[approvalId]` (ou link **Abrir aprovação existente** na criação).
-2. Card **Limite operacional** → **Editar limite operacional**.
-3. `PATCH` com confirmação `ALTERAR LIMITE OPERACIONAL REAL`.
-4. Publicar config na strategy-config; centro operacional reflete elegibilidade.
+Quando uma entrada executa, a pendente oposta pode ser cancelada por `InpCancelarPontaOpostaAposEntrada=true`.
 
-Campos de identidade da aprovação não são alteráveis. Toda alteração é auditada. **Não envia ordem real.**
+Se a ponta oposta ainda nao operou no dia, ela pode ser rearmada depois que a posicao atual for encerrada e o horario operacional ainda estiver valido. O EA preserva as flags `operouCompraHoje` e `operouVendaHoje`, entao a ponta ja executada nao e rearmada no mesmo dia.
 
-### Stop financeiro diário operacional
+## Documentos relacionados
 
-**Status:** `DAILY_RISK_ACTIVE_LICENSE_SELECTOR_IMPLEMENTED`
-
-Configure em `/admin/real-trading/daily-risk` selecionando licença ativa — conta, servidor e símbolo preenchidos automaticamente. Usado pelo `can-trade` antes de novas entradas. Link do centro Fibo: `?licenseId=`. **strategyCode canônico:** `MR_FIBO_D1_GUARD`.
-
-#### Política de validade diária do DailyRisk
-
-**Status:** `DAILY_RISK_TRADE_DATE_VALIDITY_AND_EVENT_REVALIDATION_IMPLEMENTED`
-
-- Report do pregão **sem posição, pendentes ou eventos** após o envio → `OK_FOR_DAY` (não expira por tempo).
-- Posição aberta ou ordens pendentes → report recente (**180s**).
-- Execução ou alteração admin após report → revalidação obrigatória.
-- EA offline com DailyRisk OK → bloqueio por **liveness**, não `DAILY_RISK_REPORT_STALE`.
-- Centro Fibo separa **DailyRisk pregão** de **EA/MT5 pronto**; ver [`docs/DAILY-FINANCIAL-STOP-GUARD.md`](DAILY-FINANCIAL-STOP-GUARD.md).
-
-### Centro de operações conta real
-
-**Status:** `REAL_TRADING_OPERATION_CENTER_AND_REMOTE_COMMANDS_IMPLEMENTED`
-
-Admin monitora EAs em `/admin/real-trading/operations` (online, posição, pendentes, PnL, stop diário) e envia comandos operacionais (`PAUSE`, `FLATTEN_AND_PAUSE`, etc.) — **não** cria `REAL_MANUAL`. Pausa persiste em `LicenseOperationControl` e `operation_control` no config EA. Ver [`docs/REAL-TRADING-OPERATION-CENTER.md`](REAL-TRADING-OPERATION-CENTER.md).
-
-## Caixa preta
-
-Cliente não vê parâmetros. Admin vê contratos, stop, takes, horários.
-
-## Preflight legado
-
-`POST /api/v1/ea/autonomous-strategy/preflight` permanece para compatibilidade; fluxo v2 usa **can-trade**.
+- [`MR-FIBO-D1-GUARD-LOCAL-EXECUTION.md`](MR-FIBO-D1-GUARD-LOCAL-EXECUTION.md)
+- [`EA-API.md`](EA-API.md)
+- [`MASTER-EA-IMPLEMENTATION-PLAN.md`](MASTER-EA-IMPLEMENTATION-PLAN.md)

@@ -31,7 +31,7 @@ int MR_AT_ResolveInstructionMagic(const MRInstruction &instr)
   {
    if(instr.magic_number > 0)
       return instr.magic_number;
-   return MR_AT_EA_MAGIC;
+   return (int)InpMagicNumber;
   }
 
 //+------------------------------------------------------------------+

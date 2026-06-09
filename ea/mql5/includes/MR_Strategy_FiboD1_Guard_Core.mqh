@@ -11,11 +11,14 @@
 #include "MR_AT_DailyRisk.mqh"
 
 extern bool g_debug_mode;
+extern bool g_license_authorized_today;
+extern string g_authorized_trade_date;
+extern datetime g_license_valid_until;
 
 CTrade g_fibo_trade;
 
 #define trade g_fibo_trade
-#define MagicNumber ((ulong)MR_AT_EA_MAGIC)
+#define MagicNumber ((ulong)InpMagicNumber)
 #define NomeRobo "MR_FIBO_D1_GUARD"
 #define PercentualFibo g_mr_fibo_config.percentualFibo
 #define LoteTotal g_mr_fibo_config.loteTotal
@@ -44,6 +47,21 @@ CTrade g_fibo_trade;
 #define PainelX g_mr_fibo_config.painelX
 #define PainelY g_mr_fibo_config.painelY
 #define CorFundoPainel clrDarkBlue
+#define PermitirCompra InpPermitirCompra
+#define PermitirVenda InpPermitirVenda
+#define PermitirReversao InpPermitirReversao
+#define HabilitarBreakeven InpHabilitarBreakeven
+#define BreakevenAposTake1 InpBreakevenAposTake1
+#define BreakevenOffsetPontos InpBreakevenOffsetPontos
+#define HabilitarTrailing InpHabilitarTrailing
+#define TrailingTrigger InpTrailingTrigger
+#define TrailingDistancePontos InpTrailingDistancePontos
+#define UsarOrdensPendentes InpUsarOrdensPendentes
+#define ToleranciaEntradaTicks InpToleranciaEntradaTicks
+#define ReapregoarOrdemRejeitada InpReapregoarOrdemRejeitada
+#define MaxTentativasPorLado InpMaxTentativasPorLado
+#define CooldownReenvioMs InpCooldownReenvioMs
+#define CancelarPontaOpostaAposEntrada InpCancelarPontaOpostaAposEntrada
 
 string g_fibo_trade_action = "ENTRY";
 
@@ -54,6 +72,9 @@ bool MR_AT_CanTradeAutonomousStrategy(
    const double estimated_stop_points,
    string &block_reason
 );
+
+bool MR_AT_IsDailyLicenseAuthorizedForLocalTrading();
+string MR_AT_LocalTradeDate();
 
 bool operouCompraHoje = false;
 bool operouVendaHoje = false;
@@ -120,6 +141,19 @@ bool g_trade_levels_valid = false;
 datetime horarioEntrada = 0;
 ulong ticketEntrada = 0;
 bool posicaoInicializada = false;
+uint ultimaTentativaCompraMs = 0;
+uint ultimaTentativaVendaMs = 0;
+int tentativasCompraHoje = 0;
+int tentativasVendaHoje = 0;
+ENUM_ORDER_TYPE ultimoTipoOrdemCompra = ORDER_TYPE_BUY_LIMIT;
+ENUM_ORDER_TYPE ultimoTipoOrdemVenda = ORDER_TYPE_SELL_LIMIT;
+uint ultimoRetcodeCompra = 0;
+uint ultimoRetcodeVenda = 0;
+string ultimaDescricaoCompra = "";
+string ultimaDescricaoVenda = "";
+bool g_stop_financeiro_diario_acionado = false;
+double g_pnl_diario_local = 0.0;
+string g_stop_financeiro_motivo = "";
 
 bool IsNewDay();
 void ResetDailyState();
@@ -159,13 +193,24 @@ bool ProcessarReversaoPendente();
 bool FecharPosicaoAtualParaReversao();
 bool EnviarCompraReversaoMercado();
 bool EnviarVendaReversaoMercado();
-bool PlaceEntryLimitOrder(ENUM_POSITION_TYPE type);
+bool PlaceEntryOrder(ENUM_POSITION_TYPE type);
+ENUM_ORDER_TYPE MR_DefinirTipoOrdemCompra(double askAtual, double nivel, double tolerancia);
+ENUM_ORDER_TYPE MR_DefinirTipoOrdemVenda(double bidAtual, double nivel, double tolerancia);
 bool PendingEntryOrderExists(ENUM_POSITION_TYPE type);
-ulong FindPendingEntryOrderTicket(string comment);
-string EntryLimitComment(ENUM_POSITION_TYPE type);
+ulong FindPendingEntryOrderTicket(ENUM_POSITION_TYPE type);
+string EntryOrderComment(ENUM_POSITION_TYPE type, ENUM_ORDER_TYPE orderType);
+bool IsEntryOrderCommentForSide(string comment, ENUM_POSITION_TYPE type);
+bool IsOurEntryOrderComment(string comment);
+string OrderTypeToText(ENUM_ORDER_TYPE orderType);
+bool ShouldAttemptEntrySide(ENUM_POSITION_TYPE type);
+void RegisterEntryAttemptResult(ENUM_POSITION_TYPE type, bool accepted, uint retcode, string description);
 void CancelPendingEntryOrders();
 void CancelPendingEntryOrder(ENUM_POSITION_TYPE type);
 void CancelOppositeEntryOrder(ENUM_POSITION_TYPE type);
+bool UpdateLocalDailyFinancialStop();
+double CalculateLocalDailyPnl();
+int CountTodayEntryDeals();
+int CountConsecutiveLosingTradesToday();
 
 void ManageOpenPosition();
 void ManageBuyPosition();
@@ -216,7 +261,7 @@ string ObjectScopeNeedle();
 
 bool MR_Fibo_StrategyInit()
 {
-   g_fibo_trade.SetExpertMagicNumber((ulong)MR_AT_EA_MAGIC);
+   g_fibo_trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(SlippagePoints);
    trade.SetTypeFillingBySymbol(_Symbol);
 
@@ -352,6 +397,8 @@ void MR_Fibo_StrategyOnTick()
       return;
    }
 
+   bool stop_financeiro_ativo = UpdateLocalDailyFinancialStop();
+
    if(HasOurPosition())
    {
       CancelPendingEntryOrders();
@@ -366,6 +413,18 @@ void MR_Fibo_StrategyOnTick()
 
    ClearOpenTradeState();
 
+   if(!MR_AT_IsDailyLicenseAuthorizedForLocalTrading())
+   {
+      CancelPendingEntryOrders();
+      return;
+   }
+
+   if(stop_financeiro_ativo && InpBloquearNovasEntradasNoLimite)
+   {
+      CancelPendingEntryOrders();
+      return;
+   }
+
    CheckMarketEntries();
 }
 
@@ -373,6 +432,39 @@ void MR_Fibo_StrategyOnTradeTransaction(const MqlTradeTransaction &trans,
                         const MqlTradeRequest &request,
                         const MqlTradeResult &result)
 {
+   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order > 0)
+   {
+      if(HistoryOrderSelect(trans.order))
+      {
+         if(HistoryOrderGetString(trans.order, ORDER_SYMBOL) == _Symbol &&
+            (ulong)HistoryOrderGetInteger(trans.order, ORDER_MAGIC) == MagicNumber)
+         {
+            string order_comment = HistoryOrderGetString(trans.order, ORDER_COMMENT);
+            if(IsEntryOrderCommentForSide(order_comment, POSITION_TYPE_BUY))
+            {
+               if(ticketEntradaCompra == trans.order)
+                  ticketEntradaCompra = 0;
+               Print("Ordem de compra removida/cancelada. Ticket = ", IntegerToString((long)trans.order),
+                     " Comentario = ", order_comment);
+            }
+            else if(IsEntryOrderCommentForSide(order_comment, POSITION_TYPE_SELL))
+            {
+               if(ticketEntradaVenda == trans.order)
+                  ticketEntradaVenda = 0;
+               Print("Ordem de venda removida/cancelada. Ticket = ", IntegerToString((long)trans.order),
+                     " Comentario = ", order_comment);
+            }
+
+            if(!PendingEntryOrderExists(POSITION_TYPE_BUY) &&
+               !PendingEntryOrderExists(POSITION_TYPE_SELL))
+            {
+               aguardandoExecucao = false;
+            }
+         }
+      }
+      return;
+   }
+
    if(trans.type != TRADE_TRANSACTION_DEAL_ADD || trans.deal == 0)
       return;
 
@@ -418,24 +510,26 @@ void MR_Fibo_StrategyOnTradeTransaction(const MqlTradeTransaction &trans,
    if(deal_entry != DEAL_ENTRY_IN && deal_entry != DEAL_ENTRY_INOUT)
       return;
 
-   if(deal_type == DEAL_TYPE_BUY && StringFind(effective_comment, "FIBO_D1_BUY_LIMIT_ENTRY") >= 0)
+   if(deal_type == DEAL_TYPE_BUY && IsEntryOrderCommentForSide(effective_comment, POSITION_TYPE_BUY))
    {
       operouCompraHoje = true;
       aguardandoExecucao = false;
       ticketEntradaCompra = 0;
       g_id_execucao_logada = position_id;
-      CancelOppositeEntryOrder(POSITION_TYPE_BUY);
-      Print("Compra limit executada");
+      if(CancelarPontaOpostaAposEntrada)
+         CancelOppositeEntryOrder(POSITION_TYPE_BUY);
+      Print("Compra executada. Comentario = ", effective_comment);
    }
 
-   if(deal_type == DEAL_TYPE_SELL && StringFind(effective_comment, "FIBO_D1_SELL_LIMIT_ENTRY") >= 0)
+   if(deal_type == DEAL_TYPE_SELL && IsEntryOrderCommentForSide(effective_comment, POSITION_TYPE_SELL))
    {
       operouVendaHoje = true;
       aguardandoExecucao = false;
       ticketEntradaVenda = 0;
       g_id_execucao_logada = position_id;
-      CancelOppositeEntryOrder(POSITION_TYPE_SELL);
-      Print("Venda limit executada");
+      if(CancelarPontaOpostaAposEntrada)
+         CancelOppositeEntryOrder(POSITION_TYPE_SELL);
+      Print("Venda executada. Comentario = ", effective_comment);
    }
 
    MR_AT_ForceDailyRiskAfterTradeEvent("entry_fill");
@@ -501,6 +595,19 @@ void ResetDailyState()
    ticketTake2 = 0;
    ticketEntradaCompra = 0;
    ticketEntradaVenda = 0;
+   ultimaTentativaCompraMs = 0;
+   ultimaTentativaVendaMs = 0;
+   tentativasCompraHoje = 0;
+   tentativasVendaHoje = 0;
+   ultimoTipoOrdemCompra = ORDER_TYPE_BUY_LIMIT;
+   ultimoTipoOrdemVenda = ORDER_TYPE_SELL_LIMIT;
+   ultimoRetcodeCompra = 0;
+   ultimoRetcodeVenda = 0;
+   ultimaDescricaoCompra = "";
+   ultimaDescricaoVenda = "";
+   g_stop_financeiro_diario_acionado = false;
+   g_pnl_diario_local = 0.0;
+   g_stop_financeiro_motivo = "";
    direcaoReversaoPendente = 0;
    horarioSolicitacaoReversao = 0;
    dataPreparacaoNiveis = 0;
@@ -685,6 +792,18 @@ void RecoverTodayState()
             " Volume = ", DoubleToString(PositionGetDouble(POSITION_VOLUME), VolumeDigits()),
             " Stop = ", DoubleToString(stopAtual, _Digits));
    }
+
+   ticketEntradaCompra = FindPendingEntryOrderTicket(POSITION_TYPE_BUY);
+   ticketEntradaVenda = FindPendingEntryOrderTicket(POSITION_TYPE_SELL);
+   if(ticketEntradaCompra > 0 || ticketEntradaVenda > 0)
+   {
+      aguardandoExecucao = true;
+      Print("Pendentes de entrada recuperadas. CompraTicket = ",
+            IntegerToString((long)ticketEntradaCompra),
+            " VendaTicket = ", IntegerToString((long)ticketEntradaVenda));
+   }
+
+   UpdateLocalDailyFinancialStop();
 
    Print("Estado do dia recuperado. operouCompraHoje = ", operouCompraHoje,
          " operouVendaHoje = ", operouVendaHoje);
@@ -997,6 +1116,9 @@ bool IsSoldPosition()
 
 bool CheckReversalSignal()
 {
+   if(!PermitirReversao)
+      return false;
+
    if(reversaoPendente)
       return false;
 
@@ -1220,20 +1342,76 @@ bool FecharPosicaoAtualParaReversao()
 
 bool EnviarCompraReversaoMercado()
 {
-   return PlaceEntryLimitOrder(POSITION_TYPE_BUY);
+   return PlaceEntryOrder(POSITION_TYPE_BUY);
 }
 
 bool EnviarVendaReversaoMercado()
 {
-   return PlaceEntryLimitOrder(POSITION_TYPE_SELL);
+   return PlaceEntryOrder(POSITION_TYPE_SELL);
 }
 
-string EntryLimitComment(ENUM_POSITION_TYPE type)
+ENUM_ORDER_TYPE MR_DefinirTipoOrdemCompra(double askAtual, double nivel, double tolerancia)
 {
-   return (type == POSITION_TYPE_BUY ? "FIBO_D1_BUY_LIMIT_ENTRY" : "FIBO_D1_SELL_LIMIT_ENTRY");
+   if(MathAbs(askAtual - nivel) <= tolerancia)
+      return ORDER_TYPE_BUY;
+   if(askAtual > nivel)
+      return ORDER_TYPE_BUY_LIMIT;
+   return ORDER_TYPE_BUY_STOP;
 }
 
-ulong FindPendingEntryOrderTicket(string comment)
+ENUM_ORDER_TYPE MR_DefinirTipoOrdemVenda(double bidAtual, double nivel, double tolerancia)
+{
+   if(MathAbs(bidAtual - nivel) <= tolerancia)
+      return ORDER_TYPE_SELL;
+   if(bidAtual < nivel)
+      return ORDER_TYPE_SELL_LIMIT;
+   return ORDER_TYPE_SELL_STOP;
+}
+
+string OrderTypeToText(ENUM_ORDER_TYPE orderType)
+{
+   if(orderType == ORDER_TYPE_BUY)
+      return "BUY_MARKET";
+   if(orderType == ORDER_TYPE_SELL)
+      return "SELL_MARKET";
+   if(orderType == ORDER_TYPE_BUY_LIMIT)
+      return "BUY_LIMIT";
+   if(orderType == ORDER_TYPE_SELL_LIMIT)
+      return "SELL_LIMIT";
+   if(orderType == ORDER_TYPE_BUY_STOP)
+      return "BUY_STOP";
+   if(orderType == ORDER_TYPE_SELL_STOP)
+      return "SELL_STOP";
+   return "UNKNOWN";
+}
+
+string EntryOrderComment(ENUM_POSITION_TYPE type, ENUM_ORDER_TYPE orderType)
+{
+   string side = (type == POSITION_TYPE_BUY ? "BUY" : "SELL");
+   string kind = "MARKET";
+   if(orderType == ORDER_TYPE_BUY_LIMIT || orderType == ORDER_TYPE_SELL_LIMIT)
+      kind = "LIMIT";
+   else if(orderType == ORDER_TYPE_BUY_STOP || orderType == ORDER_TYPE_SELL_STOP)
+      kind = "STOP";
+   return "FIBO_D1_" + side + "_" + kind + "_ENTRY";
+}
+
+bool IsEntryOrderCommentForSide(string comment, ENUM_POSITION_TYPE type)
+{
+   if(type == POSITION_TYPE_BUY)
+      return (StringFind(comment, "FIBO_D1_BUY_") >= 0 && StringFind(comment, "_ENTRY") >= 0);
+   if(type == POSITION_TYPE_SELL)
+      return (StringFind(comment, "FIBO_D1_SELL_") >= 0 && StringFind(comment, "_ENTRY") >= 0);
+   return false;
+}
+
+bool IsOurEntryOrderComment(string comment)
+{
+   return (IsEntryOrderCommentForSide(comment, POSITION_TYPE_BUY) ||
+           IsEntryOrderCommentForSide(comment, POSITION_TYPE_SELL));
+}
+
+ulong FindPendingEntryOrderTicket(ENUM_POSITION_TYPE type)
 {
    int total = OrdersTotal();
 
@@ -1250,7 +1428,7 @@ ulong FindPendingEntryOrderTicket(string comment)
       if((ulong)OrderGetInteger(ORDER_MAGIC) != MagicNumber)
          continue;
 
-      if(OrderGetString(ORDER_COMMENT) == comment)
+      if(IsEntryOrderCommentForSide(OrderGetString(ORDER_COMMENT), type))
          return ticket;
    }
 
@@ -1260,19 +1438,18 @@ ulong FindPendingEntryOrderTicket(string comment)
 bool PendingEntryOrderExists(ENUM_POSITION_TYPE type)
 {
    ulong ticket = (type == POSITION_TYPE_BUY ? ticketEntradaCompra : ticketEntradaVenda);
-   string comment = EntryLimitComment(type);
 
    if(ticket > 0 && OrderSelect(ticket))
    {
       if(OrderGetString(ORDER_SYMBOL) == _Symbol &&
          (ulong)OrderGetInteger(ORDER_MAGIC) == MagicNumber &&
-         OrderGetString(ORDER_COMMENT) == comment)
+         IsEntryOrderCommentForSide(OrderGetString(ORDER_COMMENT), type))
       {
          return true;
       }
    }
 
-   ticket = FindPendingEntryOrderTicket(comment);
+   ticket = FindPendingEntryOrderTicket(type);
 
    if(type == POSITION_TYPE_BUY)
       ticketEntradaCompra = ticket;
@@ -1282,9 +1459,53 @@ bool PendingEntryOrderExists(ENUM_POSITION_TYPE type)
    return (ticket > 0);
 }
 
-bool PlaceEntryLimitOrder(ENUM_POSITION_TYPE type)
+bool ShouldAttemptEntrySide(ENUM_POSITION_TYPE type)
+{
+   int attempts = (type == POSITION_TYPE_BUY ? tentativasCompraHoje : tentativasVendaHoje);
+   if(!ReapregoarOrdemRejeitada && attempts > 0)
+      return false;
+
+   if(attempts >= MaxTentativasPorLado)
+      return false;
+
+   uint nowMs = GetTickCount();
+   uint lastMs = (type == POSITION_TYPE_BUY ? ultimaTentativaCompraMs : ultimaTentativaVendaMs);
+   if(lastMs > 0 && nowMs - lastMs < (uint)CooldownReenvioMs)
+      return false;
+
+   return true;
+}
+
+void RegisterEntryAttemptResult(ENUM_POSITION_TYPE type, bool accepted, uint retcode, string description)
+{
+   uint nowMs = GetTickCount();
+   if(type == POSITION_TYPE_BUY)
+   {
+      ultimaTentativaCompraMs = nowMs;
+      ultimoRetcodeCompra = retcode;
+      ultimaDescricaoCompra = description;
+      if(!accepted)
+         tentativasCompraHoje++;
+   }
+   else if(type == POSITION_TYPE_SELL)
+   {
+      ultimaTentativaVendaMs = nowMs;
+      ultimoRetcodeVenda = retcode;
+      ultimaDescricaoVenda = description;
+      if(!accepted)
+         tentativasVendaHoje++;
+   }
+}
+
+bool PlaceEntryOrder(ENUM_POSITION_TYPE type)
 {
    if(type != POSITION_TYPE_BUY && type != POSITION_TYPE_SELL)
+      return false;
+
+   if(type == POSITION_TYPE_BUY && !PermitirCompra)
+      return false;
+
+   if(type == POSITION_TYPE_SELL && !PermitirVenda)
       return false;
 
    if(type == POSITION_TYPE_BUY && operouCompraHoje)
@@ -1295,6 +1516,9 @@ bool PlaceEntryLimitOrder(ENUM_POSITION_TYPE type)
 
    if(PendingEntryOrderExists(type))
       return true;
+
+   if(!ShouldAttemptEntrySide(type))
+      return false;
 
    if(!AreLevelsValid())
       return false;
@@ -1320,13 +1544,35 @@ bool PlaceEntryLimitOrder(ENUM_POSITION_TYPE type)
       return false;
    }
 
-   double price = NormalizarPreco(type == POSITION_TYPE_BUY ? nivelCompra : nivelVenda);
+   double tolerancia = GetOperationalTickSize() * ToleranciaEntradaTicks;
+
+   ENUM_ORDER_TYPE orderType = ORDER_TYPE_BUY_LIMIT;
+   if(type == POSITION_TYPE_BUY)
+      orderType = MR_DefinirTipoOrdemCompra(askRaw, nivelCompra, tolerancia);
+   else
+      orderType = MR_DefinirTipoOrdemVenda(bidRaw, nivelVenda, tolerancia);
+
+   if(type == POSITION_TYPE_BUY)
+      ultimoTipoOrdemCompra = orderType;
+   else
+      ultimoTipoOrdemVenda = orderType;
+
+   bool isMarket = (orderType == ORDER_TYPE_BUY || orderType == ORDER_TYPE_SELL);
+   if(!isMarket && !UsarOrdensPendentes)
+      return false;
+
+   double price = isMarket
+                  ? NormalizarPreco(type == POSITION_TYPE_BUY ? askRaw : bidRaw)
+                  : NormalizarPreco(type == POSITION_TYPE_BUY ? nivelCompra : nivelVenda);
    double stopInicial = 0.0;
-   string comment = EntryLimitComment(type);
+   string comment = EntryOrderComment(type, orderType);
 
    if(type == POSITION_TYPE_BUY)
    {
-      if(price >= askRaw - TickTolerance())
+      if(orderType == ORDER_TYPE_BUY_LIMIT && price >= askRaw - tolerancia)
+         return false;
+
+      if(orderType == ORDER_TYPE_BUY_STOP && price <= askRaw + tolerancia)
          return false;
 
       stopInicial = NormalizarPreco(price - StopPontos);
@@ -1339,7 +1585,10 @@ bool PlaceEntryLimitOrder(ENUM_POSITION_TYPE type)
    }
    else
    {
-      if(price <= bidRaw + TickTolerance())
+      if(orderType == ORDER_TYPE_SELL_LIMIT && price <= bidRaw + tolerancia)
+         return false;
+
+      if(orderType == ORDER_TYPE_SELL_STOP && price >= bidRaw - tolerancia)
          return false;
 
       stopInicial = NormalizarPreco(price + StopPontos);
@@ -1351,66 +1600,78 @@ bool PlaceEntryLimitOrder(ENUM_POSITION_TYPE type)
       }
    }
 
-   if(!ValidateInitialStop(type, stopInicial, askRaw, bidRaw))
+   if(isMarket && !ValidateInitialStop(type, stopInicial, askRaw, bidRaw))
       return false;
 
-   
-   if(!g_debug_mode)
-     {
-      string guard_side = (type == POSITION_TYPE_BUY ? "BUY" : "SELL");
-      string guard_block = "";
-      if(!MR_AT_CanTradeAutonomousStrategy(guard_side, g_fibo_trade_action, LoteTotal, StopPontos, guard_block))
-        {
-         static datetime g_last_can_trade_log = 0;
-         if(TimeCurrent() - g_last_can_trade_log > 120)
-           {
-            MR_AT_LogInfo("FiboGuard", "Can-trade bloqueado: " + guard_block + " action=" + g_fibo_trade_action);
-            g_last_can_trade_log = TimeCurrent();
-           }
-         return false;
-        }
-     }
-
-
+   double min_distance = BrokerStopsDistance();
+   if(min_distance > 0.0 && MathAbs(price - stopInicial) < min_distance - TickTolerance())
+   {
+      Print("Entrada bloqueada por distancia minima entre preco e stop. Tipo = ",
+            OrderTypeToText(orderType),
+            " Preco = ", DoubleToString(price, _Digits),
+            " Stop = ", DoubleToString(stopInicial, _Digits),
+            " Minimo = ", DoubleToString(min_distance, _Digits));
+      return false;
+   }
 
    ResetLastError();
 
-
    bool ok = false;
-
-
-   if(type == POSITION_TYPE_BUY)
+   if(orderType == ORDER_TYPE_BUY)
+      ok = trade.Buy(volume, _Symbol, 0.0, stopInicial, 0.0, comment);
+   else if(orderType == ORDER_TYPE_SELL)
+      ok = trade.Sell(volume, _Symbol, 0.0, stopInicial, 0.0, comment);
+   else if(orderType == ORDER_TYPE_BUY_LIMIT)
       ok = trade.BuyLimit(volume, price, _Symbol, stopInicial, 0.0, ORDER_TIME_GTC, 0, comment);
-   else
+   else if(orderType == ORDER_TYPE_SELL_LIMIT)
       ok = trade.SellLimit(volume, price, _Symbol, stopInicial, 0.0, ORDER_TIME_GTC, 0, comment);
+   else if(orderType == ORDER_TYPE_BUY_STOP)
+      ok = trade.BuyStop(volume, price, _Symbol, stopInicial, 0.0, ORDER_TIME_GTC, 0, comment);
+   else if(orderType == ORDER_TYPE_SELL_STOP)
+      ok = trade.SellStop(volume, price, _Symbol, stopInicial, 0.0, ORDER_TIME_GTC, 0, comment);
 
    uint retcode = trade.ResultRetcode();
    ulong order = trade.ResultOrder();
+   ulong deal = trade.ResultDeal();
+   string description = trade.ResultRetcodeDescription();
+   bool accepted = (ok && IsAcceptedTradeRetcode(retcode) && (order > 0 || deal > 0 || isMarket));
+   RegisterEntryAttemptResult(type, accepted, retcode, description);
 
-   if(!ok || !IsAcceptedTradeRetcode(retcode) || order == 0)
+   if(!accepted)
    {
-      Print("Erro ao enviar ordem limit de entrada. Tipo = ",
-            type == POSITION_TYPE_BUY ? "BUY_LIMIT" : "SELL_LIMIT",
+      Print("Erro ao enviar ordem de entrada. Tipo = ",
+            OrderTypeToText(orderType),
             " Volume = ", DoubleToString(volume, VolumeDigits()),
             " Preco = ", DoubleToString(price, _Digits),
             " Stop = ", DoubleToString(stopInicial, _Digits),
             " Retcode = ", retcode,
-            " - ", trade.ResultRetcodeDescription(),
+            " - ", description,
+            " Tentativas = ", IntegerToString(type == POSITION_TYPE_BUY ? tentativasCompraHoje : tentativasVendaHoje),
             " LastError = ", GetLastError());
       return false;
    }
 
-   if(type == POSITION_TYPE_BUY)
-      ticketEntradaCompra = order;
-   else
-      ticketEntradaVenda = order;
+   if(!isMarket)
+   {
+      if(type == POSITION_TYPE_BUY)
+         ticketEntradaCompra = order;
+      else
+         ticketEntradaVenda = order;
+      aguardandoExecucao = true;
+   }
 
-   PrintFormat("ORDEM LIMIT ENTRADA ENVIADA tipo=%s ticket=%s volume=%s preco=%.3f stop=%.3f comentario=%s",
-               type == POSITION_TYPE_BUY ? "BUY_LIMIT" : "SELL_LIMIT",
+   PrintFormat("ORDEM ENTRADA ENVIADA tipo=%s ticket=%s deal=%s volume=%s preco=%.3f stop=%.3f bid=%.3f ask=%.3f nivelCompra=%.3f nivelVenda=%.3f tolerancia=%.3f comentario=%s",
+               OrderTypeToText(orderType),
                IntegerToString((long)order),
+               IntegerToString((long)deal),
                DoubleToString(volume, VolumeDigits()),
                price,
                stopInicial,
+               bidRaw,
+               askRaw,
+               nivelCompra,
+               nivelVenda,
+               tolerancia,
                comment);
 
    return true;
@@ -1421,7 +1682,7 @@ void CancelPendingEntryOrder(ENUM_POSITION_TYPE type)
    ulong ticket = (type == POSITION_TYPE_BUY ? ticketEntradaCompra : ticketEntradaVenda);
 
    if(ticket == 0)
-      ticket = FindPendingEntryOrderTicket(EntryLimitComment(type));
+      ticket = FindPendingEntryOrderTicket(type);
 
    if(ticket > 0 && OrderSelect(ticket))
    {
@@ -1431,7 +1692,7 @@ void CancelPendingEntryOrder(ENUM_POSITION_TYPE type)
 
       if(!ok || !IsAcceptedTradeRetcode(retcode))
       {
-         Print("Falha ao cancelar ordem limit de entrada. Ticket = ",
+         Print("Falha ao cancelar ordem de entrada. Ticket = ",
                IntegerToString((long)ticket),
                " Retcode = ", retcode,
                " - ", trade.ResultRetcodeDescription(),
@@ -1478,15 +1739,160 @@ void CheckMarketEntries()
    if(!AreLevelsValid())
       return;
 
-   if(operouCompraHoje)
+   int operacoesHoje = CountTodayEntryDeals();
+   if(InpMaxOperacoesDia > 0 && operacoesHoje >= InpMaxOperacoesDia)
+   {
+      CancelPendingEntryOrders();
+      return;
+   }
+
+   if(InpMaxPerdasConsecutivas > 0 &&
+      CountConsecutiveLosingTradesToday() >= InpMaxPerdasConsecutivas)
+   {
+      CancelPendingEntryOrders();
+      return;
+   }
+
+   if(operouCompraHoje || !PermitirCompra)
       CancelPendingEntryOrder(POSITION_TYPE_BUY);
    else
-      PlaceEntryLimitOrder(POSITION_TYPE_BUY);
+      PlaceEntryOrder(POSITION_TYPE_BUY);
 
-   if(operouVendaHoje)
+   if(operouVendaHoje || !PermitirVenda)
       CancelPendingEntryOrder(POSITION_TYPE_SELL);
    else
-      PlaceEntryLimitOrder(POSITION_TYPE_SELL);
+      PlaceEntryOrder(POSITION_TYPE_SELL);
+}
+
+double CalculateLocalDailyPnl()
+{
+   double pnl = 0.0;
+   datetime inicio = diaOperacional;
+   datetime fim = TimeCurrent();
+
+   if(HistorySelect(inicio, fim))
+   {
+      int total = HistoryDealsTotal();
+      for(int i = 0; i < total; i++)
+      {
+         ulong deal = HistoryDealGetTicket(i);
+         if(deal == 0)
+            continue;
+
+         if(HistoryDealGetString(deal, DEAL_SYMBOL) != _Symbol)
+            continue;
+
+         if((ulong)HistoryDealGetInteger(deal, DEAL_MAGIC) != MagicNumber)
+            continue;
+
+         ENUM_DEAL_TYPE deal_type = (ENUM_DEAL_TYPE)HistoryDealGetInteger(deal, DEAL_TYPE);
+         if(deal_type != DEAL_TYPE_BUY && deal_type != DEAL_TYPE_SELL)
+            continue;
+
+         pnl += HistoryDealGetDouble(deal, DEAL_PROFIT);
+         pnl += HistoryDealGetDouble(deal, DEAL_SWAP);
+         pnl += HistoryDealGetDouble(deal, DEAL_COMMISSION);
+      }
+   }
+
+   if(InpConsiderarPnLAberto && SelectOurPosition())
+      pnl += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+
+   return pnl;
+}
+
+int CountTodayEntryDeals()
+{
+   int count = 0;
+   if(!HistorySelect(diaOperacional, TimeCurrent()))
+      return count;
+
+   int total = HistoryDealsTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong deal = HistoryDealGetTicket(i);
+      if(deal == 0)
+         continue;
+
+      if(HistoryDealGetString(deal, DEAL_SYMBOL) != _Symbol)
+         continue;
+
+      if((ulong)HistoryDealGetInteger(deal, DEAL_MAGIC) != MagicNumber)
+         continue;
+
+      ENUM_DEAL_ENTRY entry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(deal, DEAL_ENTRY);
+      if(entry == DEAL_ENTRY_IN || entry == DEAL_ENTRY_INOUT)
+         count++;
+   }
+
+   return count;
+}
+
+int CountConsecutiveLosingTradesToday()
+{
+   int streak = 0;
+   if(!HistorySelect(diaOperacional, TimeCurrent()))
+      return streak;
+
+   int total = HistoryDealsTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong deal = HistoryDealGetTicket(i);
+      if(deal == 0)
+         continue;
+
+      if(HistoryDealGetString(deal, DEAL_SYMBOL) != _Symbol)
+         continue;
+
+      if((ulong)HistoryDealGetInteger(deal, DEAL_MAGIC) != MagicNumber)
+         continue;
+
+      ENUM_DEAL_ENTRY entry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(deal, DEAL_ENTRY);
+      if(entry != DEAL_ENTRY_OUT && entry != DEAL_ENTRY_OUT_BY)
+         continue;
+
+      double result = HistoryDealGetDouble(deal, DEAL_PROFIT) +
+                      HistoryDealGetDouble(deal, DEAL_SWAP) +
+                      HistoryDealGetDouble(deal, DEAL_COMMISSION);
+
+      if(result < -0.000000001)
+         streak++;
+      else if(result > 0.000000001)
+         streak = 0;
+   }
+
+   return streak;
+}
+
+bool UpdateLocalDailyFinancialStop()
+{
+   if(!InpHabilitarStopFinanceiroDiario || InpLimitePerdaDiariaReais <= 0.0)
+   {
+      g_pnl_diario_local = CalculateLocalDailyPnl();
+      return false;
+   }
+
+   g_pnl_diario_local = CalculateLocalDailyPnl();
+   double limite = -MathAbs(InpLimitePerdaDiariaReais);
+
+   if(g_pnl_diario_local > limite + 0.000000001 && !g_stop_financeiro_diario_acionado)
+      return false;
+
+   if(!g_stop_financeiro_diario_acionado)
+   {
+      g_stop_financeiro_diario_acionado = true;
+      g_stop_financeiro_motivo = "PnL diario local " + DoubleToString(g_pnl_diario_local, 2) +
+                                 " <= limite " + DoubleToString(limite, 2);
+      Print("STOP FINANCEIRO DIARIO LOCAL ACIONADO: ", g_stop_financeiro_motivo);
+   }
+
+   if(InpCancelarPendentesNoLimite)
+      CancelPendingEntryOrders();
+
+   if(InpFecharPosicaoNoLimite && SelectOurPosition())
+      CloseOurPositionAtMarket("Stop financeiro diario local");
+
+   return true;
 }
 
 void ManageOpenPosition()
@@ -1510,13 +1916,13 @@ void ManageOpenPosition()
       {
          operouCompraHoje = true;
          if(g_id_execucao_logada != position_id)
-            Print("Compra limit executada");
+            Print("Compra executada");
       }
       else if(type == POSITION_TYPE_SELL)
       {
          operouVendaHoje = true;
          if(g_id_execucao_logada != position_id)
-            Print("Venda limit executada");
+            Print("Venda executada");
       }
 
       g_id_execucao_logada = position_id;
@@ -1617,15 +2023,22 @@ void ManageBuyPosition()
       return;
    }
 
-   if(trailingAtivo)
+   if(HabilitarTrailing && trailingAtivo)
    {
+      if(TrailingTrigger > 0.0 &&
+         bidOperacional - entradaOperacional < TrailingTrigger - TickTolerance())
+      {
+         return;
+      }
+
       if(melhorPrecoCompra <= 0.0)
          melhorPrecoCompra = bidOperacional;
 
       if(bidOperacional > melhorPrecoCompra)
          melhorPrecoCompra = bidOperacional;
 
-      double novo_stop = NormalizarPreco(melhorPrecoCompra - TrailOffsetPontos);
+      double distancia = (TrailingDistancePontos > 0.0 ? TrailingDistancePontos : TrailOffsetPontos);
+      double novo_stop = NormalizarPreco(melhorPrecoCompra - distancia);
 
       if(novo_stop >= stopAtual + TrailStepPontos - TickTolerance() && novo_stop < bidOperacional)
       {
@@ -1711,15 +2124,22 @@ void ManageSellPosition()
       return;
    }
 
-   if(trailingAtivo)
+   if(HabilitarTrailing && trailingAtivo)
    {
+      if(TrailingTrigger > 0.0 &&
+         entradaOperacional - askOperacional < TrailingTrigger - TickTolerance())
+      {
+         return;
+      }
+
       if(melhorPrecoVenda <= 0.0)
          melhorPrecoVenda = askOperacional;
 
       if(askOperacional < melhorPrecoVenda)
          melhorPrecoVenda = askOperacional;
 
-      double novo_stop = NormalizarPreco(melhorPrecoVenda + TrailOffsetPontos);
+      double distancia = (TrailingDistancePontos > 0.0 ? TrailingDistancePontos : TrailOffsetPontos);
+      double novo_stop = NormalizarPreco(melhorPrecoVenda + distancia);
 
       if(novo_stop <= stopAtual - TrailStepPontos + TickTolerance() && novo_stop > askOperacional)
       {
@@ -1928,13 +2348,25 @@ void HandleTakeLimitFill(string comment, ENUM_DEAL_TYPE dealType)
 
       if(SelectOurPosition())
       {
-         stopAtual = entradaOperacional;
-         PrintMarketSnapshot("ANTES DE MODIFY STOP");
+         ENUM_POSITION_TYPE pos_type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+         if(HabilitarBreakeven && BreakevenAposTake1)
+         {
+            if(pos_type == POSITION_TYPE_BUY)
+               stopAtual = NormalizarPreco(entradaOperacional + BreakevenOffsetPontos);
+            else
+               stopAtual = NormalizarPreco(entradaOperacional - BreakevenOffsetPontos);
 
-         if(ModifyStop(stopAtual))
-            Print("Take 1 limit executado. Stop real movido para entrada operacional.");
+            PrintMarketSnapshot("ANTES DE MODIFY STOP");
+
+            if(ModifyStop(stopAtual))
+               Print("Take 1 limit executado. Stop real movido para entrada operacional.");
+            else
+               Print("Take 1 limit executado, mas falhou ao mover Stop Loss real para entrada operacional.");
+         }
          else
-            Print("Take 1 limit executado, mas falhou ao mover Stop Loss real para entrada operacional.");
+         {
+            Print("Take 1 limit executado. Breakeven desabilitado por input.");
+         }
       }
    }
 
@@ -1942,14 +2374,21 @@ void HandleTakeLimitFill(string comment, ENUM_DEAL_TYPE dealType)
    {
       parcial2Feita = true;
       ticketTake2 = 0;
-      trailingAtivo = true;
+      trailingAtivo = HabilitarTrailing;
 
-      if(dealType == DEAL_TYPE_SELL)
-         melhorPrecoCompra = GetBidOperacional();
-      else if(dealType == DEAL_TYPE_BUY)
-         melhorPrecoVenda = GetAskOperacional();
+      if(trailingAtivo)
+      {
+         if(dealType == DEAL_TYPE_SELL)
+            melhorPrecoCompra = GetBidOperacional();
+         else if(dealType == DEAL_TYPE_BUY)
+            melhorPrecoVenda = GetAskOperacional();
 
-      Print("Take 2 limit executado. Trailing real ativado.");
+         Print("Take 2 limit executado. Trailing real ativado.");
+      }
+      else
+      {
+         Print("Take 2 limit executado. Trailing desabilitado por input.");
+      }
    }
 }
 
@@ -2236,15 +2675,28 @@ bool LoadSymbolProperties()
 
 bool ValidateInputs()
 {
-   int h = 0;
-   int m = 0;
+   int hInicio = 0;
+   int mInicio = 0;
+   int hFim = 0;
+   int mFim = 0;
+   int hZeragem = 0;
+   int mZeragem = 0;
    double operational_tick = GetOperationalTickSize();
 
-   if(!ParseHHMM(HorarioInicio, h, m) ||
-      !ParseHHMM(HorarioFimEntradas, h, m) ||
-      !ParseHHMM(HorarioZeragem, h, m))
+   if(!ParseHHMM(HorarioInicio, hInicio, mInicio) ||
+      !ParseHHMM(HorarioFimEntradas, hFim, mFim) ||
+      !ParseHHMM(HorarioZeragem, hZeragem, mZeragem))
    {
       Print("Horario invalido. Use o formato HH:MM.");
+      return false;
+   }
+
+   int inicioMin = hInicio * 60 + mInicio;
+   int fimMin = hFim * 60 + mFim;
+   int zeragemMin = hZeragem * 60 + mZeragem;
+   if(inicioMin >= fimMin || fimMin > zeragemMin)
+   {
+      Print("Horarios invalidos. Exigido: HorarioInicio < HorarioFimEntradas <= HorarioZeragem.");
       return false;
    }
 
@@ -2294,9 +2746,9 @@ bool ValidateInputs()
       return false;
    }
 
-   if(Alvo2Pontos < Alvo1Pontos)
+   if(Alvo2Pontos <= Alvo1Pontos)
    {
-      Print("Alvo2Pontos deve ser maior ou igual a Alvo1Pontos. EA bloqueado.");
+      Print("Alvo2Pontos deve ser maior que Alvo1Pontos. EA bloqueado.");
       return false;
    }
 
@@ -2312,15 +2764,21 @@ bool ValidateInputs()
       return false;
    }
 
+   if(MathAbs((LoteAlvo1 + LoteAlvo2 + LoteFinal) - LoteTotal) > 0.000000001)
+   {
+      Print("LoteAlvo1 + LoteAlvo2 + LoteFinal deve ser igual a LoteTotal.");
+      return false;
+   }
+
    if(NormalizeVolume(LoteTotal) <= 0.0)
    {
       Print("LoteTotal nao e valido para o simbolo.");
       return false;
    }
 
-   if(TrailStepPontos <= 0.0 || TrailOffsetPontos <= 0.0)
+   if(HabilitarTrailing && (TrailStepPontos <= 0.0 || TrailOffsetPontos <= 0.0 || TrailingDistancePontos <= 0.0))
    {
-      Print("TrailStepPontos e TrailOffsetPontos devem ser maiores que zero.");
+      Print("Parametros de trailing devem ser maiores que zero quando trailing estiver habilitado.");
       return false;
    }
 
@@ -2992,7 +3450,7 @@ void InferPartialStateFromVolume(double current_volume)
    {
       parcial1Feita = true;
       parcial2Feita = true;
-      trailingAtivo = true;
+      trailingAtivo = HabilitarTrailing;
    }
 }
 

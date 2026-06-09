@@ -18,7 +18,7 @@ string MR_AT_BuildOpenPositionsJson()
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0 || !PositionSelectByTicket(ticket))
          continue;
-      if(PositionGetInteger(POSITION_MAGIC) != MR_AT_EA_MAGIC)
+      if((ulong)PositionGetInteger(POSITION_MAGIC) != InpMagicNumber)
          continue;
 
       if(!first)
@@ -52,7 +52,7 @@ string MR_AT_ComputePositionsHash()
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0 || !PositionSelectByTicket(ticket))
          continue;
-      if(PositionGetInteger(POSITION_MAGIC) != MR_AT_EA_MAGIC)
+      if((ulong)PositionGetInteger(POSITION_MAGIC) != InpMagicNumber)
          continue;
       hash += PositionGetString(POSITION_SYMBOL) + ":" +
               DoubleToString(PositionGetDouble(POSITION_VOLUME), 2) + ";";

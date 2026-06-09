@@ -71,7 +71,7 @@ bool MR_AT_CanTradeAutonomousStrategy(
    body += "\"account_server\":" + MR_AT_JsonQuote(MR_AT_AccountServerStr()) + ",";
    body += "\"symbol\":" + MR_AT_JsonQuote(_Symbol) + ",";
    body += "\"trade_mode\":" + MR_AT_JsonQuote(MR_AT_GetTradeMode()) + ",";
-   body += "\"magic_number\":" + IntegerToString((int)MR_AT_EA_MAGIC) + ",";
+   body += "\"magic_number\":" + IntegerToString((int)InpMagicNumber) + ",";
    body += "\"side\":" + MR_AT_JsonQuote(side) + ",";
    body += "\"action\":" + MR_AT_JsonQuote(action) + ",";
    body += "\"requested_contracts\":" + IntegerToString((int)requested_contracts) + ",";
@@ -113,12 +113,10 @@ bool MR_AT_CanTradeAutonomousStrategy(
 //+------------------------------------------------------------------+
 void MR_AT_ProcessAutonomousStrategy()
   {
-   if(!InpEnableAutonomousStrategy)
-      return;
    if(!g_autonomous_strategy_site_enabled)
       return;
-   if(StringLen(InpAutonomousStrategyCode) == 0 ||
-      InpAutonomousStrategyCode != MR_FIBO_GUARD_CODE)
+   if(StringLen(InpStrategyCode) == 0 ||
+      InpStrategyCode != MR_FIBO_GUARD_CODE)
       return;
    if(MR_AT_GetTradeMode() == "REAL" && !MR_Fibo_IsConfigReadyForReal())
      {

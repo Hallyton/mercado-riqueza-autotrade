@@ -5,6 +5,8 @@
 **Código:** `MR_FIBO_D1_GUARD`  
 **Status:** `FIBO_D1_GUARD_AUTONOMOUS_STRATEGY_ATTACHED_TO_EXECUTOR`
 
+> Nota Fase 15.7: esta pagina registra a integracao autonomo-remota anterior. O fluxo atual aprovado esta em [`MR-FIBO-D1-GUARD-LOCAL-EXECUTION.md`](MR-FIBO-D1-GUARD-LOCAL-EXECUTION.md): o site valida a licenca uma vez por `tradeDate` e a execucao/risco da estrategia ficam locais no `OnTick`.
+
 ## Arquitetura
 
 1. **`ea/mql5/includes/MR_Strategy_FiboD1_Guard.mqh`** — calcula níveis D1 anterior, arma compra/venda, emite `MR_StrategySignal` (sem `OrderSend`).

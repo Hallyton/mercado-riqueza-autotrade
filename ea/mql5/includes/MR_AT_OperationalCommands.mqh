@@ -72,7 +72,7 @@ bool MR_AT_IsAdminPaused()
 //+------------------------------------------------------------------+
 int MR_AT_OperationalMagic()
   {
-   return (int)MR_AT_EA_MAGIC;
+   return (int)InpMagicNumber;
   }
 
 //+------------------------------------------------------------------+

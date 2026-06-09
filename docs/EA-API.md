@@ -47,6 +47,19 @@ Configuração operacional mínima (sem parâmetros de estratégia):
 
 ---
 
+### MR_FIBO_D1_GUARD local - Fase 15.7
+
+No modo `MR_FIBO_D1_GUARD_LOCAL_ON_TICK_EXECUTION_IMPLEMENTED`, o EA usa `GET /api/v1/ea/config` somente como validacao diaria de licenca:
+
+- confirma `license_status=ACTIVE` para o `tradeDate` atual;
+- atualiza `license_id` local quando retornado;
+- nao usa `strategy_config`, `strategy_config_hash`, DailyRisk remoto, preflight, approvals ou maxContracts para decidir entrada;
+- nao chama `/config` dentro do `OnTick`.
+
+Apos autorizacao diaria, entradas, stop, parciais, breakeven, trailing, reversao, zeragem e stop financeiro diario sao executados localmente no MetaTrader.
+
+---
+
 ## POST `/autonomous-strategy/preflight`
 
 Autorização server-side antes de entrada gerada localmente pelo EA (estratégia caixa preta).
@@ -72,6 +85,8 @@ Resposta `allowed: true`: `decision: STRATEGY_CAN_TRADE`, `reason_code: OK`.
 Resposta bloqueada: `decision: STRATEGY_BLOCKED`, `reason_code`, `detail`.
 
 Persiste `AutonomousStrategyDecision` para auditoria.
+
+**Fase 15.7:** este endpoint permanece legado/compatibilidade. O caminho local atual da `MR_FIBO_D1_GUARD` nao chama `can-trade` antes de entradas, reversoes, stops, parciais ou trailing.
 
 ---
 

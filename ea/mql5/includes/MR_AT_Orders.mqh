@@ -26,7 +26,7 @@ string MR_AT_BuildPendingOrdersJson()
       ulong ticket = OrderGetTicket(i);
       if(ticket == 0 || !OrderSelect(ticket))
          continue;
-      if(OrderGetInteger(ORDER_MAGIC) != MR_AT_EA_MAGIC)
+      if((ulong)OrderGetInteger(ORDER_MAGIC) != InpMagicNumber)
          continue;
 
       if(!first)

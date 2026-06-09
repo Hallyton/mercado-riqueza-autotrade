@@ -25,14 +25,18 @@ describe("contratos MQL5 — EA cliente", () => {
     expect(executor).toContain("input string InpActivationCode");
     expect(executor).toContain("input string InpDeviceId");
     expect(executor).toContain("input int    InpLogLevel");
-    expect(executor).toContain("input bool   InpDebugMode       = true");
+    expect(executor).toContain("input bool   InpDebugMode = true");
     expect(executor).toContain('input string InpTradeMode       = "DEMO"');
+    expect(executor).toContain('input string InpStrategyCode    = "MR_FIBO_D1_GUARD"');
+    expect(executor).toContain("input ulong  InpMagicNumber");
+    expect(executor).toContain("input double InpPercentualFibo = 0.20");
+    expect(executor).toContain('input string InpHorarioInicio = "09:15"');
+    expect(executor).toContain('input string InpHorarioFimEntradas = "17:30"');
+    expect(executor).toContain("input bool   InpPermitirOrdensReais = false");
 
     for (const forbiddenInput of [
       "InpStopLoss",
       "InpTakeProfit",
-      "InpTrailing",
-      "InpStrategy",
       "InpIndicator",
       "InpStartHour",
       "InpEndHour",
@@ -112,7 +116,15 @@ describe("contratos MQL5 — EA cliente", () => {
     const autonomous = readMql(path.join("includes", "MR_AT_AutonomousStrategy.mqh"));
     expect(fiboConfig).toContain("MR_Fibo_ParseConfigFromEaJson");
     expect(fiboGuard).toContain("MR_Fibo_StrategyOnTick");
-    expect(fiboCore).toContain("Can-trade bloqueado");
+    expect(executor).toContain("MR_AT_ApplyLocalFiboInputs");
+    expect(executor).toContain("MR_AT_EnsureDailyLicenseAuthorization");
+    expect(executor).toContain("MR_Fibo_OnTickStrategy");
+    expect(fiboCore).toContain("MR_DefinirTipoOrdemCompra");
+    expect(fiboCore).toContain("MR_DefinirTipoOrdemVenda");
+    expect(fiboCore).toContain("ORDER_TYPE_BUY_STOP");
+    expect(fiboCore).toContain("ORDER_TYPE_SELL_STOP");
+    expect(fiboCore).toContain("UpdateLocalDailyFinancialStop");
+    expect(fiboCore).not.toContain("Can-trade bloqueado");
     expect(autonomous).toContain("/api/v1/ea/autonomous-strategy/can-trade");
     expect(autonomous).not.toContain("MR_AT_ProcessInstruction");
     expect(fiboGuard).not.toContain("input ");

@@ -9,6 +9,25 @@ Plano técnico para transformar a arquitetura documentada em [`docs/MASTER-EA-SI
 
 ---
 
+## Fase 15.7 - Local OnTick Execution & Daily License Authorization
+
+**Status:** `MR_FIBO_D1_GUARD_LOCAL_ON_TICK_EXECUTION_IMPLEMENTED`
+
+Esta fase simplifica o fluxo da `MR_FIBO_D1_GUARD`:
+
+- o site valida a licenca uma vez por `tradeDate`;
+- depois da autorizacao, a estrategia roda totalmente local no `MR_AutoTrade_Executor.mq5`;
+- `OnTick()` decide entradas, stop, parciais, breakeven, trailing, reversao, zeragem e stop financeiro local;
+- `OnTimer()` fica restrito a infraestrutura: licenca diaria, heartbeat, snapshot/DailyRisk informacional e painel;
+- `can-trade`, preflight, strategy config remota, RealTradingApproval, maxContracts do site, comandos remotos e EA Mestre nao participam do caminho critico de entrada.
+
+Documentos:
+
+- [`MR-FIBO-D1-GUARD-LOCAL-EXECUTION.md`](MR-FIBO-D1-GUARD-LOCAL-EXECUTION.md)
+- [`MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md`](MR-FIBO-D1-GUARD-SIMPLE-AUTONOMOUS-FLOW.md)
+
+---
+
 ## 1. Objetivo do plano
 
 O próximo desenvolvimento consiste em implementar, de forma incremental:
